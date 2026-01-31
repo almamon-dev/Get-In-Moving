@@ -1,0 +1,220 @@
+<?php
+
+namespace App\Http\Controllers\API\Supplier;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\API\Supplier\SubmitQuoteRequest;
+use App\Http\Resources\API\Supplier\QuoteRequestDetailResource;
+use App\Http\Resources\API\Supplier\QuoteRequestResource;
+use App\Http\Resources\API\Supplier\QuoteResource;
+use App\Models\Quote;
+use App\Models\QuoteRequest;
+use App\Models\QuoteRequestView;
+use App\Traits\ApiResponse;
+use Illuminate\Http\Request;
+
+class SupplierApiController extends Controller
+{
+    use ApiResponse;
+
+    /**
+     * Get quote requests for the supplier dashboard with stats and filters.
+     */
+    public function getAvailableRequests(Request $request)
+    {
+        $user = $request->user();
+        $tab = $request->input('tab', 'new');
+        $search = $request->input('search');
+
+        $query = QuoteRequest::with(['items', 'user'])
+            ->withCount('quotes')
+            ->where('status', 'active');
+
+        // Search by location or service type
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('pickup_address', 'like', "%$search%")
+                    ->orWhere('delivery_address', 'like', "%$search%")
+                    ->orWhere('service_type', 'like', "%$search%");
+            });
+        }
+
+        // Filtering based on supplier engagement
+        $viewedIds = QuoteRequestView::where('user_id', $user->id)->pluck('quote_request_id');
+        $quotedIds = Quote::where('user_id', $user->id)->pluck('quote_request_id');
+
+        if ($tab === 'new') {
+            $query->whereNotIn('id', $viewedIds)->whereNotIn('id', $quotedIds);
+        } elseif ($tab === 'viewed') {
+            $query->whereIn('id', $viewedIds)->whereNotIn('id', $quotedIds);
+        } elseif ($tab === 'quoted') {
+            $query->whereIn('id', $quotedIds);
+        }
+
+        $requests = $query->latest()->get();
+
+        // Stats calculation
+        $stats = [
+            'total' => QuoteRequest::where('status', 'active')->count(),
+            'new' => QuoteRequest::where('status', 'active')
+                ->whereNotIn('id', $viewedIds)
+                ->whereNotIn('id', $quotedIds)
+                ->count(),
+            'viewed' => QuoteRequestView::where('user_id', $user->id)
+                ->whereNotIn('quote_request_id', $quotedIds)
+                ->count(),
+            'quoted' => Quote::where('user_id', $user->id)->count(),
+        ];
+
+        return $this->sendResponse([
+            'stats' => $stats,
+            'requests' => QuoteRequestResource::collection($requests),
+        ], 'Supplier dashboard data retrieved.');
+    }
+
+    /**
+     * Get details of a specific quote request and mark as viewed.
+     */
+    public function getRequestDetails(Request $request, $id)
+    {
+        $quoteRequest = QuoteRequest::with(['items', 'user'])->find($id);
+
+        if (! $quoteRequest) {
+            return $this->sendError('Quote request not found.', [], 404);
+        }
+
+        // Mark as viewed
+        QuoteRequestView::firstOrCreate([
+            'user_id' => $request->user()->id,
+            'quote_request_id' => $id,
+        ]);
+
+        return $this->sendResponse(new QuoteRequestDetailResource($quoteRequest), 'Quote request details retrieved.');
+    }
+
+    /**
+     * Submit a quote for a request.
+     */
+    public function submitQuote(SubmitQuoteRequest $request, $id)
+    {
+        $quoteRequest = QuoteRequest::find($id);
+
+        if (! $quoteRequest) {
+            return $this->sendError('Quote request not found.', [], 404);
+        }
+
+        if ($quoteRequest->status !== 'active') {
+            return $this->sendError('This request is no longer active.', [], 422);
+        }
+
+        $user = $request->user();
+
+        // Check if already quoted - if so, submit as a revision
+        $existing = Quote::where('quote_request_id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($existing) {
+            $existing->update([
+                'revised_amount' => $request->amount,
+                'revised_estimated_time' => $request->estimated_time,
+                'revision_status' => 'pending',
+            ]);
+
+            // Notify the customer about the revised offer
+            $customer = $quoteRequest->user;
+            if ($customer) {
+                $customer->notify(new \App\Notifications\RevisedQuoteNotification($existing));
+
+                // Add a message to the chat history about this revision
+                \App\Models\Message::create([
+                    'sender_id' => $user->id,
+                    'receiver_id' => $customer->id,
+                    'quote_id' => $existing->id,
+                    'message' => 'I have submitted a revised offer of $'.number_format($request->amount, 0).' with estimated delivery: '.$request->estimated_time,
+                ]);
+            }
+
+            return $this->sendResponse(new QuoteResource($existing->load('user')), 'Revised offer submitted successfully.', null, 200);
+        }
+
+        $quote = Quote::create([
+            'quote_request_id' => $id,
+            'user_id' => $user->id,
+            'amount' => $request->amount,
+            'estimated_time' => $request->estimated_time,
+            'status' => 'pending',
+        ]);
+
+        // Notify the customer
+        $customer = $quoteRequest->user;
+        if ($customer) {
+            $customer->notify(new \App\Notifications\NewQuoteSubmittedNotification($quote));
+        }
+
+        return $this->sendResponse(new QuoteResource($quote->load('user')), 'Quote submitted successfully.', null, 201);
+    }
+
+    /**
+     * Get quotes submitted by the authenticated supplier.
+     */
+    public function getMyQuotes(Request $request)
+    {
+        $user = $request->user();
+
+        $quotes = Quote::with(['quoteRequest.items', 'quoteRequest.user'])
+            ->where('user_id', $user->id)
+            ->latest()
+            ->get();
+
+        return $this->sendResponse(QuoteResource::collection($quotes), 'Your quotes retrieved successfully.');
+    }
+
+    /**
+     * Submit a revised quote/offer for an existing quote.
+     */
+    public function submitRevision(Request $request, $quoteId)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'estimated_time' => 'nullable|string',
+            'message' => 'nullable|string',
+        ]);
+
+        $user = $request->user();
+        $quote = Quote::with('quoteRequest.user')->where('id', $quoteId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $quote) {
+            return $this->sendError('Quote not found or you do not have permission to revise this quote.', [], 404);
+        }
+
+        $quote->update([
+            'revised_amount' => $request->amount,
+            'revised_estimated_time' => $request->estimated_time ?? $quote->estimated_time,
+            'revision_status' => 'pending',
+        ]);
+
+        // Notify the customer
+        $customer = $quote->quoteRequest->user;
+        if ($customer) {
+            $customer->notify(new \App\Notifications\RevisedQuoteNotification($quote));
+
+            // Add the "Optional Sms/Message" to chat history if provided
+            $chatMessage = 'I have submitted a revised offer of $'.number_format($request->amount, 0);
+            if ($request->message) {
+                $chatMessage .= "\n\nNote: ".$request->message;
+            }
+
+            \App\Models\Message::create([
+                'sender_id' => $user->id,
+                'receiver_id' => $customer->id,
+                'quote_id' => $quote->id,
+                'message' => $chatMessage,
+            ]);
+        }
+
+        return $this->sendResponse(new QuoteResource($quote), 'Revised offer submitted successfully.');
+    }
+}
