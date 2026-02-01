@@ -3,15 +3,15 @@ import { Link } from '@inertiajs/react';
 
 export default function GuestLayout({ children }) {
     return (
-        <div className="flex min-h-screen flex-col items-center bg-gray-100 pt-6 sm:justify-center sm:pt-0 dark:bg-gray-900">
-            <div>
-                <Link href="/">
-                    <ApplicationLogo className="h-20 w-20 fill-current text-gray-500" />
-                </Link>
-            </div>
+        <div className="flex min-h-screen flex-col items-center justify-center bg-[#f4f5f9] dark:bg-gray-900 p-4">
+            
 
-            <div className="mt-6 w-full overflow-hidden bg-white px-6 py-4 shadow-md sm:max-w-md sm:rounded-lg dark:bg-gray-800">
+            <div className="w-full sm:max-w-[450px] bg-white dark:bg-gray-800 px-8 py-10 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] rounded-xl border border-gray-100 dark:border-gray-700">
                 {children}
+            </div>
+            
+            <div className="mt-8 text-sm text-gray-500">
+                &copy; {new Date().getFullYear()} Hostinger Clone. All rights reserved.
             </div>
         </div>
     );
