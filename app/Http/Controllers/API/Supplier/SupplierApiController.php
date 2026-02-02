@@ -4,9 +4,14 @@ namespace App\Http\Controllers\API\Supplier;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\API\Supplier\SubmitQuoteRequest;
+use App\Http\Resources\API\Supplier\InvoiceResource;
+use App\Http\Resources\API\Supplier\OrderResource;
+use App\Http\Resources\API\Supplier\PodResource;
 use App\Http\Resources\API\Supplier\QuoteRequestDetailResource;
 use App\Http\Resources\API\Supplier\QuoteRequestResource;
 use App\Http\Resources\API\Supplier\QuoteResource;
+use App\Models\Invoice;
+use App\Models\Order;
 use App\Models\Quote;
 use App\Models\QuoteRequest;
 use App\Models\QuoteRequestView;
@@ -216,5 +221,169 @@ class SupplierApiController extends Controller
         }
 
         return $this->sendResponse(new QuoteResource($quote), 'Revised offer submitted successfully.');
+    }
+
+    /**
+     * Get orders assigned to the supplier.
+     */
+    public function getMyOrders(Request $request)
+    {
+        $status = $request->input('status');
+        $search = $request->input('search');
+
+        $query = Order::with(['customer', 'invoice'])
+            ->where('supplier_id', auth()->id());
+
+        if ($status && $status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        if ($search) {
+            $query->where('order_number', 'LIKE', "%{$search}%");
+        }
+
+        $orders = $query->latest()->paginate($request->input('per_page', 10));
+
+        $orders->setCollection(OrderResource::collection($orders->getCollection())->collection);
+
+        return $this->sendResponse($orders, 'Supplier orders retrieved.');
+    }
+
+    /**
+     * Get details of a specific order.
+     */
+    public function getOrderDetails($id)
+    {
+        $order = Order::with(['items', 'customer', 'quote.quoteRequest', 'invoice'])->find($id);
+
+        if (! $order || $order->supplier_id !== auth()->id()) {
+            return $this->sendError('Order not found.', [], 404);
+        }
+
+        return $this->sendResponse(new OrderResource($order), 'Order details retrieved.');
+    }
+
+    /**
+     * Update order status.
+     */
+    public function updateOrderStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,confirmed,in_progress,picked_up,delivered,completed,cancelled',
+            'note' => 'nullable|string',
+            'proof' => 'required_if:status,delivered|image|max:20048',
+        ], [
+            'proof.required_if' => 'Proof of delivery is required when marking the order as delivered.',
+        ]);
+
+        $order = Order::find($id);
+
+        if (! $order || $order->supplier_id !== auth()->id()) {
+            return $this->sendError('Order not found.', [], 404);
+        }
+
+        $updateData = ['status' => $request->status];
+
+        if ($request->has('note')) {
+            $updateData['status_note'] = $request->note;
+        }
+
+        if ($request->hasFile('proof')) {
+            $path = $request->file('proof')->store('orders/proofs', 'public');
+            $updateData['proof_of_delivery'] = $path;
+            $updateData['pod_status'] = 'pending';
+        }
+
+        $order->update($updateData);
+
+        return $this->sendResponse(new OrderResource($order), "Order status updated to {$request->status}.");
+    }
+
+    /**
+     * Get invoices for the supplier.
+     */
+    public function getMyInvoices(Request $request)
+    {
+        $status = $request->input('status');
+
+        $query = Invoice::whereHas('order', function ($q) {
+            $q->where('supplier_id', auth()->id());
+        })->with('order');
+
+        if ($status && $status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        $invoices = $query->latest()->paginate($request->input('per_page', 10));
+
+        $invoices->setCollection(InvoiceResource::collection($invoices->getCollection())->collection);
+
+        return $this->sendResponse($invoices, 'Supplier invoices retrieved.');
+    }
+
+    /**
+     * Get details of a specific invoice.
+     */
+    public function getInvoiceDetails($id)
+    {
+        $invoice = Invoice::with(['order.customer', 'order.items'])->find($id);
+
+        if (! $invoice || $invoice->order->supplier_id !== auth()->id()) {
+            return $this->sendError('Invoice not found.', [], 404);
+        }
+
+        return $this->sendResponse(new InvoiceResource($invoice), 'Invoice details retrieved.');
+    }
+
+    /**
+     * Get orders with POD status.
+     */
+    public function getPodOrders(Request $request)
+    {
+        $search = $request->input('search');
+        $status = $request->input('status');
+
+        $query = Order::with('customer')
+            ->where('supplier_id', auth()->id())
+            ->whereIn('status', ['delivered', 'picked_up', 'completed', 'in_progress']);
+
+        if ($search) {
+            $query->where('order_number', 'LIKE', "%{$search}%");
+        }
+
+        if ($status && $status !== 'all') {
+            $query->where('pod_status', $status);
+        }
+
+        $orders = $query->latest()->paginate($request->input('per_page', 10));
+
+        $orders->setCollection(PodResource::collection($orders->getCollection())->collection);
+
+        return $this->sendResponse($orders, 'POD orders retrieved.');
+    }
+
+    /**
+     * Reupload Proof of Delivery.
+     */
+    public function reuploadPod(Request $request, $id)
+    {
+        $request->validate([
+            'proof' => 'required|image|max:20048',
+        ]);
+
+        $order = Order::where('supplier_id', auth()->id())->find($id);
+
+        if (! $order) {
+            return $this->sendError('Order not found.', [], 404);
+        }
+
+        $path = $request->file('proof')->store('orders/proofs', 'public');
+
+        $order->update([
+            'proof_of_delivery' => $path,
+            'pod_status' => 'pending',
+        ]);
+
+        return $this->sendResponse(new PodResource($order), 'Proof of Delivery reuploaded successfully.');
     }
 }

@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $blueprint) {
-            $blueprint->timestamp('terms_accepted_at')->nullable();
+        Schema::table('orders', function (Blueprint $table) {
+            $table->enum('pod_status', ['awaiting', 'pending', 'confirmed', 'rejected'])->default('awaiting')->after('proof_of_delivery');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $blueprint) {
-            $blueprint->dropColumn('terms_accepted_at');
+        Schema::table('orders', function (Blueprint $table) {
+            $table->dropColumn('pod_status');
         });
     }
 };

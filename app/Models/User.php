@@ -40,6 +40,9 @@ class User extends Authenticatable
         'reset_password_token',
         'reset_password_token_expire_at',
         'terms_accepted_at',
+        'parent_id',
+        'last_login_at',
+        'status',
     ];
 
     /**
@@ -70,6 +73,7 @@ class User extends Authenticatable
             'policy_expiry_date' => 'date',
             'reset_password_token_expire_at' => 'datetime',
             'terms_accepted_at' => 'datetime',
+            'last_login_at' => 'datetime',
         ];
     }
 

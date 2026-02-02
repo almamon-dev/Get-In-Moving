@@ -13,14 +13,17 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('parent_id')->nullable()->constrained('users')->onDelete('cascade');
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
 
             // User Type & Basic Info
-            $table->enum('user_type', ['customer', 'admin', 'supplier'])->default('customer');
+            $table->enum('user_type', ['customer', 'admin', 'supplier', 'supplier_employee'])->default('customer');
+            $table->enum('status', ['active', 'invited', 'disabled'])->default('active');
             $table->string('company_name')->nullable();
             $table->string('phone_number')->nullable();
+            $table->string('profile_picture')->nullable();
 
             // Supplier Compliance Fields
             $table->string('insurance_type')->nullable();
@@ -40,6 +43,8 @@ return new class extends Migration
             $table->string('password');
             $table->string('reset_password_token', 100)->nullable();
             $table->timestamp('reset_password_token_expire_at')->nullable();
+            $table->timestamp('last_login_at')->nullable();
+            $table->timestamp('terms_accepted_at')->nullable();
 
             $table->rememberToken();
             $table->timestamps();

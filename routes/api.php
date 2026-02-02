@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\API\Auth\AuthApiController;
 use App\Http\Controllers\API\Customer\CustomerApiController;
+use App\Http\Controllers\API\Supplier\AvailabilityApiController;
+use App\Http\Controllers\API\Supplier\EmployeeApiController;
 use App\Http\Controllers\API\Supplier\SupplierApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +26,9 @@ Route::prefix('auth')->group(function () {
     Route::post('/reset-password', [AuthApiController::class, 'resetPasswordApi']);
 });
 
+// Stripe Webhook
+Route::post('/webhooks/stripe', [\App\Http\Controllers\API\StripeWebhookController::class, 'handle']);
+
 // Protected Routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthApiController::class, 'logoutApi']);
@@ -45,7 +50,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/quotes/{id}/accept', [CustomerApiController::class, 'acceptQuote']);
         Route::post('/quotes/{id}/accept-revision', [CustomerApiController::class, 'acceptRevision']);
         Route::post('/quotes/{id}/reject-revision', [CustomerApiController::class, 'rejectRevision']);
-        
+
+        // Orders
+        Route::get('/orders', [CustomerApiController::class, 'getMyOrders']);
+        Route::get('/orders/{id}', [CustomerApiController::class, 'getOrderDetails']);
+
+        // Billing
+        Route::get('/invoices', [CustomerApiController::class, 'getMyInvoices']);
+        Route::get('/invoices/{id}', [CustomerApiController::class, 'getInvoiceDetails']);
+        Route::get('/invoices/{id}/download', [CustomerApiController::class, 'downloadInvoice']);
+        Route::post('/invoices/{id}/pay', [CustomerApiController::class, 'payInvoice']);
+
         // Profile & Settings Management
         Route::get('/profile', [\App\Http\Controllers\API\Customer\SettingsController::class, 'getProfile']);
         Route::post('/profile', [\App\Http\Controllers\API\Customer\SettingsController::class, 'updateProfile']);
@@ -59,6 +74,34 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/requests/{id}', [SupplierApiController::class, 'getRequestDetails']);
         Route::post('/requests/{id}/quote', [SupplierApiController::class, 'submitQuote']);
         Route::post('/quotes/{id}/revise', [SupplierApiController::class, 'submitRevision']);
-        Route::get('/my-quotes', [SupplierApiController::class, 'getMyQuotes']);
+        Route::get('/quotes', [SupplierApiController::class, 'getMyQuotes']);
+
+        // Orders
+        Route::get('/orders', [SupplierApiController::class, 'getMyOrders']);
+        Route::get('/orders/{id}', [SupplierApiController::class, 'getOrderDetails']);
+        Route::post('/orders/{id}/status', [SupplierApiController::class, 'updateOrderStatus']);
+
+        // Invoices
+        Route::get('/invoices', [SupplierApiController::class, 'getMyInvoices']);
+        Route::get('/invoices/{id}', [SupplierApiController::class, 'getInvoiceDetails']);
+
+        // POD (Proof of Delivery)
+        Route::get('/pods', [SupplierApiController::class, 'getPodOrders']);
+        Route::post('/orders/{id}/pod-reupload', [SupplierApiController::class, 'reuploadPod']);
+
+        // Availability & Capacity
+        Route::get('/availabilities', [AvailabilityApiController::class, 'index']);
+        Route::post('/availabilities', [AvailabilityApiController::class, 'store']);
+        Route::post('/availabilities/{id}', [AvailabilityApiController::class, 'update']);
+        Route::post('/availabilities/{id}/toggle', [AvailabilityApiController::class, 'toggleStatus']);
+        Route::delete('/availabilities/{id}', [AvailabilityApiController::class, 'destroy']);
+
+        // Employee Management
+        Route::get('/employees', [EmployeeApiController::class, 'index']);
+        Route::post('/employees', [EmployeeApiController::class, 'store']);
+        Route::post('/employees/{id}/status', [EmployeeApiController::class, 'updateStatus']);
+        Route::delete('/employees/{id}', [EmployeeApiController::class, 'destroy']);
+
+        // Profile & Settings
     });
 });

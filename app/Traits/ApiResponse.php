@@ -11,15 +11,18 @@ trait ApiResponse
                 'success' => true,
                 'data' => $result->items(),
                 'message' => $message,
-                'pagination' => [
+            ];
+
+            if ($result->total() > 0) {
+                $response['pagination'] = [
                     'total' => $result->total(),
                     'per_page' => $result->perPage(),
                     'current_page' => $result->currentPage(),
                     'last_page' => $result->lastPage(),
                     'from' => $result->firstItem(),
                     'to' => $result->lastItem(),
-                ],
-            ];
+                ];
+            }
         } else {
             $response = [
                 'success' => true,
