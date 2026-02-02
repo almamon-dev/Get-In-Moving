@@ -10,13 +10,16 @@ use App\Http\Resources\API\Supplier\PodResource;
 use App\Http\Resources\API\Supplier\QuoteRequestDetailResource;
 use App\Http\Resources\API\Supplier\QuoteRequestResource;
 use App\Http\Resources\API\Supplier\QuoteResource;
+use App\Http\Resources\API\Supplier\SupplierProfileResource;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Quote;
 use App\Models\QuoteRequest;
 use App\Models\QuoteRequestView;
+use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class SupplierApiController extends Controller
 {
@@ -385,5 +388,149 @@ class SupplierApiController extends Controller
         ]);
 
         return $this->sendResponse(new PodResource($order), 'Proof of Delivery reuploaded successfully.');
+    }
+
+    /**
+     * Get supplier profile / settings.
+     */
+    public function getProfile()
+    {
+        return $this->sendResponse(new SupplierProfileResource(auth()->user()), 'Profile retrieved successfully.');
+    }
+
+    /**
+     * Update company information / profile.
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'company_name' => 'required|string|max:255',
+            'phone_number' => 'required|string|max:20',
+            'business_address' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:100',
+            'state' => 'nullable|string|max:100',
+            'zip_code' => 'nullable|string|max:20',
+            'country' => 'nullable|string|max:100',
+        ]);
+
+        $user->update($request->only([
+            'name', 'phone_number', 'company_name',
+            'business_address', 'city', 'state', 'zip_code', 'country',
+        ]));
+
+        return $this->sendResponse(new SupplierProfileResource($user), 'Profile updated successfully.');
+    }
+
+    /**
+     * Update profile picture / logo.
+     */
+    public function updateLogo(Request $request)
+    {
+        $request->validate([
+            'logo' => 'required|image|max:5120',
+        ]);
+
+        $user = auth()->user();
+        $path = $request->file('logo')->store('profile_pictures', 'public');
+
+        $user->update(['profile_picture' => $path]);
+
+        return $this->sendResponse(new SupplierProfileResource($user), 'Logo updated successfully.');
+    }
+
+    /**
+     * Remove profile picture / logo.
+     */
+    public function removeLogo()
+    {
+        $user = auth()->user();
+        $user->update(['profile_picture' => null]);
+
+        return $this->sendResponse(new SupplierProfileResource($user), 'Logo removed successfully.');
+    }
+
+    /**
+     * Update insurance document.
+     */
+    public function updateInsurance(Request $request)
+    {
+        $request->validate([
+            'document' => 'required|file|mimes:pdf,jpg,png,jpeg|max:10240',
+            'expiry_date' => 'required|date|after:today',
+        ]);
+
+        $user = auth()->user();
+        $path = $request->file('document')->store('compliance/insurance', 'public');
+
+        $user->update([
+            'insurance_document' => $path,
+            'policy_expiry_date' => $request->expiry_date,
+            'insurance_status' => 'pending',
+            'insurance_uploaded_at' => now(),
+            'is_compliance_verified' => false,
+        ]);
+
+        return $this->sendResponse(new SupplierProfileResource($user), 'Insurance document updated and pending verification.');
+    }
+
+    /**
+     * Update driver license.
+     */
+    public function updateLicense(Request $request)
+    {
+        $request->validate([
+            'document' => 'required|file|mimes:pdf,jpg,png,jpeg|max:10240',
+            'expiry_date' => 'required|date|after:today',
+        ]);
+
+        $user = auth()->user();
+        $path = $request->file('document')->store('compliance/license', 'public');
+
+        $user->update([
+            'license_document' => $path,
+            'license_expiry_date' => $request->expiry_date,
+            'license_status' => 'pending',
+            'license_uploaded_at' => now(),
+            'is_compliance_verified' => false,
+        ]);
+
+        return $this->sendResponse(new SupplierProfileResource($user), 'License document updated and pending verification.');
+    }
+
+    /**
+     * Change user password.
+     */
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = auth()->user();
+
+        if (! Hash::check($request->current_password, $user->password)) {
+            return $this->sendError('Current password does not match.', [], 422);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->new_password),
+        ]);
+
+        return $this->sendResponse(null, 'Password changed successfully.');
+    }
+
+    /**
+     * Request account deletion.
+     */
+    public function requestDeletion()
+    {
+        $user = auth()->user();
+        $user->update(['deletion_requested_at' => now()]);
+
+        return $this->sendResponse(null, 'Account deletion requested. This will be processed by administrative team.');
     }
 }

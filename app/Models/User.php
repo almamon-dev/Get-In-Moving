@@ -26,13 +26,23 @@ class User extends Authenticatable
         'user_type',
         'company_name',
         'phone_number',
+        'business_address',
+        'city',
+        'state',
+        'zip_code',
+        'country',
         'profile_picture',
         'insurance_type',
         'insurance_provider_name',
         'policy_number',
         'policy_expiry_date',
+        'license_expiry_date',
         'insurance_document',
         'license_document',
+        'insurance_status',
+        'license_status',
+        'insurance_uploaded_at',
+        'license_uploaded_at',
         'is_verified',
         'verified_at',
         'is_compliance_verified',
@@ -43,6 +53,7 @@ class User extends Authenticatable
         'parent_id',
         'last_login_at',
         'status',
+        'deletion_requested_at',
     ];
 
     /**
@@ -71,9 +82,13 @@ class User extends Authenticatable
             'is_compliance_verified' => 'boolean',
             'compliance_verified_at' => 'datetime',
             'policy_expiry_date' => 'date',
+            'license_expiry_date' => 'date',
+            'insurance_uploaded_at' => 'datetime',
+            'license_uploaded_at' => 'datetime',
             'reset_password_token_expire_at' => 'datetime',
             'terms_accepted_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'deletion_requested_at' => 'datetime',
         ];
     }
 

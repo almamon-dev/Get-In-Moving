@@ -87,6 +87,9 @@ class ChatApiController extends Controller
             'message' => $request->message,
         ]);
 
+        // Broadcast real-time message
+        broadcast(new \App\Events\MessageSent($message))->toOthers();
+
         // Notify the receiver about the new message
         $receiver = \App\Models\User::find($receiverId);
         if ($receiver) {

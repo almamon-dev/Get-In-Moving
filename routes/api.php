@@ -103,5 +103,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/employees/{id}', [EmployeeApiController::class, 'destroy']);
 
         // Profile & Settings
+        Route::get('/profile', [SupplierApiController::class, 'getProfile']);
+        Route::post('/profile', [SupplierApiController::class, 'updateProfile']);
+        Route::post('/profile/logo', [SupplierApiController::class, 'updateLogo']);
+        Route::post('/profile/logo-remove', [SupplierApiController::class, 'removeLogo']);
+        Route::post('/profile/compliance/insurance', [SupplierApiController::class, 'updateInsurance']);
+        Route::post('/profile/compliance/license', [SupplierApiController::class, 'updateLicense']);
+        Route::post('/profile/change-password', [SupplierApiController::class, 'changePassword']);
+        Route::post('/profile/request-deletion', [SupplierApiController::class, 'requestDeletion']);
     });
 });

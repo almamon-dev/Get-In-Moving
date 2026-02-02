@@ -60,19 +60,31 @@ class InvoicePaymentService
             $invoice = Invoice::with('order')->find($invoiceId);
 
             if ($invoice && $invoice->status !== 'paid') {
-                // 1. Update Invoice
+                // 1. Create Payment Record
+                \App\Models\Payment::create([
+                    'invoice_id' => $invoice->id,
+                    'transaction_id' => $session->payment_intent,
+                    'session_id' => $session->id,
+                    'amount' => $session->amount_total / 100,
+                    'currency' => $session->currency,
+                    'status' => 'succeeded',
+                    'payment_method' => $session->payment_method_types[0] ?? 'card',
+                    'metadata' => (array) $session->metadata,
+                ]);
+
+                // 2. Update Invoice
                 $invoice->update([
                     'status' => 'paid',
                     'paid_at' => now(),
                 ]);
 
-                // 2. Update Order Status
+                // 3. Update Order Status
                 if ($invoice->order) {
                     $invoice->order->update([
                         'status' => 'in_progress',
                     ]);
                 }
-                Log::info("Stripe Webhook: Invoice {$invoice->invoice_number} marked as PAID. Order status updated to in_progress.");
+                Log::info("Stripe Webhook: Invoice {$invoice->invoice_number} marked as PAID. Transaction record created.");
             }
 
             DB::commit();
