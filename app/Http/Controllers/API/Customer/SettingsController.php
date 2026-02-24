@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
+use App\Helpers\Helper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -23,7 +24,7 @@ class SettingsController extends Controller
             'email' => $user->email,
             'phone' => $user->phone_number,
             'company_name' => $user->company_name,
-            'profile_picture' => $user->profile_picture,
+            'profile_picture' => Helper::generateURL($user->profile_picture),
         ], 'Profile retrieved successfully.');
     }
 
@@ -36,7 +37,7 @@ class SettingsController extends Controller
             'name' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
             'company_name' => 'nullable|string|max:255',
-            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
         ]);
 
         $user = $request->user();
@@ -47,10 +48,8 @@ class SettingsController extends Controller
         
         // Handle profile picture upload
         if ($request->hasFile('profile_picture')) {
-            $file = $request->file('profile_picture');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $path = $file->storeAs('profile_pictures', $filename, 'public');
-            $user->profile_picture = asset('storage/' . $path);
+            Helper::deleteFile($user->profile_picture);
+            $user->profile_picture = Helper::uploadFile('profile', $request->file('profile_picture'));
         }
         
         $user->save();
@@ -60,7 +59,7 @@ class SettingsController extends Controller
             'email' => $user->email,
             'phone' => $user->phone_number,
             'company_name' => $user->company_name,
-            'profile_picture' => $user->profile_picture,
+            'profile_picture' => Helper::generateURL($user->profile_picture),
         ], 'Profile updated successfully.');
     }
 
@@ -94,15 +93,16 @@ class SettingsController extends Controller
     public function deleteAccount(Request $request)
     {
         $request->validate([
-            'password' => 'required|string',
+            'confirmation' => 'required|string',
+        ], [
+            'confirmation.required' => 'Please type "DELETE" to confirm account deletion.'
         ]);
 
-        $user = $request->user();
-
-        // Verify password
-        if (!Hash::check($request->password, $user->password)) {
-            return $this->sendError('Password is incorrect.', [], 422);
+        if (strtoupper($request->confirmation) !== 'DELETE') {
+            return $this->sendError('Invalid confirmation. Please type "DELETE" correctly.', [], 422);
         }
+
+        $user = $request->user();
 
         // Delete user's tokens
         $user->tokens()->delete();
@@ -110,6 +110,6 @@ class SettingsController extends Controller
         // Soft delete the user
         $user->delete();
 
-        return $this->sendResponse(null, 'Account deleted successfully.');
+        return $this->sendResponse([], 'Account deleted successfully.');
     }
 }

@@ -20,6 +20,11 @@ class Invoice extends Model
         'paid_at',
     ];
 
+    protected $casts = [
+        'paid_at' => 'datetime',
+        'due_date' => 'date',
+    ];
+
     public function order()
     {
         return $this->belongsTo(Order::class);

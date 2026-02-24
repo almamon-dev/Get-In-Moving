@@ -70,6 +70,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Supplier Endpoints
     Route::middleware('supplier')->prefix('supplier')->group(function () {
+        Route::get('/dashboard', [SupplierApiController::class, 'getDashboardData']);
         Route::get('/available-requests', [SupplierApiController::class, 'getAvailableRequests']);
         Route::get('/requests/{id}', [SupplierApiController::class, 'getRequestDetails']);
         Route::post('/requests/{id}/quote', [SupplierApiController::class, 'submitQuote']);
@@ -110,6 +111,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/profile/compliance/insurance', [SupplierApiController::class, 'updateInsurance']);
         Route::post('/profile/compliance/license', [SupplierApiController::class, 'updateLicense']);
         Route::post('/profile/change-password', [SupplierApiController::class, 'changePassword']);
-        Route::post('/profile/request-deletion', [SupplierApiController::class, 'requestDeletion']);
+        Route::post('/profile/delete-account', [SupplierApiController::class, 'deleteAccount']);
+
+        // Notifications
+        Route::get('/notifications', [SupplierApiController::class, 'getNotifications']);
+        Route::post('/notifications/{id}/read', [SupplierApiController::class, 'markNotificationRead']);
+        Route::post('/notifications/read-all', [SupplierApiController::class, 'markAllNotificationsRead']);
+
+        // Payments
+        Route::get('/payments', [SupplierApiController::class, 'getPayments']);
     });
 });

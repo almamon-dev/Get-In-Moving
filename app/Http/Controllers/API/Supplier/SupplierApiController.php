@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\API\Supplier;
 
+use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\API\Supplier\SubmitQuoteRequest;
 use App\Http\Resources\API\Supplier\InvoiceResource;
+use App\Http\Resources\API\Supplier\NotificationResource;
 use App\Http\Resources\API\Supplier\OrderResource;
+use App\Http\Resources\API\Supplier\PaymentHistoryResource;
 use App\Http\Resources\API\Supplier\PodResource;
 use App\Http\Resources\API\Supplier\QuoteRequestDetailResource;
 use App\Http\Resources\API\Supplier\QuoteRequestResource;
@@ -24,6 +27,137 @@ use Illuminate\Support\Facades\Hash;
 class SupplierApiController extends Controller
 {
     use ApiResponse;
+
+    /**
+     * Get dynamic data for the supplier dashboard.
+     */
+    public function getDashboardData(Request $request)
+    {
+        $user = $request->user();
+        $supplierId = $user->id;
+        $period = $request->input('period', '8_months');
+
+        // 1. Stats (Only Completed Orders will be filtered by period)
+        $totalOrdersCount = Order::where('supplier_id', $supplierId)->count();
+        $activeOrdersCount = Order::where('supplier_id', $supplierId)
+            ->whereIn('status', ['pending', 'confirmed', 'in_progress', 'picked_up'])
+            ->count();
+        $negotiationsCount = Quote::where('user_id', $supplierId)
+            ->where('status', 'pending')
+            ->count();
+
+        // Query for Completed Orders with period filter
+        $completedQuery = Order::where('supplier_id', $supplierId)
+            ->whereIn('status', ['delivered', 'completed']);
+
+        if ($period === 'last_month') {
+            $completedQuery->where('updated_at', '>=', now()->subDays(30));
+        } elseif ($period === 'last_year') {
+            $completedQuery->where('updated_at', '>=', now()->subYear());
+        } elseif ($period === '8_months') {
+            $completedQuery->where('updated_at', '>=', now()->subMonths(8));
+        }
+
+        $completedOrdersCount = $completedQuery->count();
+
+        // 2. Chart Data (Always show Months on X-axis)
+        $chartData = [];
+        $monthsToFetch = ($period === 'last_year') ? 12 : 8;
+
+        for ($i = ($monthsToFetch - 1); $i >= 0; $i--) {
+            $month = now()->subMonths($i);
+            $chartData[] = [
+                'name' => $month->format('M'),
+                'orders' => Order::where('supplier_id', $supplierId)
+                    ->whereIn('status', ['delivered', 'completed'])
+                    ->whereYear('updated_at', $month->year)
+                    ->whereMonth('updated_at', $month->month)
+                    ->count(),
+            ];
+        }
+
+        // 3. Earnings (Card with radial chart data)
+        $totalWithdraw = Invoice::whereHas('order', function ($q) use ($supplierId) {
+            $q->where('supplier_id', $supplierId);
+        })
+            ->where('status', 'paid')
+            ->sum('supplier_amount');
+
+        $pendingEarnings = Invoice::whereHas('order', function ($q) use ($supplierId) {
+            $q->where('supplier_id', $supplierId);
+        })
+            ->where('status', '!=', 'paid')
+            ->sum('supplier_amount');
+
+        $earnings = [
+            'total_earnings' => $totalWithdraw + $pendingEarnings,
+            'total_withdraw' => $totalWithdraw,
+            'pending' => $pendingEarnings,
+        ];
+
+        // 4. Active Orders (Table section)
+        $activeOrders = Order::with(['customer'])
+            ->where('supplier_id', $supplierId)
+            ->whereIn('status', ['pending', 'confirmed', 'in_progress', 'picked_up', 'delivered'])
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'order_id' => $order->order_number,
+                    'client_name' => $order->customer?->name ?? 'N/A',
+                    'route' => $order->pickup_address.' → '.$order->delivery_address,
+                    'status' => $order->status,
+                    'pickup_date' => $order->pickup_date ? \Carbon\Carbon::parse($order->pickup_date)->format('j M Y') : 'N/A',
+                ];
+            });
+
+        // 5. Recent Activity (Recent list section)
+
+        $recentMessages = \App\Models\Message::with(['sender', 'quote.quoteRequest'])
+            ->where('receiver_id', $supplierId)
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($msg) {
+                return [
+                    'id' => $msg->id,
+                    'title' => 'New negotiation request from '.($msg->sender?->company_name ?? $msg->sender?->name ?? 'Customer'),
+                    'description' => \Illuminate\Support\Str::limit($msg->message, 100),
+                    'time' => $msg->created_at->diffForHumans(),
+                ];
+            });
+
+        return $this->sendResponse([
+            'stats' => [
+                'total_orders' => [
+                    'count' => $totalOrdersCount,
+                    'label' => 'Total Orders',
+                    'sub_label' => 'All-time order count',
+                ],
+                'active_orders' => [
+                    'count' => $activeOrdersCount,
+                    'label' => 'Active Orders',
+                    'sub_label' => 'Jobs currently in progress',
+                ],
+                'completed_orders' => [
+                    'count' => $completedOrdersCount,
+                    'label' => 'Completed Orders',
+                    'sub_label' => 'Based on selected period',
+                ],
+                'negotiations' => [
+                    'count' => $negotiationsCount,
+                    'label' => 'Negotiations',
+                    'sub_label' => 'Clients awaiting your response',
+                ],
+            ],
+            'orders_completed' => $chartData,
+            'earnings' => $earnings,
+            'active_orders' => $activeOrders,
+            'recent_activity' => $recentMessages,
+        ], 'Supplier dashboard data retrieved.');
+    }
 
     /**
      * Get quote requests for the supplier dashboard with stats and filters.
@@ -292,7 +426,8 @@ class SupplierApiController extends Controller
         }
 
         if ($request->hasFile('proof')) {
-            $path = $request->file('proof')->store('orders/proofs', 'public');
+            Helper::deleteFile($order->proof_of_delivery);
+            $path = Helper::uploadFile('orders/proofs', $request->file('proof'));
             $updateData['proof_of_delivery'] = $path;
             $updateData['pod_status'] = 'pending';
         }
@@ -380,7 +515,8 @@ class SupplierApiController extends Controller
             return $this->sendError('Order not found.', [], 404);
         }
 
-        $path = $request->file('proof')->store('orders/proofs', 'public');
+        Helper::deleteFile($order->proof_of_delivery);
+        $path = Helper::uploadFile('orders/proofs', $request->file('proof'));
 
         $order->update([
             'proof_of_delivery' => $path,
@@ -417,8 +553,14 @@ class SupplierApiController extends Controller
         ]);
 
         $user->update($request->only([
-            'name', 'phone_number', 'company_name',
-            'business_address', 'city', 'state', 'zip_code', 'country',
+            'name',
+            'company_name',
+            'phone_number',
+            'business_address',
+            'city',
+            'state',
+            'zip_code',
+            'country',
         ]));
 
         return $this->sendResponse(new SupplierProfileResource($user), 'Profile updated successfully.');
@@ -434,7 +576,8 @@ class SupplierApiController extends Controller
         ]);
 
         $user = auth()->user();
-        $path = $request->file('logo')->store('profile_pictures', 'public');
+        Helper::deleteFile($user->profile_picture);
+        $path = Helper::uploadFile('profile', $request->file('logo'));
 
         $user->update(['profile_picture' => $path]);
 
@@ -447,6 +590,7 @@ class SupplierApiController extends Controller
     public function removeLogo()
     {
         $user = auth()->user();
+        Helper::deleteFile($user->profile_picture);
         $user->update(['profile_picture' => null]);
 
         return $this->sendResponse(new SupplierProfileResource($user), 'Logo removed successfully.');
@@ -460,14 +604,21 @@ class SupplierApiController extends Controller
         $request->validate([
             'document' => 'required|file|mimes:pdf,jpg,png,jpeg|max:10240',
             'expiry_date' => 'required|date|after:today',
+            'insurance_type' => 'required|string|max:255',
+            'insurance_provider_name' => 'required|string|max:255',
+            'policy_number' => 'required|string|max:255',
         ]);
 
         $user = auth()->user();
-        $path = $request->file('document')->store('compliance/insurance', 'public');
+        Helper::deleteFile($user->insurance_document);
+        $path = Helper::uploadFile('compliance/insurance', $request->file('document'));
 
         $user->update([
             'insurance_document' => $path,
             'policy_expiry_date' => $request->expiry_date,
+            'insurance_type' => $request->insurance_type,
+            'insurance_provider_name' => $request->insurance_provider_name,
+            'policy_number' => $request->policy_number,
             'insurance_status' => 'pending',
             'insurance_uploaded_at' => now(),
             'is_compliance_verified' => false,
@@ -487,7 +638,8 @@ class SupplierApiController extends Controller
         ]);
 
         $user = auth()->user();
-        $path = $request->file('document')->store('compliance/license', 'public');
+        Helper::deleteFile($user->license_document);
+        $path = Helper::uploadFile('compliance/license', $request->file('document'));
 
         $user->update([
             'license_document' => $path,
@@ -524,13 +676,111 @@ class SupplierApiController extends Controller
     }
 
     /**
-     * Request account deletion.
+     * Delete supplier account.
      */
-    public function requestDeletion()
+    public function deleteAccount(Request $request)
+    {
+        $request->validate([
+            'confirmation' => 'required|string',
+        ], [
+            'confirmation.required' => 'Please type "DELETE" to confirm account deletion.',
+        ]);
+
+        if (strtoupper($request->confirmation) !== 'DELETE') {
+            return $this->sendError('Invalid confirmation. Please type "DELETE" correctly.', [], 422);
+        }
+
+        $user = auth()->user();
+
+        // Delete user's tokens
+        $user->tokens()->delete();
+
+        // Soft delete the user
+        $user->delete();
+
+        return $this->sendResponse([], 'Account deleted successfully.');
+    }
+
+    /**
+     * Get paginated notifications for the supplier.
+     */
+    public function getNotifications()
+    {
+        $notifications = auth()->user()->notifications()->latest()->get();
+
+        return $this->sendResponse([
+            'notifications' => NotificationResource::collection($notifications),
+            'unread_count' => auth()->user()->unreadNotifications()->count(),
+        ], 'Notifications retrieved successfully.');
+    }
+
+    /**
+     * Mark a specific notification as read.
+     */
+    public function markNotificationRead($id)
+    {
+        $notification = auth()->user()->notifications()->find($id);
+
+        if (! $notification) {
+            return $this->sendError('Notification not found.', [], 404);
+        }
+
+        $notification->markAsRead();
+
+        return $this->sendResponse([], 'Notification marked as read.');
+    }
+
+    /**
+     * Mark all notifications as read.
+     */
+
+    /**
+     * Get payments data (stats + history) for the supplier.
+     */
+    public function getPayments(Request $request)
     {
         $user = auth()->user();
-        $user->update(['deletion_requested_at' => now()]);
+        $perPage = $request->input('per_page', 10);
+        $search = $request->input('search');
+        $status = $request->input('status'); // all, pending, paid (released)
 
-        return $this->sendResponse(null, 'Account deletion requested. This will be processed by administrative team.');
+        // 1. Stats Calculation (Total earnings should ignore search/filters for consistency)
+        $allEarnings = Invoice::whereHas('order', function ($query) use ($user) {
+            $query->where('supplier_id', $user->id);
+        })->get();
+
+        $totalEarning = $allEarnings->where('status', 'paid')->sum('supplier_amount');
+        $pending = $allEarnings->where('status', 'pending')->sum('supplier_amount');
+        $totalWithdraw = $totalEarning;
+
+        // 2. Paginated History with Search & Filter
+        $query = Invoice::whereHas('order', function ($q) use ($user, $search) {
+            $q->where('supplier_id', $user->id);
+            if ($search) {
+                $q->where('order_number', 'LIKE', "%{$search}%");
+            }
+        })->with(['order.customer']);
+
+        if ($status && $status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        $invoices = $query->latest()->paginate($perPage);
+
+        return $this->sendResponse([
+            'stats' => [
+                'total_earning' => '$'.number_format($totalEarning, 0),
+                'pending' => '$'.number_format($pending, 0),
+                'total_withdraw' => '$'.number_format($totalWithdraw, 0),
+            ],
+            'history' => PaymentHistoryResource::collection($invoices),
+            'pagination' => [
+                'total' => $invoices->total(),
+                'count' => $invoices->count(),
+                'per_page' => $invoices->perPage(),
+                'current_page' => $invoices->currentPage(),
+                'total_pages' => $invoices->lastPage(),
+            ],
+        ], 'Payments data retrieved successfully.');
     }
 }

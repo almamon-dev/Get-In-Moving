@@ -33,7 +33,7 @@ class PodResource extends JsonResource
             'price' => '$'.number_format($this->total_amount, 2),
             'action' => $pod['act'],
             'action_type' => $pod['type'],
-            'file_url' => $this->proof_of_delivery ? asset('storage/'.$this->proof_of_delivery) : null,
+            'file_url' => \App\Helpers\Helper::generateURL($this->proof_of_delivery),
         ];
     }
 

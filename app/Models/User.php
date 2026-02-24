@@ -54,6 +54,8 @@ class User extends Authenticatable
         'last_login_at',
         'status',
         'deletion_requested_at',
+        'stripe_account_id',
+        'is_stripe_connected',
     ];
 
     /**
@@ -89,6 +91,7 @@ class User extends Authenticatable
             'terms_accepted_at' => 'datetime',
             'last_login_at' => 'datetime',
             'deletion_requested_at' => 'datetime',
+            'is_stripe_connected' => 'boolean',
         ];
     }
 

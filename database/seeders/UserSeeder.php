@@ -201,4 +201,11 @@ class UserSeeder extends Seeder
             }
         }
     }
+    // comand all credential
+    // admin: admin@admin.com / password123
+    // customer: customer@customer.com / password123
+    // supplier: supplier@supplier.com / password123
+    // customer: mamon193p@gmail.com / password123
+    // supplier: mamonsoftvence@gmail.com / password123
+
 }
