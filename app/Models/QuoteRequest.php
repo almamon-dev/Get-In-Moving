@@ -18,6 +18,7 @@ class QuoteRequest extends Model
         'pickup_time_from',
         'pickup_time_till',
         'additional_notes',
+        'attachment_path',
         'status',
     ];
 

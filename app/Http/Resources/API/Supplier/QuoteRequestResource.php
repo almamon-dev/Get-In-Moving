@@ -6,6 +6,9 @@ use App\Http\Resources\API\Customer\QuoteRequestItemResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin \App\Models\QuoteRequest
+ */
 class QuoteRequestResource extends JsonResource
 {
     /**
@@ -29,6 +32,7 @@ class QuoteRequestResource extends JsonResource
             // Fields for details view
             'pickup_time' => $this->pickup_time_from.' - '.$this->pickup_time_till,
             'additional_notes' => $this->additional_notes,
+            'attachment_path' => $this->attachment_path ? asset($this->attachment_path) : null,
             'items' => QuoteRequestItemResource::collection($this->whenLoaded('items')),
         ];
     }

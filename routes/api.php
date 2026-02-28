@@ -12,6 +12,14 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
+Route::get('/customer/quote-requests/template/download', [CustomerApiController::class, 'downloadTemplate'])
+    ->name('api.customer.template.download')
+    ->middleware('signed');
+
+Route::get('/customer/quote-requests/pdf/template/download', [CustomerApiController::class, 'downloadPdfTemplate'])
+    ->name('api.customer.quote-requests.pdf.template')
+    ->middleware('signed');
+
 // Pricing Plans
 Route::get('/pricing-plans', [\App\Http\Controllers\API\PricingPlanApiController::class, 'index']);
 
@@ -45,6 +53,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Customer Endpoints
     Route::middleware('customer')->prefix('customer')->group(function () {
         Route::post('/quote-requests', [CustomerApiController::class, 'createQuoteRequest']);
+        Route::post('/quote-requests/import', [CustomerApiController::class, 'importQuoteRequest']);
+        Route::get('/quote-requests/template-link', [CustomerApiController::class, 'getTemplateLink']);
+        Route::get('/quote-requests/pdf-template-link', [CustomerApiController::class, 'getPdfTemplateLink']);
+        Route::get('/quote-requests/template', [CustomerApiController::class, 'downloadTemplate']);
         Route::get('/quote-requests', [CustomerApiController::class, 'getMyQuoteRequests']);
         Route::get('/quote-requests/{id}/quotes', [CustomerApiController::class, 'getRequestQuotes']);
         Route::post('/quotes/{id}/accept', [CustomerApiController::class, 'acceptQuote']);

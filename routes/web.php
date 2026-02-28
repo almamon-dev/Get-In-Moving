@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -19,16 +18,16 @@ Route::middleware('auth')->group(function () {
         // Customer Management
         Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class)->only(['index', 'show', 'destroy']);
         Route::patch('customers/{customer}/verification', [\App\Http\Controllers\Admin\CustomerController::class, 'updateVerification'])->name('customers.verification');
-        
+
         // Supplier Management
         Route::resource('suppliers', \App\Http\Controllers\Admin\SupplierController::class)->only(['index', 'show', 'destroy']);
         Route::patch('suppliers/{supplier}/compliance', [\App\Http\Controllers\Admin\SupplierController::class, 'updateCompliance'])->name('suppliers.compliance');
         Route::patch('suppliers/{supplier}/verification', [\App\Http\Controllers\Admin\SupplierController::class, 'updateVerification'])->name('suppliers.verification');
-        
+
         // Pricing Plans Management
         Route::resource('pricing-plans', \App\Http\Controllers\Admin\PricingPlanController::class);
         Route::patch('pricing-plans/{pricingPlan}/toggle-active', [\App\Http\Controllers\Admin\PricingPlanController::class, 'toggleActive'])->name('pricing-plans.toggle-active');
-        
+
         // Settings Routes
         Route::prefix('settings')->name('settings.')->group(function () {
             // General Settings

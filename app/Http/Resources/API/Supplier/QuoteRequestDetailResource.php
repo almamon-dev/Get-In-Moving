@@ -5,6 +5,9 @@ namespace App\Http\Resources\API\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin \App\Models\QuoteRequest
+ */
 class QuoteRequestDetailResource extends JsonResource
 {
     /**
@@ -27,6 +30,7 @@ class QuoteRequestDetailResource extends JsonResource
             'pickup_date' => $this->pickup_date,
             'pickup_date_formatted' => $this->pickup_date ? \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : null,
             'received_at_human' => 'Receive '.$this->created_at?->diffForHumans(),
+            'attachment_path' => $this->attachment_path ? asset($this->attachment_path) : null,
             'supplier_status' => $this->getSupplierStatus(auth()->id()),
         ];
     }

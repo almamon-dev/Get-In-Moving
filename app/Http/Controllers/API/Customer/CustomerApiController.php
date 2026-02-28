@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\Customer;
 
+use App\Exports\QuoteItemsTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\API\Customer\CreateQuoteRequest;
 use App\Http\Resources\API\Customer\InvoiceResource;
@@ -9,6 +10,7 @@ use App\Http\Resources\API\Customer\OrderResource;
 use App\Http\Resources\API\Customer\QuoteRequestDetailResource;
 use App\Http\Resources\API\Customer\QuoteRequestResource;
 use App\Http\Resources\API\Customer\QuoteResource;
+use App\Imports\QuoteRequestItemsImport;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -21,7 +23,9 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CustomerApiController extends Controller
 {
@@ -53,16 +57,31 @@ class CustomerApiController extends Controller
                 'status' => 'active',
             ]);
 
-            foreach ($request->items as $item) {
-                QuoteRequestItem::create([
-                    'quote_request_id' => $quoteRequest->id,
-                    'item_type' => $item['item_type'],
-                    'quantity' => $item['quantity'],
-                    'length' => $item['length'] ?? null,
-                    'width' => $item['width'] ?? null,
-                    'height' => $item['height'] ?? null,
-                    'weight' => $item['weight'] ?? null,
-                ]);
+            // Handle items from array
+            if ($request->has('items') && is_array($request->items)) {
+                foreach ($request->items as $item) {
+                    QuoteRequestItem::create([
+                        'quote_request_id' => $quoteRequest->id,
+                        'item_type' => $item['item_type'],
+                        'quantity' => $item['quantity'],
+                        'length' => $item['length'] ?? null,
+                        'width' => $item['width'] ?? null,
+                        'height' => $item['height'] ?? null,
+                        'weight' => $item['weight'] ?? null,
+                    ]);
+                }
+            }
+
+            // Handle File Upload
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                $extension = $file->getClientOriginalExtension();
+                $path = $file->store('quote_attachments', 'public');
+                $quoteRequest->update(['attachment_path' => '/storage/'.$path]);
+
+                if (in_array(strtolower($extension), ['csv', 'xlsx', 'xls'])) {
+                    Excel::import(new QuoteRequestItemsImport($quoteRequest->id), $file);
+                }
             }
 
             DB::commit();
@@ -74,6 +93,125 @@ class CustomerApiController extends Controller
 
             return $this->sendError('Failed to create quote request.', ['error' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Import Quote Request from CSV/Excel (Bulk Import).
+     */
+    public function importQuoteRequest(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt,xlsx,xls|max:10240',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // 1. Create the base Quote Request
+            $quoteRequest = QuoteRequest::create([
+                'user_id' => auth()->id(),
+                'status' => 'active',
+            ]);
+
+            // 2. Handle Attachment
+            $file = $request->file('file');
+            $path = $file->store('quote_attachments', 'public');
+            $quoteRequest->update(['attachment_path' => asset('storage/'.$path)]);
+
+            // 3. Execute the Import logic
+            Excel::import(new QuoteRequestItemsImport($quoteRequest->id), $file);
+
+            // 4. Validate that items were imported
+            if ($quoteRequest->items()->count() === 0) {
+                DB::rollBack();
+
+                return $this->sendError('The uploaded file contains no valid items. Please check the template.', [], 422);
+            }
+            DB::commit();
+
+            // 5. Finalize the response with consistent header mapping
+            $quoteRequest->refresh();
+            $items = $quoteRequest->items->map(function ($item) use ($quoteRequest) {
+                return array_merge($item->toArray(), [
+                    'service_type' => $quoteRequest->service_type,
+                    'pickup_address' => $quoteRequest->pickup_address,
+                    'delivery_address' => $quoteRequest->delivery_address,
+                    'pickup_date' => $quoteRequest->pickup_date ? \Carbon\Carbon::parse($quoteRequest->pickup_date)->format('n/j/Y') : null,
+                    'pickup_time_from' => $quoteRequest->pickup_time_from,
+                    'pickup_time_till' => $quoteRequest->pickup_time_till,
+                    'additional_notes' => $quoteRequest->additional_notes,
+                ]);
+            });
+
+            return $this->sendResponse($items, 'Bulk Import successful.');
+
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            DB::rollBack();
+
+            return $this->sendError('Validation failed for some rows.', ['row_errors' => $e->failures()], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return $this->sendError('Failed to import: '.$e->getMessage(), [], 500);
+        }
+    }
+
+    /**
+     * Get a temporary signed download link for the template.
+     */
+    public function getTemplateLink()
+    {
+        $url = URL::temporarySignedRoute(
+            'api.customer.template.download',
+            now()->addHours(24)
+        );
+
+        return $this->sendResponse(['download_url' => $url], 'Download link generated.');
+    }
+
+    /**
+     * Get a temporary signed download link for the PDF template.
+     */
+    public function getPdfTemplateLink()
+    {
+        $url = URL::temporarySignedRoute(
+            'api.customer.quote-requests.pdf.template',
+            now()->addHours(24)
+        );
+
+        return $this->sendResponse(['download_url' => $url], 'PDF template link generated.');
+    }
+
+    /**
+     * Download a blank PDF Template for Quote Requests.
+     */
+    public function downloadPdfTemplate()
+    {
+        // Creating a blank request for the template view
+        $quoteRequest = new QuoteRequest;
+        $quoteRequest->id = '____';
+        $quoteRequest->service_type = '________________';
+        $quoteRequest->pickup_address = '________________';
+        $quoteRequest->delivery_address = '________________';
+        $quoteRequest->pickup_date = '________________';
+        $quoteRequest->pickup_time_from = '________________';
+        $quoteRequest->pickup_time_till = '________________';
+
+        $user = new \stdClass;
+        $user->name = '________________';
+        $quoteRequest->setRelation('user', $user);
+
+        $pdf = Pdf::loadView('pdf.quote_request', compact('quoteRequest'));
+
+        return $pdf->download('QuoteRequest-Template.pdf');
+    }
+
+    /**
+     * Download Quote Request Items Template Excel (.xlsx).
+     */
+    public function downloadTemplate()
+    {
+        return Excel::download(new QuoteItemsTemplateExport, 'quote_items_template.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     /**

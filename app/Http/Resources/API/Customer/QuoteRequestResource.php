@@ -22,6 +22,7 @@ class QuoteRequestResource extends JsonResource
                 'destination' => $this->delivery_address,
             ],
             'quotes_received' => ($this->quotes_count ?? $this->quotes()->count()).' Quotes',
+            'attachment_path' => $this->attachment_path ? asset($this->attachment_path) : null,
             'last_updated' => ($this->quotes()->latest()->first()?->created_at ?? $this->updated_at)?->diffForHumans(),
         ];
     }

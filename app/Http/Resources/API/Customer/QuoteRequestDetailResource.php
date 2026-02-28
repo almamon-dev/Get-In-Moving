@@ -23,6 +23,7 @@ class QuoteRequestDetailResource extends JsonResource
             'total_weight' => 'Total weight : '.$this->items()->sum('weight').' kg',
             'dimensions_summary' => 'Dimensions per unit: '.$this->getDimensionsSummary(),
             'service_type' => $this->service_type,
+            'attachment_path' => $this->attachment_path ? asset($this->attachment_path) : null,
             'requested_date' => $this->created_at?->format('j M Y'),
             'estimated_price_range' => $this->getEstimatedPriceRange(),
             'status' => $this->status,
