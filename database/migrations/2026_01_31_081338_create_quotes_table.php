@@ -16,9 +16,13 @@ return new class extends Migration
             $table->foreignId('quote_request_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Supplier
             $table->decimal('amount', 12, 2);
+            $table->string('estimated_time')->nullable();
             $table->text('notes')->nullable();
             $table->timestamp('valid_until')->nullable();
             $table->enum('status', ['pending', 'accepted', 'rejected', 'withdrawn'])->default('pending');
+            $table->decimal('revised_amount', 12, 2)->nullable();
+            $table->string('revised_estimated_time')->nullable();
+            $table->enum('revision_status', ['none', 'pending', 'accepted', 'rejected'])->default('none');
             $table->timestamps();
         });
     }

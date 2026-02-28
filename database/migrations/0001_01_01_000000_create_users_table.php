@@ -21,8 +21,14 @@ return new class extends Migration
             // User Type & Basic Info
             $table->enum('user_type', ['customer', 'admin', 'supplier', 'supplier_employee'])->default('customer');
             $table->enum('status', ['active', 'invited', 'disabled'])->default('active');
+            $table->timestamp('deletion_requested_at')->nullable();
             $table->string('company_name')->nullable();
             $table->string('phone_number')->nullable();
+            $table->string('business_address')->nullable();
+            $table->string('city')->nullable();
+            $table->string('state')->nullable();
+            $table->string('zip_code')->nullable();
+            $table->string('country')->nullable();
             $table->string('profile_picture')->nullable();
 
             // Supplier Compliance Fields
@@ -30,14 +36,23 @@ return new class extends Migration
             $table->string('insurance_provider_name')->nullable();
             $table->string('policy_number')->nullable();
             $table->date('policy_expiry_date')->nullable();
+            $table->date('license_expiry_date')->nullable();
             $table->string('insurance_document')->nullable();
+            $table->enum('insurance_status', ['pending', 'verified', 'rejected'])->default('pending');
+            $table->timestamp('insurance_uploaded_at')->nullable();
             $table->string('license_document')->nullable();
+            $table->enum('license_status', ['pending', 'verified', 'rejected'])->default('pending');
+            $table->timestamp('license_uploaded_at')->nullable();
 
             // Verification Fields
             $table->boolean('is_verified')->default(false);
             $table->timestamp('verified_at')->nullable();
             $table->boolean('is_compliance_verified')->default(false);
             $table->timestamp('compliance_verified_at')->nullable();
+
+            // Stripe Integration
+            $table->string('stripe_account_id')->nullable();
+            $table->boolean('is_stripe_connected')->default(false);
 
             // Password & Reset
             $table->string('password');

@@ -5,6 +5,7 @@ namespace App\Imports;
 use App\Models\QuoteRequest;
 use App\Models\QuoteRequestItem;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -32,32 +33,47 @@ class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow
 
     public function model(array $row)
     {
+        Log::info('Processing CSV row: ', $row);
+
         // Update Parent (Header) Data from the first valid row only
         if (! $this->processedFirstRow) {
+            Log::info('Updating parent header from first row.');
             $this->updateParentHeader($row);
             $this->processedFirstRow = true;
         }
 
         // Skip rows without essential item data
         if (empty($row['item_type']) || empty($row['quantity'])) {
+            Log::warning('Skipping row due to missing item_type or quantity: ', $row);
+
             return null;
         }
+        try {
+            $item = new QuoteRequestItem([
+                'quote_request_id' => $this->quoteRequestId,
+                'item_type' => $row['item_type'],
+                'quantity' => $row['quantity'],
+                'length' => $row['length'] ?? null,
+                'width' => $row['width'] ?? null,
+                'height' => $row['height'] ?? null,
+                'weight' => $row['weight'] ?? null,
+            ]);
+            Log::info('Successfully created model for QuoteRequestItem.');
 
-        return new QuoteRequestItem([
-            'quote_request_id' => $this->quoteRequestId,
-            'item_type' => $row['item_type'],
-            'quantity' => $row['quantity'],
-            'length' => $row['length'] ?? null,
-            'width' => $row['width'] ?? null,
-            'height' => $row['height'] ?? null,
-            'weight' => $row['weight'] ?? null,
-        ]);
+            return $item;
+        } catch (\Exception $e) {
+            Log::error('Error creating QuoteRequestItem for row: '.$e->getMessage(), ['row' => $row]);
+
+            return null;
+        }
     }
 
     private function updateParentHeader(array $row)
     {
         $parent = QuoteRequest::find($this->quoteRequestId);
         if (! $parent) {
+            Log::error('QuoteRequest parent not found during import update.', ['id' => $this->quoteRequestId]);
+
             return;
         }
 
@@ -84,7 +100,10 @@ class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow
         }
 
         if (! empty($updateData)) {
+            Log::info('Updating QuoteRequest header with: ', $updateData);
             $parent->update($updateData);
+        } else {
+            Log::info('No header data to update for QuoteRequest.');
         }
     }
 
@@ -119,6 +138,8 @@ class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow
 
             return $date ? $date->format('Y-m-d') : null;
         } catch (\Exception $e) {
+            Log::warning('Failed to parse date: '.$val.'. Error: '.$e->getMessage());
+
             return null;
         }
     }
@@ -132,6 +153,8 @@ class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow
 
             return Carbon::parse($val)->format('H:i:s');
         } catch (\Exception $e) {
+            Log::warning('Failed to parse time: '.$val.'. Error: '.$e->getMessage());
+
             return null;
         }
     }

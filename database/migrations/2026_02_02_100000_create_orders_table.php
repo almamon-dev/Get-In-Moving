@@ -24,6 +24,9 @@ return new class extends Migration
             $table->date('pickup_date');
             $table->string('estimated_time')->nullable();
             $table->enum('status', ['confirmed', 'in_progress', 'picked_up', 'delivered', 'cancelled'])->default('confirmed');
+            $table->text('status_note')->nullable();
+            $table->string('proof_of_delivery')->nullable();
+            $table->enum('pod_status', ['awaiting', 'pending', 'confirmed', 'rejected'])->default('awaiting');
             $table->timestamps();
         });
 

@@ -15,7 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('supplier_id')->constrained('users')->onDelete('cascade');
             $table->enum('type', ['standard', 'recurring'])->default('standard');
+            $table->string('route_name')->nullable();
             $table->string('service_type');
+            $table->string('trailer_type')->nullable();
 
             // Route/Location
             $table->string('pickup_region')->nullable();
@@ -30,7 +32,7 @@ return new class extends Migration
 
             // Pricing & Capacity
             $table->decimal('price', 15, 2)->default(0);
-            $table->integer('capacity_limit')->default(0);
+            $table->integer('capacity_limit')->nullable();
             $table->integer('capacity_used')->default(0);
 
             // Constraints

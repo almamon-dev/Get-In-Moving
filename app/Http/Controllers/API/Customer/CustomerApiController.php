@@ -23,6 +23,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
@@ -43,6 +44,12 @@ class CustomerApiController extends Controller
      */
     public function createQuoteRequest(CreateQuoteRequest $request)
     {
+        Log::info('Entering createQuoteRequest.', [
+            'has_file' => $request->hasFile('file'),
+            'file_keys' => array_keys($request->allFiles()),
+            'input_keys' => array_keys($request->all()),
+        ]);
+
         DB::beginTransaction();
         try {
             $quoteRequest = QuoteRequest::create([
@@ -76,11 +83,16 @@ class CustomerApiController extends Controller
             if ($request->hasFile('file')) {
                 $file = $request->file('file');
                 $extension = $file->getClientOriginalExtension();
+                Log::info('File upload detected in createQuoteRequest.', ['extension' => $extension, 'name' => $file->getClientOriginalName()]);
+
                 $path = $file->store('quote_attachments', 'public');
                 $quoteRequest->update(['attachment_path' => '/storage/'.$path]);
 
                 if (in_array(strtolower($extension), ['csv', 'xlsx', 'xls'])) {
+                    Log::info('Starting Excel import for QuoteRequest: '.$quoteRequest->id);
                     Excel::import(new QuoteRequestItemsImport($quoteRequest->id), $file);
+                } else {
+                    Log::warning('Uploaded file is not a supported spreadsheet format.', ['extension' => $extension]);
                 }
             }
 
@@ -88,8 +100,14 @@ class CustomerApiController extends Controller
 
             return $this->sendResponse(new QuoteRequestResource($quoteRequest->load('items')), 'Quote request created successfully.', null, 201);
 
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            DB::rollBack();
+            Log::error('Excel Validation failed: ', ['failures' => $e->failures()]);
+
+            return $this->sendError('Validation failed for some rows.', ['row_errors' => $e->failures()], 422);
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error in createQuoteRequest: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
             return $this->sendError('Failed to create quote request.', ['error' => $e->getMessage()], 500);
         }
@@ -115,15 +133,22 @@ class CustomerApiController extends Controller
 
             // 2. Handle Attachment
             $file = $request->file('file');
+            Log::info('Starting importQuoteRequest for user: '.auth()->id(), ['filename' => $file->getClientOriginalName()]);
+
             $path = $file->store('quote_attachments', 'public');
             $quoteRequest->update(['attachment_path' => asset('storage/'.$path)]);
 
             // 3. Execute the Import logic
+            Log::info('Executing Excel::import for QuoteRequest: '.$quoteRequest->id);
             Excel::import(new QuoteRequestItemsImport($quoteRequest->id), $file);
 
             // 4. Validate that items were imported
-            if ($quoteRequest->items()->count() === 0) {
+            $itemCount = $quoteRequest->items()->count();
+            Log::info('Import finished. Rows imported: '.$itemCount);
+
+            if ($itemCount === 0) {
                 DB::rollBack();
+                Log::warning('Import resulted in 0 items.', ['quote_request_id' => $quoteRequest->id]);
 
                 return $this->sendError('The uploaded file contains no valid items. Please check the template.', [], 422);
             }
@@ -147,10 +172,12 @@ class CustomerApiController extends Controller
 
         } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
             DB::rollBack();
+            Log::error('Bulk Excel Validation failed: ', ['failures' => $e->failures()]);
 
             return $this->sendError('Validation failed for some rows.', ['row_errors' => $e->failures()], 422);
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error in importQuoteRequest: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
             return $this->sendError('Failed to import: '.$e->getMessage(), [], 500);
         }

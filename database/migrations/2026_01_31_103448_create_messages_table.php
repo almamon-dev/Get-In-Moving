@@ -11,14 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('messages', function (Blueprint $description) {
-            $description->id();
-            $description->foreignId('sender_id')->constrained('users')->onDelete('cascade');
-            $description->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
-            $description->foreignId('quote_id')->constrained('quotes')->onDelete('cascade');
-            $description->text('message');
-            $description->boolean('is_read')->default(false);
-            $description->timestamps();
+        Schema::create('messages', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('quote_id')->constrained('quotes')->onDelete('cascade');
+            $table->text('message');
+            $table->boolean('is_read')->default(false);
+            $table->timestamp('read_at')->nullable();
+            $table->timestamps();
         });
     }
 
