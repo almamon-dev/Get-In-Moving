@@ -125,50 +125,19 @@ class CustomerApiController extends Controller
         DB::beginTransaction();
 
         try {
-            // 1. Create the base Quote Request
-            $quoteRequest = QuoteRequest::create([
-                'user_id' => auth()->id(),
-                'status' => 'active',
-            ]);
-
-            // 2. Handle Attachment
             $file = $request->file('file');
-            Log::info('Starting importQuoteRequest for user: '.auth()->id(), ['filename' => $file->getClientOriginalName()]);
+            Log::info('Starting Bulk importQuoteRequest for user: '.auth()->id(), ['filename' => $file->getClientOriginalName()]);
 
+            // Store the file and generate a link for reference in all created items
             $path = $file->store('quote_attachments', 'public');
-            $quoteRequest->update(['attachment_path' => asset('storage/'.$path)]);
+            $attachmentPath = '/storage/'.$path;
 
-            // 3. Execute the Import logic
-            Log::info('Executing Excel::import for QuoteRequest: '.$quoteRequest->id);
-            Excel::import(new QuoteRequestItemsImport($quoteRequest->id), $file);
-
-            // 4. Validate that items were imported
-            $itemCount = $quoteRequest->items()->count();
-            Log::info('Import finished. Rows imported: '.$itemCount);
-
-            if ($itemCount === 0) {
-                DB::rollBack();
-                Log::warning('Import resulted in 0 items.', ['quote_request_id' => $quoteRequest->id]);
-
-                return $this->sendError('The uploaded file contains no valid items. Please check the template.', [], 422);
-            }
+            // Execute the Import logic (Passing null for quoteRequestId triggers new parent creation per row)
+            Excel::import(new QuoteRequestItemsImport(null, auth()->id(), $attachmentPath), $file);
+            // mamon
             DB::commit();
 
-            // 5. Finalize the response with consistent header mapping
-            $quoteRequest->refresh();
-            $items = $quoteRequest->items->map(function ($item) use ($quoteRequest) {
-                return array_merge($item->toArray(), [
-                    'service_type' => $quoteRequest->service_type,
-                    'pickup_address' => $quoteRequest->pickup_address,
-                    'delivery_address' => $quoteRequest->delivery_address,
-                    'pickup_date' => $quoteRequest->pickup_date ? \Carbon\Carbon::parse($quoteRequest->pickup_date)->format('n/j/Y') : null,
-                    'pickup_time_from' => $quoteRequest->pickup_time_from,
-                    'pickup_time_till' => $quoteRequest->pickup_time_till,
-                    'additional_notes' => $quoteRequest->additional_notes,
-                ]);
-            });
-
-            return $this->sendResponse($items, 'Bulk Import successful.');
+            return $this->sendResponse(null, 'Bulk Import successful. All requests have been created.');
 
         } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
             DB::rollBack();
@@ -238,7 +207,7 @@ class CustomerApiController extends Controller
      */
     public function downloadTemplate()
     {
-        return Excel::download(new QuoteItemsTemplateExport, 'quote_items_template.csv', \Maatwebsite\Excel\Excel::CSV);
+        return Excel::download(new QuoteItemsTemplateExport, 'quote_items_template.xlsx', \Maatwebsite\Excel\Excel::XLSX);
     }
 
     /**

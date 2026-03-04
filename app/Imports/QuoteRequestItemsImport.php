@@ -15,12 +15,15 @@ use PhpOffice\PhpSpreadsheet\Shared\Date;
 class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithValidation
 {
     protected $quoteRequestId;
+    protected $userId;
 
-    private $processedFirstRow = false;
+    protected $attachmentPath;
 
-    public function __construct($quoteRequestId)
+    public function __construct($quoteRequestId = null, $userId = null, $attachmentPath = null)
     {
         $this->quoteRequestId = $quoteRequestId;
+        $this->userId = $userId;
+        $this->attachmentPath = $attachmentPath;
     }
 
     public function rules(): array
@@ -33,17 +36,19 @@ class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow
 
     public function model(array $row)
     {
-        Log::info('Processing CSV row: ', $row);
-
-        // Update Parent (Header) Data from the first valid row only
-        if (! $this->processedFirstRow) {
-            Log::info('Updating parent header from first row.');
+        Log::info('Processing CSV row. Available keys: '.implode(', ', array_keys($row)));
+        // Mode A: Creating new QuoteRequest for every row (Bulk Import)
+        if (! $this->quoteRequestId && $this->userId) {
+            $this->quoteRequestId = $this->createNewParentFromRow($row);
+        } else {
+            // Mode B: Adding to an existing QuoteRequest (Form + File)
             $this->updateParentHeader($row);
-            $this->processedFirstRow = true;
         }
 
-        // Skip rows without essential item data
-        if (empty($row['item_type']) || empty($row['quantity'])) {
+        $itemType = $row['item_type'] ?? $row['item'] ?? null;
+        $quantity = $row['quantity'] ?? $row['qty'] ?? null;
+
+        if (empty($itemType) || empty($quantity)) {
             Log::warning('Skipping row due to missing item_type or quantity: ', $row);
 
             return null;
@@ -51,13 +56,19 @@ class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow
         try {
             $item = new QuoteRequestItem([
                 'quote_request_id' => $this->quoteRequestId,
-                'item_type' => $row['item_type'],
-                'quantity' => $row['quantity'],
-                'length' => $row['length'] ?? null,
-                'width' => $row['width'] ?? null,
-                'height' => $row['height'] ?? null,
-                'weight' => $row['weight'] ?? null,
+                'item_type' => $row['item_type'] ?? $row['item'] ?? null,
+                'quantity' => $row['quantity'] ?? $row['qty'] ?? 0,
+                'length' => $row['length_cm'] ?? $row['length'] ?? null,
+                'width' => $row['width_cm'] ?? $row['width'] ?? null,
+                'height' => $row['height_cm'] ?? $row['height'] ?? null,
+                'weight' => $row['weight_kg'] ?? $row['weight'] ?? null,
             ]);
+
+            // If we are in Bulk Mode, we reset the ID for the next row to create its own parent
+            if ($this->userId && ! empty($this->attachmentPath)) {
+                $this->quoteRequestId = null;
+            }
+
             Log::info('Successfully created model for QuoteRequestItem.');
 
             return $item;
@@ -66,6 +77,34 @@ class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow
 
             return null;
         }
+    }
+
+    private function createNewParentFromRow(array $row)
+    {
+        $data = [
+            'user_id' => $this->userId,
+            'service_type' => $row['service_type'] ?? null,
+            'pickup_address' => $row['pickup_address'] ?? null,
+            'delivery_address' => $row['delivery_address'] ?? null,
+            'additional_notes' => $row['additional_notes'] ?? $row['notes'] ?? null,
+            'attachment_path' => $this->attachmentPath,
+            'status' => 'active',
+        ];
+
+        if (! empty($row['pickup_date'])) {
+            $data['pickup_date'] = $this->parseDate($row['pickup_date']);
+        }
+        if (! empty($row['pickup_time_from'])) {
+            $data['pickup_time_from'] = $this->parseTime($row['pickup_time_from']);
+        }
+        if (! empty($row['pickup_time_till'])) {
+            $data['pickup_time_till'] = $this->parseTime($row['pickup_time_till']);
+        }
+
+        $parent = QuoteRequest::create($data);
+        Log::info('Bulk Mode: Created new QuoteRequest parent ID: '.$parent->id);
+
+        return $parent->id;
     }
 
     private function updateParentHeader(array $row)
@@ -83,27 +122,47 @@ class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow
 
         $updateData = [];
         foreach ($fields as $field) {
-            if (! empty($row[$field])) {
+            // Only update if parent field is empty AND row has data
+            if (empty($parent->{$field}) && ! empty($row[$field])) {
                 $updateData[$field] = $row[$field];
+                $parent->{$field} = $row[$field]; // Update local object to avoid multiple updates for same field
             }
         }
 
-        // Handle Date and Time parsing
-        if (! empty($row['pickup_date'])) {
-            $updateData['pickup_date'] = $this->parseDate($row['pickup_date']);
+        // Handle Date and Time parsing if not already set
+        if (empty($parent->pickup_date) && ! empty($row['pickup_date'])) {
+            $parsedDate = $this->parseDate($row['pickup_date']);
+            if ($parsedDate) {
+                $updateData['pickup_date'] = $parsedDate;
+                $parent->pickup_date = $parsedDate;
+            }
         }
-        if (! empty($row['pickup_time_from'])) {
-            $updateData['pickup_time_from'] = $this->parseTime($row['pickup_time_from']);
+
+        if (empty($parent->pickup_time_from) && ! empty($row['pickup_time_from'])) {
+            $parsedTime = $this->parseTime($row['pickup_time_from']);
+            if ($parsedTime) {
+                $updateData['pickup_time_from'] = $parsedTime;
+                $parent->pickup_time_from = $parsedTime;
+            }
         }
-        if (! empty($row['pickup_time_till'])) {
-            $updateData['pickup_time_till'] = $this->parseTime($row['pickup_time_till']);
+
+        if (empty($parent->pickup_time_till) && ! empty($row['pickup_time_till'])) {
+            $parsedTime = $this->parseTime($row['pickup_time_till']);
+            if ($parsedTime) {
+                $updateData['pickup_time_till'] = $parsedTime;
+                $parent->pickup_time_till = $parsedTime;
+            }
+        }
+
+        $additionalNotes = $row['additional_notes'] ?? $row['notes'] ?? null;
+        if (empty($parent->additional_notes) && ! empty($additionalNotes)) {
+            $updateData['additional_notes'] = $additionalNotes;
+            $parent->additional_notes = $additionalNotes;
         }
 
         if (! empty($updateData)) {
             Log::info('Updating QuoteRequest header with: ', $updateData);
-            $parent->update($updateData);
-        } else {
-            Log::info('No header data to update for QuoteRequest.');
+            $parent->save();
         }
     }
 
@@ -149,6 +208,10 @@ class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow
         try {
             if ($val instanceof \DateTimeInterface) {
                 return $val->format('H:i:s');
+            }
+
+            if (is_numeric($val)) {
+                return Carbon::instance(Date::excelToDateTimeObject($val))->format('H:i:s');
             }
 
             return Carbon::parse($val)->format('H:i:s');

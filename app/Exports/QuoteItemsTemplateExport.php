@@ -18,19 +18,19 @@ class QuoteItemsTemplateExport implements FromCollection, WithHeadings
     public function headings(): array
     {
         return [
-            'service_type',
-            'pickup_address',
-            'delivery_address',
-            'pickup_date',
-            'pickup_time_from',
-            'pickup_time_till',
-            'item_type',
-            'quantity',
-            'length',
-            'width',
-            'height',
-            'weight',
-            'additional_notes',
+            'Service Type',
+            'Pickup Address',
+            'Delivery Address',
+            'Pickup Date',
+            'Pickup Time From',
+            'Pickup Time Till',
+            'Item Type',
+            'Quantity',
+            'Length (cm)',
+            'Width (cm)',
+            'Height (cm)',
+            'Weight (kg)',
+            'Additional Notes',
         ];
     }
 }
