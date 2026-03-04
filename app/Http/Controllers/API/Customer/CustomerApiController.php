@@ -137,7 +137,7 @@ class CustomerApiController extends Controller
             // mamon
             DB::commit();
 
-            return $this->sendResponse(null, 'Bulk Import successful. All requests have been created.');
+            return $this->sendResponse([], 'Bulk Import successful. All requests have been created.');
 
         } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
             DB::rollBack();
