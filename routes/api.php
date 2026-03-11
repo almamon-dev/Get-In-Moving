@@ -16,8 +16,8 @@ Route::get('/customer/quote-requests/template/download', [CustomerApiController:
     ->name('api.customer.template.download')
     ->middleware('signed');
 
-Route::get('/customer/quote-requests/pdf/template/download', [CustomerApiController::class, 'downloadPdfTemplate'])
-    ->name('api.customer.quote-requests.pdf.template')
+Route::get('/customer/quote-requests/pdf/sample/generate', [CustomerApiController::class, 'generateSamplePdf'])
+    ->name('api.customer.sample-pdf.generate')
     ->middleware('signed');
 
 // Pricing Plans
@@ -52,10 +52,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Customer Endpoints
     Route::middleware('customer')->prefix('customer')->group(function () {
+        Route::get('/dashboard-overview', [CustomerApiController::class, 'getDashboardOverview']);
         Route::post('/quote-requests', [CustomerApiController::class, 'createQuoteRequest']);
         Route::post('/quote-requests/import', [CustomerApiController::class, 'importQuoteRequest']);
+        Route::post('/quote-requests/upload-pdf', [CustomerApiController::class, 'uploadPdf']);
         Route::get('/quote-requests/template-link', [CustomerApiController::class, 'getTemplateLink']);
         Route::get('/quote-requests/pdf-template-link', [CustomerApiController::class, 'getPdfTemplateLink']);
+        Route::get('/quote-requests/sample-pdf-link', [CustomerApiController::class, 'getSamplePdfLink']);
         Route::get('/quote-requests/template', [CustomerApiController::class, 'downloadTemplate']);
         Route::get('/quote-requests', [CustomerApiController::class, 'getMyQuoteRequests']);
         Route::get('/quote-requests/{id}/quotes', [CustomerApiController::class, 'getRequestQuotes']);
@@ -78,6 +81,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/profile', [\App\Http\Controllers\API\Customer\SettingsController::class, 'updateProfile']);
         Route::post('/change-password', [\App\Http\Controllers\API\Customer\SettingsController::class, 'changePassword']);
         Route::delete('/account', [\App\Http\Controllers\API\Customer\SettingsController::class, 'deleteAccount']);
+
+        // Notifications
+        Route::get('/notifications', [CustomerApiController::class, 'getNotifications']);
+        Route::post('/notifications/{id}/read', [CustomerApiController::class, 'markNotificationRead']);
+        Route::post('/notifications/read-all', [CustomerApiController::class, 'markAllNotificationsRead']);
+
+        // Proof of Delivery Management
+        Route::get('/orders/{id}/pod-download', [CustomerApiController::class, 'downloadPod']);
+        Route::post('/orders/{id}/pod-approve', [CustomerApiController::class, 'approvePod']);
+        Route::post('/orders/{id}/pod-reject', [CustomerApiController::class, 'rejectPod']);
+        Route::post('/orders/{id}/rate', [CustomerApiController::class, 'submitReview']);
     });
 
     // Supplier Endpoints

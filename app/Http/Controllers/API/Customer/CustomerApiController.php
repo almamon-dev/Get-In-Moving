@@ -6,6 +6,7 @@ use App\Exports\QuoteItemsTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\API\Customer\CreateQuoteRequest;
 use App\Http\Resources\API\Customer\InvoiceResource;
+use App\Http\Resources\API\Customer\NotificationResource;
 use App\Http\Resources\API\Customer\OrderResource;
 use App\Http\Resources\API\Customer\QuoteRequestDetailResource;
 use App\Http\Resources\API\Customer\QuoteRequestResource;
@@ -17,6 +18,8 @@ use App\Models\OrderItem;
 use App\Models\Quote;
 use App\Models\QuoteRequest;
 use App\Models\QuoteRequestItem;
+use App\Models\Review;
+use App\Services\AiExtractionService;
 use App\Services\InvoicePaymentService;
 use App\Traits\ApiResponse;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -33,10 +36,12 @@ class CustomerApiController extends Controller
     use ApiResponse;
 
     protected $paymentService;
+    protected $aiService;
 
-    public function __construct(InvoicePaymentService $paymentService)
+    public function __construct(InvoicePaymentService $paymentService, AiExtractionService $aiService)
     {
         $this->paymentService = $paymentService;
+        $this->aiService = $aiService;
     }
 
     /**
@@ -252,6 +257,90 @@ class CustomerApiController extends Controller
     }
 
     /**
+     * Get a link to download the sample PDF for AI testing.
+     */
+    public function getSamplePdfLink()
+    {
+        $url = URL::temporarySignedRoute(
+            'api.customer.sample-pdf.generate',
+            now()->addMinutes(60)
+        );
+
+        return $this->sendResponse(['url' => $url], 'Sample PDF link generated.');
+    }
+
+    /**
+     * Generate the actual sample PDF.
+     */
+    public function generateSamplePdf()
+    {
+        $html = "
+        <div style='font-family: sans-serif; padding: 20px;'>
+            <h1>Shipping Request Order</h1>
+            <p><strong>Order ID:</strong> ORD-TEST-999</p>
+            <p><strong>Service Type:</strong> Full Truckload</p>
+            <hr>
+            <h3>Pickup Details</h3>
+            <p>Address: 123 Logistics Way, Brooklyn, NY 11201</p>
+            <p>Date: 2026-03-25</p>
+            <p>Time: 09:00:00 to 17:00:00</p>
+            <hr>
+            <h3>Delivery Details</h3>
+            <p>Address: 456 Delivery Ave, Los Angeles, CA 90001</p>
+            <hr>
+            <h3>Items to Ship</h3>
+            <table border='1' width='100%' cellpadding='5' style='border-collapse: collapse;'>
+                <thead>
+                    <tr>
+                        <th>Item Type</th>
+                        <th>Qty</th>
+                        <th>Dimentions (LxWxH) cm</th>
+                        <th>Weight (kg)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Euro Pallets</td>
+                        <td>5</td>
+                        <td>120 x 80 x 100</td>
+                        <td>500</td>
+                    </tr>
+                    <tr>
+                        <td>Cardboard Boxes</td>
+                        <td>10</td>
+                        <td>40 x 40 x 40</td>
+                        <td>100</td>
+                    </tr>
+                    <tr>
+                        <td>Wooden Crates</td>
+                        <td>2</td>
+                        <td>150 x 100 x 50</td>
+                        <td>400</td>
+                    </tr>
+                    <tr>
+                        <td>Plastic Drums</td>
+                        <td>4</td>
+                        <td>60 x 60 x 90</td>
+                        <td>360</td>
+                    </tr>
+                    <tr>
+                        <td>Metal Tubes</td>
+                        <td>20</td>
+                        <td>200 x 10 x 10</td>
+                        <td>200</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><strong>Notes:</strong> Handle with care. Requires liftgate for delivery.</p>
+        </div>
+        ";
+
+        $pdf = Pdf::loadHTML($html);
+
+        return $pdf->download('sample-shipping-request.pdf');
+    }
+
+    /**
      * Accept a quote.
      */
     public function acceptQuote($id)
@@ -318,7 +407,76 @@ class CustomerApiController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return $this->sendError('Failed to accept quote.', ['error' => $e->getMessage()], 500);
+            return $this->sendError('Failed to import data.', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Upload PDF and extract Quote Requests using AI (OpenAI).
+     */
+    public function uploadPdf(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:pdf|max:10240',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $file = $request->file('file');
+            $path = $file->store('quote_attachments', 'public');
+            $attachmentPath = '/storage/'.$path;
+
+            // Extract data using AI
+            $extractedRows = $this->aiService->extractFromPdf($file->getRealPath(), $file->getClientOriginalName());
+
+            $createdRequests = [];
+            
+            foreach ($extractedRows as $row) {
+                // Generate a key to group items by pickup/delivery address
+                $groupKey = md5(($row['pickup_address'] ?? '') . ($row['delivery_address'] ?? '') . ($row['pickup_date'] ?? ''));
+
+                if (!isset($createdRequests[$groupKey])) {
+                    // Create Parent only if it doesn't exist for this address group
+                    $quoteRequest = QuoteRequest::create([
+                        'user_id' => auth()->id(),
+                        'service_type' => $row['service_type'] ?? 'General',
+                        'pickup_address' => $row['pickup_address'] ?? 'N/A',
+                        'delivery_address' => $row['delivery_address'] ?? 'N/A',
+                        'pickup_date' => $row['pickup_date'] ?? null,
+                        'pickup_time_from' => $row['pickup_time_from'] ?? null,
+                        'pickup_time_till' => $row['pickup_time_till'] ?? null,
+                        'additional_notes' => $row['additional_notes'] ?? null,
+                        'attachment_path' => $attachmentPath,
+                        'status' => 'active',
+                    ]);
+                    $createdRequests[$groupKey] = $quoteRequest;
+                }
+
+                // Create Item under the parent
+                QuoteRequestItem::create([
+                    'quote_request_id' => $createdRequests[$groupKey]->id,
+                    'item_type' => $row['item_type'] ?? 'Item',
+                    'quantity' => $row['quantity'] ?? 1,
+                    'length' => $row['length_cm'] ?? null,
+                    'width' => $row['width_cm'] ?? null,
+                    'height' => $row['height_cm'] ?? null,
+                    'weight' => $row['weight_kg'] ?? null,
+                ]);
+            }
+
+            DB::commit();
+
+            return $this->sendResponse([
+                'requests_created' => count($createdRequests),
+                'total_items_extracted' => count($extractedRows),
+                'preview' => $extractedRows
+            ], "Successfully extracted " . count($extractedRows) . " items into " . count($createdRequests) . " quote requests.");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error in uploadPdf: '.$e->getMessage());
+
+            return $this->sendError('Failed to process PDF.', ['error' => $e->getMessage()], 500);
         }
     }
 
@@ -432,7 +590,7 @@ class CustomerApiController extends Controller
     {
         $perPage = $request->input('per_page', 10);
 
-        $orders = Order::with('supplier')
+        $orders = Order::with(['supplier', 'review', 'updates'])
             ->where('customer_id', $request->user()->id)
             ->latest()
             ->paginate($perPage);
@@ -443,11 +601,72 @@ class CustomerApiController extends Controller
     }
 
     /**
+     * Get dashboard overview for the customer.
+     */
+    public function getDashboardOverview()
+    {
+        $user = auth()->user();
+
+        // 1. Stats
+        $totalQuotes = Quote::whereHas('quoteRequest', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->count();
+
+        $activeQuotesCount = QuoteRequest::where('user_id', $user->id)
+            ->where('status', 'active')
+            ->whereHas('quotes')
+            ->count();
+
+        $activeOrdersCount = Order::where('customer_id', $user->id)
+            ->whereIn('status', ['confirmed', 'in_progress', 'picked_up', 'delivered'])
+            ->count();
+
+        $completedOrdersCount = Order::where('customer_id', $user->id)
+            ->where('status', 'completed')
+            ->count();
+
+        $pendingActions = $user->unreadNotifications()->count();
+
+        // 2. Active Orders (Latest 3)
+        $activeOrders = Order::with(['supplier', 'updates'])
+            ->where('customer_id', $user->id)
+            ->whereIn('status', ['confirmed', 'in_progress', 'picked_up', 'delivered'])
+            ->latest()
+            ->limit(3)
+            ->get();
+
+        // 3. Active Quote Requests (Latest 3 that have quotes)
+        $activeQuoteRequests = QuoteRequest::with(['quotes.supplier'])
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->whereHas('quotes')
+            ->latest()
+            ->limit(3)
+            ->get();
+
+        // 4. Recent Activity (Latest 5 Notifications)
+        $recentActivity = $user->notifications()->latest()->limit(5)->get();
+
+        return $this->sendResponse([
+            'stats' => [
+                'total_quotes' => $totalQuotes,
+                'active_quotes' => $activeQuotesCount,
+                'active_orders' => $activeOrdersCount,
+                'completed_orders' => $completedOrdersCount,
+                'pending_actions' => $pendingActions,
+            ],
+            'active_orders' => OrderResource::collection($activeOrders),
+            'active_quotes' => QuoteRequestResource::collection($activeQuoteRequests),
+            'recent_activity' => NotificationResource::collection($recentActivity),
+        ], 'Dashboard overview retrieved successfully.');
+    }
+
+    /**
      * Get details of a specific order.
      */
     public function getOrderDetails($id)
     {
-        $order = Order::with(['items', 'supplier', 'quote.quoteRequest'])->find($id);
+        $order = Order::with(['items', 'supplier', 'quote.quoteRequest', 'review', 'updates'])->find($id);
 
         if (! $order || $order->customer_id !== auth()->id()) {
             return $this->sendError('Order not found.', [], 404);
@@ -571,7 +790,7 @@ class CustomerApiController extends Controller
         return $this->sendResponse([
             'name' => $user->name,
             'email' => $user->email,
-            'phone' => $user->phone,
+            'phone' => $user->phone_number,
             'company_name' => $user->company_name,
             'profile_picture' => $user->profile_picture,
         ], 'Profile retrieved successfully.');
@@ -606,7 +825,7 @@ class CustomerApiController extends Controller
         return $this->sendResponse([
             'name' => $user->name,
             'email' => $user->email,
-            'phone' => $user->phone,
+            'phone' => $user->phone_number,
             'company_name' => $user->company_name,
             'profile_picture' => $user->profile_picture,
         ], 'Profile updated successfully.');
@@ -659,5 +878,142 @@ class CustomerApiController extends Controller
         $user->delete();
 
         return $this->sendResponse(null, 'Account deleted successfully.');
+    }
+
+    /**
+     * Get paginated notifications for the customer.
+     */
+    public function getNotifications()
+    {
+        $notifications = auth()->user()->notifications()->latest()->get();
+
+        return $this->sendResponse([
+            'notifications' => NotificationResource::collection($notifications),
+            'unread_count' => auth()->user()->unreadNotifications()->count(),
+        ], 'Notifications retrieved successfully.');
+    }
+
+    /**
+     * Mark a specific notification as read.
+     */
+    public function markNotificationRead($id)
+    {
+        $notification = auth()->user()->notifications()->find($id);
+
+        if (! $notification) {
+            return $this->sendError('Notification not found.', [], 404);
+        }
+
+        $notification->markAsRead();
+
+        return $this->sendResponse([], 'Notification marked as read.');
+    }
+
+    /**
+     * Mark all notifications as read.
+     */
+    public function markAllNotificationsRead()
+    {
+        auth()->user()->unreadNotifications->markAsRead();
+
+        return $this->sendResponse([], 'All notifications marked as read.');
+    }
+
+    /**
+     * Download Proof of Delivery for an order.
+     */
+    public function downloadPod($id)
+    {
+        $order = Order::find($id);
+
+        if (!$order || $order->customer_id !== auth()->id()) {
+            return $this->sendError('Order not found.', [], 404);
+        }
+
+        if (!$order->proof_of_delivery) {
+            return $this->sendError('Proof of Delivery not found.', [], 404);
+        }
+
+        $path = public_path($order->proof_of_delivery);
+
+        if (!file_exists($path)) {
+            return $this->sendError('File not found on server.', [], 404);
+        }
+
+        return response()->download($path);
+    }
+
+    /**
+     * Approve Proof of Delivery.
+     */
+    public function approvePod($id)
+    {
+        $order = Order::find($id);
+
+        if (!$order || $order->customer_id !== auth()->id()) {
+            return $this->sendError('Order not found.', [], 404);
+        }
+
+        $order->update(['pod_status' => 'confirmed', 'status' => 'completed']);
+
+        return $this->sendResponse(new OrderResource($order), 'Proof of Delivery approved.');
+    }
+
+    /**
+     * Raise an issue/Reject Proof of Delivery.
+     */
+    public function rejectPod(Request $request, $id)
+    {
+        $request->validate([
+            'note' => 'required|string|max:1000',
+        ]);
+
+        $order = Order::find($id);
+
+        if (!$order || $order->customer_id !== auth()->id()) {
+            return $this->sendError('Order not found.', [], 404);
+        }
+
+        $order->update([
+            'pod_status' => 'rejected',
+            'status_note' => $request->note,
+        ]);
+
+        return $this->sendResponse(new OrderResource($order), 'Issue raised and Proof of Delivery rejected.');
+    }
+
+    /**
+     * Submit a review for a completed order.
+     */
+    public function submitReview(Request $request, $id)
+    {
+        $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:1000',
+        ]);
+
+        $order = Order::with('review')->find($id);
+
+        if (!$order || $order->customer_id !== auth()->id()) {
+            return $this->sendError('Order not found.', [], 404);
+        }
+
+        if ($order->status !== 'completed' && $order->status !== 'delivered') {
+            return $this->sendError('You can only review a delivered or completed order.', [], 422);
+        }
+
+        if ($order->review) {
+            return $this->sendError('You have already reviewed this order.', [], 422);
+        }
+
+        $review = Review::create([
+            'order_id' => $order->id,
+            'customer_id' => auth()->id(),
+            'supplier_id' => $order->supplier_id,
+            'rating' => $request->rating,
+            'comment' => $request->comment,
+        ]);
+
+        return $this->sendResponse($review, 'Thank you for your feedback! Your rating has been submitted.');
     }
 }

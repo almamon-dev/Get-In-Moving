@@ -50,4 +50,14 @@ class Order extends Model
     {
         return $this->hasOne(Invoice::class);
     }
+
+    public function review()
+    {
+        return $this->hasOne(Review::class);
+    }
+
+    public function updates()
+    {
+        return $this->hasMany(OrderUpdate::class)->latest();
+    }
 }

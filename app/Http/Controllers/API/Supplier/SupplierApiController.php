@@ -112,22 +112,8 @@ class SupplierApiController extends Controller
                     'pickup_date' => $order->pickup_date ? \Carbon\Carbon::parse($order->pickup_date)->format('j M Y') : 'N/A',
                 ];
             });
-
-        // 5. Recent Activity (Recent list section)
-
-        $recentMessages = \App\Models\Message::with(['sender', 'quote.quoteRequest'])
-            ->where('receiver_id', $supplierId)
-            ->latest()
-            ->take(5)
-            ->get()
-            ->map(function ($msg) {
-                return [
-                    'id' => $msg->id,
-                    'title' => 'New negotiation request from '.($msg->sender?->company_name ?? $msg->sender?->name ?? 'Customer'),
-                    'description' => \Illuminate\Support\Str::limit($msg->message, 100),
-                    'time' => $msg->created_at->diffForHumans(),
-                ];
-            });
+        // 5. Recent Activity (Latest 5 Notifications)
+        $recentActivity = $user->notifications()->latest()->limit(5)->get();
 
         return $this->sendResponse([
             'stats' => [
@@ -144,7 +130,7 @@ class SupplierApiController extends Controller
                 'completed_orders' => [
                     'count' => $completedOrdersCount,
                     'label' => 'Completed Orders',
-                    'sub_label' => 'Based on selected period',
+                    'sub_label' => 'Successfully delivered jobs',
                 ],
                 'negotiations' => [
                     'count' => $negotiationsCount,
@@ -155,7 +141,7 @@ class SupplierApiController extends Controller
             'orders_completed' => $chartData,
             'earnings' => $earnings,
             'active_orders' => $activeOrders,
-            'recent_activity' => $recentMessages,
+            'recent_activity' => NotificationResource::collection($recentActivity),
         ], 'Supplier dashboard data retrieved.');
     }
 
