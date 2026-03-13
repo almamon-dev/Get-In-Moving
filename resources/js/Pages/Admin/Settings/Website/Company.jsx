@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head } from '@inertiajs/react';
-import { Building2, Mail, Phone, Globe, MapPin, Hash, Briefcase, Clock, Home, Save, CheckCircle2, ChevronDown, Calendar, Trash2 } from 'lucide-react';
+import { Head, useForm } from '@inertiajs/react';
+import { toast } from 'react-toastify';
 
-export default function CompanySettings() {
+import { Building2, Mail, Phone, Globe, MapPin, Hash, Briefcase, Clock, Home, Save, CheckCircle2, ChevronDown, Calendar, Trash2, Loader2 } from 'lucide-react';
+
+export default function CompanySettings({ settings }) {
     const DAYS = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     const TIMES = [
         '08:00 AM', '08:30 AM', '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
@@ -12,56 +14,53 @@ export default function CompanySettings() {
         '08:00 PM', '08:30 PM', '09:00 PM', '09:30 PM', '10:00 PM'
     ];
 
-    const [formData, setFormData] = useState({
-        company_name: 'Almamon Softwares Ltd.',
-        legal_name: 'Almamon Tech Solutions Inc.',
-        established_since: '2020-01-01',
-        company_email: 'hello@almamon.dev',
-        company_phone: '+880 1234 567 890',
-        registration_no: 'REG-2026-X990',
-        tax_id: 'TAX-8822-001',
-        website: 'https://almamon.dev',
-        address: '123 Tech Square, Digital City, Dhaka, Bangladesh',
-        is_operating_active: true,
-        business_hours: [
+    const { data, setData, post, processing } = useForm({
+        company_name: settings.company_name || '',
+        legal_name: settings.legal_name || '',
+        established_since: settings.established_since || '',
+        company_email: settings.company_email || '',
+        company_phone: settings.company_phone || '',
+        registration_no: settings.registration_no || '',
+        tax_id: settings.tax_id || '',
+        website: settings.website || '',
+        address: settings.address || '',
+        is_operating_active: settings.is_operating_active ?? true,
+        business_hours: settings.business_hours || [
             { from_day: 'Saturday', to_day: 'Thursday', start_time: '09:00 AM', end_time: '06:00 PM', status: 'Open' },
             { from_day: 'Friday', to_day: 'Friday', start_time: '-', end_time: '-', status: 'Closed' }
         ]
     });
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
     const handleBusinessHourChange = (index, field, value) => {
-        const newHours = [...formData.business_hours];
+        const newHours = [...data.business_hours];
         newHours[index][field] = value;
-        setFormData(prev => ({ ...prev, business_hours: newHours }));
+        setData('business_hours', newHours);
     };
 
     const toggleOperatingStatus = () => {
-        setFormData(prev => ({ ...prev, is_operating_active: !prev.is_operating_active }));
+        setData('is_operating_active', !data.is_operating_active);
     };
 
     const addBusinessHourRange = () => {
-        setFormData(prev => ({
-            ...prev,
-            business_hours: [...prev.business_hours, { from_day: 'Saturday', to_day: 'Thursday', start_time: '09:00 AM', end_time: '06:00 PM', status: 'Open' }]
-        }));
+        setData('business_hours', [
+            ...data.business_hours, 
+            { from_day: 'Saturday', to_day: 'Thursday', start_time: '09:00 AM', end_time: '06:00 PM', status: 'Open' }
+        ]);
     };
 
     const removeBusinessHourRange = (index) => {
-        setFormData(prev => ({
-            ...prev,
-            business_hours: prev.business_hours.filter((_, i) => i !== index)
-        }));
+        if (data.business_hours.length > 1) {
+            setData('business_hours', data.business_hours.filter((_, i) => i !== index));
+        }
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log('Company Data Saved:', formData);
-        alert('Company information updated successfully!');
+        post(route('admin.settings.update'), {
+            onSuccess: () => toast.success('Company settings updated successfully!'),
+            onError: () => toast.error('Failed to update company settings.'),
+            preserveScroll: true,
+        });
     };
 
     return (
@@ -85,9 +84,10 @@ export default function CompanySettings() {
                     </div>
                     <button 
                         type="submit"
-                        className="bg-[#673ab7] text-white px-8 py-[10px] rounded-[6px] font-bold text-[14px] hover:bg-[#5e35b1] transition-all shadow-sm flex items-center gap-2"
+                        disabled={processing}
+                        className="bg-[#673ab7] text-white px-8 py-[10px] rounded-[6px] font-bold text-[14px] hover:bg-[#5e35b1] transition-all shadow-sm flex items-center gap-2 disabled:opacity-70"
                     >
-                        <Save size={18} />
+                        {processing ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                         Save Company Info
                     </button>
                 </div>
@@ -106,20 +106,18 @@ export default function CompanySettings() {
                             <div className="space-y-2">
                                 <label className="text-[14px] font-bold text-[#2f3344]">Display Name</label>
                                 <input 
-                                    name="company_name"
                                     type="text" 
-                                    value={formData.company_name}
-                                    onChange={handleInputChange}
+                                    value={data.company_name}
+                                    onChange={e => setData('company_name', e.target.value)}
                                     className="w-full h-[45px] px-4 bg-white border border-[#e3e4e8] rounded-[6px] text-[14px] text-[#2f3344] focus:outline-none focus:border-[#673ab7] transition-all"
                                 />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[14px] font-bold text-[#2f3344]">Legal / Registered Name</label>
                                 <input 
-                                    name="legal_name"
                                     type="text" 
-                                    value={formData.legal_name}
-                                    onChange={handleInputChange}
+                                    value={data.legal_name}
+                                    onChange={e => setData('legal_name', e.target.value)}
                                     className="w-full h-[45px] px-4 bg-white border border-[#e3e4e8] rounded-[6px] text-[14px] text-[#2f3344] focus:outline-none focus:border-[#673ab7] transition-all"
                                 />
                             </div>
@@ -127,10 +125,9 @@ export default function CompanySettings() {
                                 <label className="text-[14px] font-bold text-[#2f3344]">Established Date (Start Date)</label>
                                 <div className="relative">
                                     <input 
-                                        name="established_since"
                                         type="date" 
-                                        value={formData.established_since}
-                                        onChange={handleInputChange}
+                                        value={data.established_since}
+                                        onChange={e => setData('established_since', e.target.value)}
                                         className="w-full h-[45px] pl-11 pr-4 bg-white border border-[#e3e4e8] rounded-[6px] text-[14px] text-[#2f3344] focus:outline-none focus:border-[#673ab7] transition-all"
                                     />
                                     <Calendar size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a0a3af]" />
@@ -140,10 +137,9 @@ export default function CompanySettings() {
                                 <label className="text-[14px] font-bold text-[#2f3344]">Registration Number</label>
                                 <div className="relative">
                                     <input 
-                                        name="registration_no"
                                         type="text" 
-                                        value={formData.registration_no}
-                                        onChange={handleInputChange}
+                                        value={data.registration_no}
+                                        onChange={e => setData('registration_no', e.target.value)}
                                         className="w-full h-[45px] pl-11 pr-4 bg-white border border-[#e3e4e8] rounded-[6px] text-[14px] text-[#2f3344] focus:outline-none focus:border-[#673ab7] transition-all"
                                     />
                                     <Briefcase size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a0a3af]" />
@@ -153,10 +149,9 @@ export default function CompanySettings() {
                                 <label className="text-[14px] font-bold text-[#2f3344]">Tax / VAT ID</label>
                                 <div className="relative">
                                     <input 
-                                        name="tax_id"
                                         type="text" 
-                                        value={formData.tax_id}
-                                        onChange={handleInputChange}
+                                        value={data.tax_id}
+                                        onChange={e => setData('tax_id', e.target.value)}
                                         className="w-full h-[45px] pl-11 pr-4 bg-white border border-[#e3e4e8] rounded-[6px] text-[14px] text-[#2f3344] focus:outline-none focus:border-[#673ab7] transition-all"
                                     />
                                     <Hash size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a0a3af]" />
@@ -166,10 +161,9 @@ export default function CompanySettings() {
                                 <label className="text-[14px] font-bold text-[#2f3344]">Website</label>
                                 <div className="relative">
                                     <input 
-                                        name="website"
                                         type="text" 
-                                        value={formData.website}
-                                        onChange={handleInputChange}
+                                        value={data.website}
+                                        onChange={e => setData('website', e.target.value)}
                                         className="w-full h-[45px] pl-11 pr-4 bg-white border border-[#e3e4e8] rounded-[6px] text-[14px] text-[#2f3344] focus:outline-none focus:border-[#673ab7] transition-all"
                                     />
                                     <Globe size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a0a3af]" />
@@ -194,10 +188,9 @@ export default function CompanySettings() {
                                 <label className="text-[14px] font-bold text-[#2f3344]">Official Business Email</label>
                                 <div className="relative">
                                     <input 
-                                        name="company_email"
                                         type="email" 
-                                        value={formData.company_email}
-                                        onChange={handleInputChange}
+                                        value={data.company_email}
+                                        onChange={e => setData('company_email', e.target.value)}
                                         className="w-full h-[45px] pl-11 pr-4 bg-white border border-[#e3e4e8] rounded-[6px] text-[14px] text-[#2f3344] focus:outline-none focus:border-[#673ab7] transition-all"
                                     />
                                     <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a0a3af]" />
@@ -207,10 +200,9 @@ export default function CompanySettings() {
                                 <label className="text-[14px] font-bold text-[#2f3344]">Business Phone</label>
                                 <div className="relative">
                                     <input 
-                                        name="company_phone"
                                         type="text" 
-                                        value={formData.company_phone}
-                                        onChange={handleInputChange}
+                                        value={data.company_phone}
+                                        onChange={e => setData('company_phone', e.target.value)}
                                         className="w-full h-[45px] pl-11 pr-4 bg-white border border-[#e3e4e8] rounded-[6px] text-[14px] text-[#2f3344] focus:outline-none focus:border-[#673ab7] transition-all"
                                     />
                                     <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a0a3af]" />
@@ -220,9 +212,8 @@ export default function CompanySettings() {
                                 <label className="text-[14px] font-bold text-[#2f3344]">Main Office Address</label>
                                 <div className="relative">
                                     <textarea 
-                                        name="address"
-                                        value={formData.address}
-                                        onChange={handleInputChange}
+                                        value={data.address}
+                                        onChange={e => setData('address', e.target.value)}
                                         className="w-full pl-11 pr-4 py-4 bg-white border border-[#e3e4e8] rounded-[6px] text-[14px] text-[#2f3344] focus:outline-none focus:border-[#673ab7] transition-all resize-none min-h-[100px]"
                                     ></textarea>
                                     <MapPin size={18} className="absolute left-4 top-4 text-[#a0a3af]" />
@@ -262,15 +253,15 @@ export default function CompanySettings() {
                             </div>
                             <div 
                                 onClick={toggleOperatingStatus}
-                                className={`w-12 h-6 rounded-full relative cursor-pointer group transition-all duration-300 ${formData.is_operating_active ? 'bg-[#673ab7]' : 'bg-[#e3e4e8]'}`}
+                                className={`w-12 h-6 rounded-full relative cursor-pointer group transition-all duration-300 ${data.is_operating_active ? 'bg-[#673ab7]' : 'bg-[#e3e4e8]'}`}
                             >
-                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300 ${formData.is_operating_active ? 'right-1' : 'left-1'}`}></div>
+                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300 ${data.is_operating_active ? 'right-1' : 'left-1'}`}></div>
                             </div>
                         </div>
 
                         {/* Schedule List */}
                         <div className="space-y-4">
-                            {formData.business_hours.map((item, idx) => (
+                            {data.business_hours.map((item, idx) => (
                                 <div key={idx} className="flex gap-4 items-end p-5 bg-white border border-[#e3e4e8] rounded-[10px] relative group hover:border-[#673ab7]/30 transition-all">
                                     <div className="flex-1 min-w-[180px] space-y-2">
                                         <label className="text-[11px] font-bold text-[#a0a3af] uppercase tracking-wider">From Day</label>
@@ -351,8 +342,8 @@ export default function CompanySettings() {
                                         <button 
                                             type="button"
                                             onClick={() => removeBusinessHourRange(idx)}
-                                            className={`w-[42px] h-[42px] flex items-center justify-center rounded-[6px] bg-[#f43f5e]/5 text-[#f43f5e] hover:bg-[#f43f5e] hover:text-white transition-all ${formData.business_hours.length === 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                            disabled={formData.business_hours.length === 1}
+                                            className={`w-[42px] h-[42px] flex items-center justify-center rounded-[6px] bg-[#f43f5e]/5 text-[#f43f5e] hover:bg-[#f43f5e] hover:text-white transition-all ${data.business_hours.length === 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                            disabled={data.business_hours.length === 1}
                                         >
                                             <Trash2 size={18} />
                                         </button>

@@ -86,18 +86,7 @@ export default function EmailSettings() {
                         </div>
                     </div>
 
-                    <div className="pt-8 border-t border-[#f1f2f4]">
-                        <div className="flex items-center justify-between p-6 bg-[#f4f0ff]/50 rounded-[12px] border border-[#e9e3ff]">
-                            <div>
-                                <h4 className="text-[15px] font-bold text-[#2f3344]">Test Configuration</h4>
-                                <p className="text-[13px] text-[#727586] mt-1">Send a test email to verify your SMTP settings.</p>
-                            </div>
-                            <button className="flex items-center bg-white border border-[#673ab7] text-[#673ab7] px-6 py-2.5 rounded-lg font-bold text-[13px] hover:bg-[#673ab7] hover:text-white transition-all shadow-sm">
-                                <Send size={16} className="mr-2" />
-                                Send Test Mail
-                            </button>
-                        </div>
-                    </div>
+                  
                 </div>
             </div>
         </SettingsLayout>

@@ -32,6 +32,8 @@ class User extends Authenticatable
         'zip_code',
         'country',
         'profile_picture',
+        'designation',
+        'bio',
         'insurance_type',
         'insurance_provider_name',
         'policy_number',
@@ -56,6 +58,7 @@ class User extends Authenticatable
         'deletion_requested_at',
         'stripe_account_id',
         'is_stripe_connected',
+        'balance',
     ];
 
     /**

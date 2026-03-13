@@ -21,5 +21,32 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        // Override Config from Database
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
+                $settings = \App\Models\Setting::all()->pluck('value', 'key');
+
+                if (isset($settings['stripe_key'])) {
+                    config(['services.stripe.key' => $settings['stripe_key']]);
+                }
+                if (isset($settings['stripe_secret'])) {
+                    config(['services.stripe.secret' => $settings['stripe_secret']]);
+                }
+                if (isset($settings['stripe_webhook_secret'])) {
+                    config(['services.stripe.webhook_secret' => $settings['stripe_webhook_secret']]);
+                }
+                if (isset($settings['site_name'])) {
+                    config(['app.name' => $settings['site_name']]);
+                }
+
+                // For debug mode, we need to handle the string to boolean conversion
+                if (isset($settings['debug_mode'])) {
+                    config(['app.debug' => filter_var($settings['debug_mode'], FILTER_VALIDATE_BOOLEAN)]);
+                }
+            }
+        } catch (\Exception $e) {
+            // Silently fail if DB is not ready
+        }
     }
 }

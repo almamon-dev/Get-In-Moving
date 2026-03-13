@@ -1,8 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import SettingsLayout from '../SettingsLayout';
-import { CreditCard, ShieldCheck, DollarSign, ExternalLink } from 'lucide-react';
+import { CreditCard, ShieldCheck, Save, Loader2, Eye, EyeOff, Copy, Check } from 'lucide-react';
+import { useForm } from '@inertiajs/react';
+import { toast } from 'react-toastify';
 
-export default function FinancialGateway() {
+export default function FinancialGateway({ settings }) {
+    const [showSecret, setShowSecret] = useState(false);
+    const [showWebhook, setShowWebhook] = useState(false);
+    const [copiedField, setCopiedField] = useState(null);
+
+    const { data, setData, post, processing, errors } = useForm({
+        stripe_mode: settings.stripe_mode || 'test',
+        stripe_key: settings.stripe_key || '',
+        stripe_secret: settings.stripe_secret || '',
+        stripe_webhook_secret: settings.stripe_webhook_secret || '',
+    });
+
+    const handleCopy = (text, field) => {
+        if (!text) return;
+        navigator.clipboard.writeText(text);
+        setCopiedField(field);
+        toast.success(`${field.replace('_', ' ')} copied to clipboard!`);
+        setTimeout(() => setCopiedField(null), 2000);
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        post(route('admin.settings.update'), {
+            onSuccess: () => toast.success('Settings updated successfully!'),
+            onError: () => toast.error('Failed to update settings. Please check errors.'),
+            preserveScroll: true,
+        });
+    };
+
+    const toggleMode = () => {
+        setData('stripe_mode', data.stripe_mode === 'live' ? 'test' : 'live');
+    };
+
     return (
         <SettingsLayout 
             title="Payment Gateways" 
@@ -10,7 +44,7 @@ export default function FinancialGateway() {
             breadcrumbs={["Financial", "Gateway"]}
         >
             <div className="p-8">
-                <div className="max-w-3xl space-y-12">
+                <form onSubmit={handleSubmit} className="max-w-7xl space-y-12">
                     {/* Active Gateway Toggle */}
                     <div className="flex items-center justify-between p-6 bg-[#f8f9fa] rounded-[15px] border border-[#e3e4e8]">
                         <div className="flex items-center gap-5">
@@ -23,9 +57,20 @@ export default function FinancialGateway() {
                             </div>
                         </div>
                         <div className="flex items-center gap-4">
-                            <span className="text-[12px] font-bold text-green-500 bg-green-50 px-3 py-1 rounded-full uppercase tracking-wider">Live</span>
-                            <div className="w-12 h-6 bg-[#673ab7] rounded-full relative cursor-pointer">
-                                <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm"></div>
+                            <span className={`text-[12px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${
+                                data.stripe_mode === 'live' ? 'text-green-500 bg-green-50' : 'text-orange-500 bg-orange-50'
+                            }`}>
+                                {data.stripe_mode === 'live' ? 'Live' : 'Sandbox (Test)'}
+                            </span>
+                            <div 
+                                onClick={toggleMode}
+                                className={`w-12 h-6 rounded-full relative cursor-pointer transition-all duration-300 ${
+                                    data.stripe_mode === 'live' ? 'bg-[#673ab7]' : 'bg-[#a0a3af]'
+                                }`}
+                            >
+                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300 ${
+                                    data.stripe_mode === 'live' ? 'right-1' : 'left-1'
+                                }`}></div>
                             </div>
                         </div>
                     </div>
@@ -39,52 +84,101 @@ export default function FinancialGateway() {
                         <div className="space-y-6">
                             <div className="space-y-2">
                                 <label className="text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">Stripe Public Key</label>
-                                <input 
-                                    type="text" 
-                                    placeholder="pk_live_..."
-                                    className="w-full h-[52px] px-4 bg-white border border-[#e3e4e8] rounded-[8px] text-[14px] font-mono focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all"
-                                />
+                                <div className="relative">
+                                    <input 
+                                        type="text" 
+                                        value={data.stripe_key}
+                                        onChange={e => setData('stripe_key', e.target.value)}
+                                        placeholder="pk_live_..."
+                                        className={`w-full h-[52px] pl-4 pr-12 bg-white border ${errors.stripe_key ? 'border-red-500' : 'border-[#e3e4e8]'} rounded-[8px] text-[14px] font-mono focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all`}
+                                    />
+                                    <button 
+                                        type="button"
+                                        onClick={() => handleCopy(data.stripe_key, 'key')}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[#a0a3af] hover:text-[#673ab7] transition-colors"
+                                    >
+                                        {copiedField === 'key' ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+                                    </button>
+                                </div>
+                                {errors.stripe_key && <p className="text-red-500 text-xs mt-1">{errors.stripe_key}</p>}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">Stripe Secret Key</label>
-                                <input 
-                                    type="password" 
-                                    defaultValue="sk_live_••••••••••••••••••••"
-                                    className="w-full h-[52px] px-4 bg-white border border-[#e3e4e8] rounded-[8px] text-[14px] font-mono focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all"
-                                />
+                                <div className="relative">
+                                    <input 
+                                        type={showSecret ? "text" : "password"} 
+                                        value={data.stripe_secret}
+                                        onChange={e => setData('stripe_secret', e.target.value)}
+                                        placeholder="sk_live_..."
+                                        className={`w-full h-[52px] pl-4 pr-24 bg-white border ${errors.stripe_secret ? 'border-red-500' : 'border-[#e3e4e8]'} rounded-[8px] text-[14px] font-mono focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all`}
+                                    />
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                                        <button 
+                                            type="button"
+                                            onClick={() => handleCopy(data.stripe_secret, 'secret')}
+                                            className="text-[#a0a3af] hover:text-[#673ab7] transition-colors"
+                                        >
+                                            {copiedField === 'secret' ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setShowSecret(!showSecret)}
+                                            className="text-[#a0a3af] hover:text-[#673ab7] transition-colors"
+                                        >
+                                            {showSecret ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        </button>
+                                    </div>
+                                </div>
+                                {errors.stripe_secret && <p className="text-red-500 text-xs mt-1">{errors.stripe_secret}</p>}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">Webhook Secret</label>
-                                <input 
-                                    type="text" 
-                                    placeholder="whsec_..."
-                                    className="w-full h-[52px] px-4 bg-white border border-[#e3e4e8] rounded-[8px] text-[14px] font-mono focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all"
-                                />
+                                <div className="relative">
+                                    <input 
+                                        type={showWebhook ? "text" : "password"} 
+                                        value={data.stripe_webhook_secret}
+                                        onChange={e => setData('stripe_webhook_secret', e.target.value)}
+                                        placeholder="whsec_..."
+                                        className={`w-full h-[52px] pl-4 pr-24 bg-white border ${errors.stripe_webhook_secret ? 'border-red-500' : 'border-[#e3e4e8]'} rounded-[8px] text-[14px] font-mono focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all`}
+                                    />
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                                        <button 
+                                            type="button"
+                                            onClick={() => handleCopy(data.stripe_webhook_secret, 'webhook')}
+                                            className="text-[#a0a3af] hover:text-[#673ab7] transition-colors"
+                                        >
+                                            {copiedField === 'webhook' ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setShowWebhook(!showWebhook)}
+                                            className="text-[#a0a3af] hover:text-[#673ab7] transition-colors"
+                                        >
+                                            {showWebhook ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        </button>
+                                    </div>
+                                </div>
+                                {errors.stripe_webhook_secret && <p className="text-red-500 text-xs mt-1">{errors.stripe_webhook_secret}</p>}
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                        <div className="space-y-2">
-                            <label className="text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">Currency Mode</label>
-                            <div className="relative">
-                                <select className="w-full h-[52px] pl-11 pr-4 bg-white border border-[#e3e4e8] rounded-[8px] text-[15px] appearance-none focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all cursor-pointer">
-                                    <option>USD - United States Dollar</option>
-                                    <option>EUR - Euro</option>
-                                    <option>GBP - British Pound</option>
-                                    <option>BDT - Bangladeshi Taka</option>
-                                </select>
-                                <DollarSign size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a0a3af]" />
-                            </div>
-                        </div>
-                        <div className="space-y-2 flex flex-col justify-end">
-                            <button className="h-[52px] w-full border border-[#673ab7] text-[#673ab7] font-bold text-[14px] rounded-[8px] flex items-center justify-center gap-2 hover:bg-[#673ab7] hover:text-white transition-all">
-                                <ExternalLink size={18} />
-                                Visit Stripe Dashboard
-                            </button>
-                        </div>
+                    <div className="flex justify-end pt-6 border-t border-[#f1f2f4]">
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="flex items-center gap-2 bg-[#673ab7] hover:bg-[#5e35b1] text-white px-8 py-3 rounded-[10px] font-bold text-[14px] transition-all shadow-lg shadow-[#673ab7]/20 disabled:opacity-70"
+                        >
+                            {processing ? (
+                                <Loader2 size={18} className="animate-spin" />
+                            ) : (
+                                <Save size={18} />
+                            )}
+                            Save Changes
+                        </button>
                     </div>
-                </div>
+
+                </form>
             </div>
         </SettingsLayout>
     );

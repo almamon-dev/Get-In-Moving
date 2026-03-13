@@ -24,7 +24,6 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
 
     const menuGroups = [
         {
-            title: "User Management",
             items: [
                 { 
                     label: "Customers", 
@@ -44,36 +43,15 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     icon: <CircleDollarSign />, 
                     route: "admin.pricing-plans.index" 
                 },
+                { 
+                    label: "Withdrawals", 
+                    path: route('admin.withdrawals.index'), 
+                    icon: <DollarSign />, 
+                    route: "admin.withdrawals.index" 
+                },
             ]
         },
-        {
-            title: "Pages",
-            items: [
-             
-                { 
-                    label: "Authentication", 
-                    icon: <ShieldCheck />, 
-                    key: "auth",
-                    children: [
-                        { label: "Login", path: "/login" },
-                        { label: "Register", path: "/register" },
-                    ]
-                },
-                { 
-                    label: "Error Pages", 
-                    icon: <Mail />, 
-                    key: "errors",
-                    children: [
-                        { label: "404", path: "/404" },
-                        { label: "500", path: "/500" },
-                    ]
-                },
-                { label: "Blank Page", path: "/blank", icon: <Mail />, route: "blank" },
-                { label: "Pricing", path: "/pricing", icon: <DollarSign />, route: "pricing" },
-                { label: "Coming Soon", path: "/coming-soon", icon: <Mail />, route: "coming-soon" },
-                { label: "Under Maintenance", path: "/maintenance", icon: <Mail />, route: "maintenance" },
-            ]
-        },
+       
         {
             title: "Settings",
             items: [
@@ -84,7 +62,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     children: [
                         { label: "Profile", path: route('admin.settings.general.profile') },
                         { label: "Security", path: route('admin.settings.general.security') },
-                        { label: "Notifications", path: route('admin.settings.general.notifications') },
+                       
                     ]
                 },
                 { 
@@ -94,11 +72,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     children: [
                         { label: "System Settings", path: route('admin.settings.website.system') },
                         { label: "Company Settings", path: route('admin.settings.website.company') },
-                        { label: "Localization", path: route('admin.settings.website.localization') },
-                        { label: "Prefixes", path: route('admin.settings.website.prefixes') },
-                        { label: "Preference", path: route('admin.settings.website.preference') },
-                        { label: "Appearance", path: route('admin.settings.website.appearance') },
-                        { label: "Social Authentication", path: route('admin.settings.website.social-auth') },
+                       
                     ]
                 },
                 { 
@@ -107,9 +81,8 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     key: "system",
                     children: [
                         { label: "Email", path: route('admin.settings.system.email') },
-                        { label: "SMS", path: route('admin.settings.system.sms') },
-                        { label: "OTP", path: route('admin.settings.system.otp') },
-                        { label: "GDPR Cookies", path: route('admin.settings.system.gdpr') },
+                      
+                      
                     ]
                 },
                 { 
@@ -118,20 +91,10 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     key: "financial",
                     children: [
                         { label: "Payment Gateway", path: route('admin.settings.financial.gateway') },
-                        { label: "Bank Accounts", path: route('admin.settings.financial.bank-accounts') },
-                        { label: "Tax Rates", path: route('admin.settings.financial.tax-rates') },
-                        { label: "Currencies", path: route('admin.settings.financial.currencies') },
+                      
                     ]
                 },
-                { 
-                    label: "Other Settings", 
-                    icon: <Hexagon />, 
-                    key: "other",
-                    children: [
-                        { label: "Storage", path: route('admin.settings.other.storage') },
-                        { label: "Ban IP Address", path: route('admin.settings.other.ban-ip') },
-                    ]
-                },
+               
                 { label: "Logout", path: "/logout", icon: <LogOut />, method: "post" },
             ]
         }

@@ -37,6 +37,8 @@ class HandleInertiaRequests extends Middleware
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
                     'user_type' => $request->user()->user_type,
+                    'designation' => $request->user()->designation,
+                    'profile_picture' => \App\Helpers\Helper::generateURL($request->user()->profile_picture),
                 ] : null,
             ],
             'settings' => [

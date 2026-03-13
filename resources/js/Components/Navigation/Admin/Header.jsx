@@ -78,13 +78,13 @@ const Header = ({ onMenuClick }) => {
                         className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100"
                     >
                         <img
-                            src={auth?.user?.profile_photo_url || `https://ui-avatars.com/api/?name=${auth?.user?.name || 'Admin'}&background=673ab7&color=fff`}
+                            src={auth?.user?.profile_picture || `https://ui-avatars.com/api/?name=${auth?.user?.name || 'Admin'}&background=673ab7&color=fff`}
                             alt="User"
                             className="w-9 h-9 rounded-lg object-cover shadow-sm"
                         />
                         <div className="hidden lg:block text-left leading-tight">
-                            <p className="text-sm font-bold text-slate-700 block truncate">{auth?.user?.name || "Rashedul"}</p>
-                            <p className="text-[11px] text-slate-400 font-medium">Administrator</p>
+                            <p className="text-sm font-bold text-slate-700 block truncate">{auth?.user?.name || "User"}</p>
+                            <p className="text-[11px] text-slate-400 font-medium">{auth?.user?.designation || "Administrator"}</p>
                         </div>
                         <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
                     </button>
@@ -94,8 +94,8 @@ const Header = ({ onMenuClick }) => {
                         <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                             <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center gap-3">
                                 <img
-                                    src={auth?.user?.profile_photo_url || `https://ui-avatars.com/api/?name=${auth?.user?.name || 'Admin'}&background=673ab7&color=fff`}
-                                    className="w-10 h-10 rounded-lg"
+                                    src={auth?.user?.profile_picture || `https://ui-avatars.com/api/?name=${auth?.user?.name || 'Admin'}&background=673ab7&color=fff`}
+                                    className="w-10 h-10 rounded-lg object-cover"
                                     alt="Avatar"
                                 />
                                 <div className="overflow-hidden">
@@ -106,8 +106,6 @@ const Header = ({ onMenuClick }) => {
 
                             <div className="p-2">
                                 <DropdownLink icon={Settings} label="System Settings" href={route('admin.settings.website.system')} />
-                                <DropdownLink icon={CreditCard} label="Billing Details" href="#" />
-                                <DropdownLink icon={Globe} label="Region & Language" href={route('admin.settings.website.localization')} />
                             </div>
 
                             <div className="p-2 border-t border-slate-50 bg-slate-50/30">

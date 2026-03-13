@@ -146,5 +146,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Payments
         Route::get('/payments', [SupplierApiController::class, 'getPayments']);
+
+        // Finance & Withdrawals
+        Route::prefix('finance')->group(function () {
+            Route::get('/dashboard', [\App\Http\Controllers\API\Supplier\SupplierFinanceApiController::class, 'getDashboard']);
+            Route::post('/withdraw', [\App\Http\Controllers\API\Supplier\SupplierFinanceApiController::class, 'requestWithdraw']);
+        });
     });
 });
