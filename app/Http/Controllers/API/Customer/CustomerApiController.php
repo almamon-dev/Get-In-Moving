@@ -36,6 +36,7 @@ class CustomerApiController extends Controller
     use ApiResponse;
 
     protected $paymentService;
+
     protected $aiService;
 
     public function __construct(InvoicePaymentService $paymentService, AiExtractionService $aiService)
@@ -245,7 +246,7 @@ class CustomerApiController extends Controller
             return $this->sendError('Quote request not found.', [], 404);
         }
 
-        $quotes = Quote::with('user')
+        $quotes = Quote::with('supplier')
             ->where('quote_request_id', $id)
             ->latest()
             ->get();
@@ -430,12 +431,12 @@ class CustomerApiController extends Controller
             $extractedRows = $this->aiService->extractFromPdf($file->getRealPath(), $file->getClientOriginalName());
 
             $createdRequests = [];
-            
+
             foreach ($extractedRows as $row) {
                 // Generate a key to group items by pickup/delivery address
-                $groupKey = md5(($row['pickup_address'] ?? '') . ($row['delivery_address'] ?? '') . ($row['pickup_date'] ?? ''));
+                $groupKey = md5(($row['pickup_address'] ?? '').($row['delivery_address'] ?? '').($row['pickup_date'] ?? ''));
 
-                if (!isset($createdRequests[$groupKey])) {
+                if (! isset($createdRequests[$groupKey])) {
                     // Create Parent only if it doesn't exist for this address group
                     $quoteRequest = QuoteRequest::create([
                         'user_id' => auth()->id(),
@@ -469,8 +470,8 @@ class CustomerApiController extends Controller
             return $this->sendResponse([
                 'requests_created' => count($createdRequests),
                 'total_items_extracted' => count($extractedRows),
-                'preview' => $extractedRows
-            ], "Successfully extracted " . count($extractedRows) . " items into " . count($createdRequests) . " quote requests.");
+                'preview' => $extractedRows,
+            ], 'Successfully extracted '.count($extractedRows).' items into '.count($createdRequests).' quote requests.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -926,17 +927,17 @@ class CustomerApiController extends Controller
     {
         $order = Order::find($id);
 
-        if (!$order || $order->customer_id !== auth()->id()) {
+        if (! $order || $order->customer_id !== auth()->id()) {
             return $this->sendError('Order not found.', [], 404);
         }
 
-        if (!$order->proof_of_delivery) {
+        if (! $order->proof_of_delivery) {
             return $this->sendError('Proof of Delivery not found.', [], 404);
         }
 
         $path = public_path($order->proof_of_delivery);
 
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             return $this->sendError('File not found on server.', [], 404);
         }
 
@@ -950,7 +951,7 @@ class CustomerApiController extends Controller
     {
         $order = Order::find($id);
 
-        if (!$order || $order->customer_id !== auth()->id()) {
+        if (! $order || $order->customer_id !== auth()->id()) {
             return $this->sendError('Order not found.', [], 404);
         }
 
@@ -965,12 +966,12 @@ class CustomerApiController extends Controller
     public function rejectPod(Request $request, $id)
     {
         $request->validate([
-            'note' => 'required|string|max:1000',
+            'note' => 'nullable|string|max:1000',
         ]);
 
         $order = Order::find($id);
 
-        if (!$order || $order->customer_id !== auth()->id()) {
+        if (! $order || $order->customer_id !== auth()->id()) {
             return $this->sendError('Order not found.', [], 404);
         }
 
@@ -994,7 +995,7 @@ class CustomerApiController extends Controller
 
         $order = Order::with('review')->find($id);
 
-        if (!$order || $order->customer_id !== auth()->id()) {
+        if (! $order || $order->customer_id !== auth()->id()) {
             return $this->sendError('Order not found.', [], 404);
         }
 

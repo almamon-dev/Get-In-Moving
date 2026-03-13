@@ -28,9 +28,9 @@ class QuoteResource extends JsonResource
             'pickup_date' => $this->quoteRequest?->pickup_date,
             'service_type' => $this->quoteRequest?->service_type,
             'supplier' => [
-               'id' => $this->user?->id,
-               'name' => $this->user?->name,
-               'company_name' => $this->user?->company_name ?? $this->user?->name,
+               'id' => $this->supplier?->id,
+               'name' => $this->supplier?->name,
+               'company_name' => $this->supplier?->company_name ?? $this->supplier?->name,
                'rating' => 4.9,
                'completed_orders' => '234 completed orders',
                'available_capacity' => '15 Pallets',
