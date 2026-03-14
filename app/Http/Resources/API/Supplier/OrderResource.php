@@ -60,9 +60,26 @@ class OrderResource extends JsonResource
 
             'next_step' => $nextActions[$this->status] ?? null,
 
-            'items_count' => $this->items()->count(),
+            'shipment' => [
+                'items_count' => $this->items()->count(),
+                'total_weight' => $this->items()->sum('weight') > 0 ? $this->items()->sum('weight') . ' kg' : 'N/A',
+                'dimensions' => ($firstItem = $this->items()->first()) ? "{$firstItem->length} × {$firstItem->width} × {$firstItem->height} cm" : 'N/A',
+                'description' => $this->getItemsSummary(),
+            ],
+
             'date' => $this->created_at?->format('d M Y, h:i A'),
         ];
+    }
+
+    private function getItemsSummary(): string
+    {
+        $items = $this->items;
+        if (!$items || $items->isEmpty()) return '0 Items';
+        
+        $count = $items->sum('quantity');
+        $type = $items->first()->item_type ?? 'Items';
+        
+        return "{$count} {$type}";
     }
 
     private function getLocationSummary()

@@ -8,9 +8,7 @@ use App\Http\Requests\API\Customer\CreateQuoteRequest;
 use App\Http\Resources\API\Customer\InvoiceResource;
 use App\Http\Resources\API\Customer\NotificationResource;
 use App\Http\Resources\API\Customer\OrderResource;
-use App\Http\Resources\API\Customer\QuoteRequestDetailResource;
 use App\Http\Resources\API\Customer\QuoteRequestResource;
-use App\Http\Resources\API\Customer\QuoteResource;
 use App\Imports\QuoteRequestItemsImport;
 use App\Models\Invoice;
 use App\Models\Order;
@@ -104,7 +102,7 @@ class CustomerApiController extends Controller
 
             DB::commit();
 
-            return $this->sendResponse(new QuoteRequestResource($quoteRequest->load('items')), 'Quote request created successfully.', null, 201);
+            return $this->sendResponse(new \App\Http\Resources\API\Customer\QuoteRequestResource($quoteRequest->load('items')), 'Quote request created successfully.', null, 201);
 
         } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
             DB::rollBack();
@@ -252,8 +250,8 @@ class CustomerApiController extends Controller
             ->get();
 
         return $this->sendResponse([
-            'request' => new QuoteRequestDetailResource($quoteRequest),
-            'quotes' => QuoteResource::collection($quotes),
+            'quote_details' => new \App\Http\Resources\API\Customer\QuoteDetailResource($quoteRequest),
+            'quotes_request' => \App\Http\Resources\API\Customer\QuoteResource::collection($quotes),
         ], 'Quotes retrieved for this request.');
     }
 
@@ -356,9 +354,16 @@ class CustomerApiController extends Controller
         try {
             $quote->update(['status' => 'accepted']);
 
-            Quote::where('quote_request_id', $quote->quote_request_id)
+            $rejectedQuotes = Quote::where('quote_request_id', $quote->quote_request_id)
                 ->where('id', '!=', $id)
-                ->update(['status' => 'rejected']);
+                ->get();
+
+            foreach ($rejectedQuotes as $rejected) {
+                $rejected->update(['status' => 'rejected']);
+                if ($rejected->user) {
+                    $rejected->user->notify(new \App\Notifications\QuoteRejectedNotification($rejected));
+                }
+            }
 
             $quote->quoteRequest->update(['status' => 'completed']);
 
@@ -402,8 +407,12 @@ class CustomerApiController extends Controller
             ]);
 
             DB::commit();
+            // Notify the supplier that their quote was accepted
+            if ($quote->user) {
+                $quote->user->notify(new \App\Notifications\QuoteAcceptedNotification($quote));
+            }
 
-            return $this->sendResponse(new QuoteResource($quote), 'Quote accepted and order created successfully.');
+            return $this->sendResponse(new \App\Http\Resources\API\Customer\QuoteResource($quote), 'Quote accepted and order created successfully.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -467,11 +476,7 @@ class CustomerApiController extends Controller
 
             DB::commit();
 
-            return $this->sendResponse([
-                'requests_created' => count($createdRequests),
-                'total_items_extracted' => count($extractedRows),
-                'preview' => $extractedRows,
-            ], 'Successfully extracted '.count($extractedRows).' items into '.count($createdRequests).' quote requests.');
+            return $this->sendResponse([], 'Successfully extracted quote requests.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -508,9 +513,16 @@ class CustomerApiController extends Controller
             ]);
 
             // Reject other quotes for this request
-            Quote::where('quote_request_id', $quote->quote_request_id)
+            $rejectedQuotes = Quote::where('quote_request_id', $quote->quote_request_id)
                 ->where('id', '!=', $id)
-                ->update(['status' => 'rejected']);
+                ->get();
+
+            foreach ($rejectedQuotes as $rejected) {
+                $rejected->update(['status' => 'rejected']);
+                if ($rejected->user) {
+                    $rejected->user->notify(new \App\Notifications\QuoteRejectedNotification($rejected));
+                }
+            }
 
             $quote->quoteRequest->update(['status' => 'completed']);
 
@@ -555,7 +567,12 @@ class CustomerApiController extends Controller
 
             DB::commit();
 
-            return $this->sendResponse(new QuoteResource($quote), 'Revised offer accepted and order created successfully.');
+            // Notify the supplier that their revised quote was accepted
+            if ($quote->user) {
+                $quote->user->notify(new \App\Notifications\QuoteAcceptedNotification($quote));
+            }
+
+            return $this->sendResponse(new \App\Http\Resources\API\Customer\QuoteResource($quote), 'Revised offer accepted and order created successfully.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -581,7 +598,11 @@ class CustomerApiController extends Controller
             'revision_status' => 'rejected',
         ]);
 
-        return $this->sendResponse(new QuoteResource($quote), 'Revised offer rejected.');
+        if ($quote->user) {
+            $quote->user->notify(new \App\Notifications\QuoteRejectedNotification($quote, true));
+        }
+
+        return $this->sendResponse(new \App\Http\Resources\API\Customer\QuoteResource($quote), 'Revised offer rejected.');
     }
 
     /**
@@ -697,11 +718,11 @@ class CustomerApiController extends Controller
         });
 
         $stats = [
-            'total_spent' => (float) (clone $statsQuery)->where('status', 'paid')->sum('total_amount'),
-            'total_outstanding' => (float) (clone $statsQuery)->whereIn('status', ['due', 'overdue'])->sum('total_amount'),
-            'total_invoices_count' => (clone $statsQuery)->count(),
-            'invoices_due_count' => (clone $statsQuery)->where('status', 'due')->count(),
-            'invoices_paid_count' => (clone $statsQuery)->where('status', 'paid')->count(),
+            'total_spent' => '$'.number_format((clone $statsQuery)->where('status', 'paid')->sum('total_amount')),
+            'total_outstanding' => '$'.number_format((clone $statsQuery)->whereIn('status', ['due', 'overdue'])->sum('total_amount')),
+            'total_invoices' => (clone $statsQuery)->count(),
+            'invoices_due' => (clone $statsQuery)->where('status', 'due')->count(),
+            'invoices_paid' => (clone $statsQuery)->where('status', 'paid')->count(),
         ];
 
         // Filtering
@@ -717,13 +738,9 @@ class CustomerApiController extends Controller
         }
 
         $invoices = $query->latest()->paginate($perPage);
-
         $invoices->setCollection(InvoiceResource::collection($invoices->getCollection())->collection);
 
-        return $this->sendResponse([
-            'stats' => $stats,
-            'invoices' => $invoices,
-        ], 'Your invoices retrieved.');
+        return $this->sendResponse($invoices, 'Your invoices retrieved.', [], 200, ['stats' => $stats]);
     }
 
     /**
@@ -737,7 +754,7 @@ class CustomerApiController extends Controller
             return $this->sendError('Invoice not found.', [], 404);
         }
 
-        return $this->sendResponse(new InvoiceResource($invoice), 'Invoice details retrieved.');
+        return $this->sendResponse(new \App\Http\Resources\API\Customer\InvoiceDetailResource($invoice), 'Invoice details retrieved.');
     }
 
     /**

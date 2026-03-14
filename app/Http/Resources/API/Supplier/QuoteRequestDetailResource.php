@@ -17,21 +17,34 @@ class QuoteRequestDetailResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $supplierQuote = $this->quotes()->where('user_id', auth()->id())->first();
+
+        $statusLabel = 'Awaiting client response';
+        if ($supplierQuote && $supplierQuote->status === 'accepted') {
+            $statusLabel = 'Accepted by client';
+        } elseif ($supplierQuote && $supplierQuote->status === 'rejected') {
+            $statusLabel = 'Rejected by client';
+        }
+
         return [
             'id' => $this->id,
-            'pickup_address' => $this->pickup_address,
-            'delivery_address' => $this->delivery_address,
-            'miles_placeholder' => '210 Miles', // Static for now as per image
-            'client_name' => $this->user?->name,
-            'service_type' => $this->service_type,
-            'items_summary' => $this->getItemsSummary(),
-            'total_weight' => 'Total weight : '.$this->items()->sum('weight').' kg',
-            'dimensions_summary' => 'Dimensions per unit: '.$this->getDimensionsSummary(),
-            'pickup_date' => $this->pickup_date,
-            'pickup_date_formatted' => $this->pickup_date ? \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : null,
-            'received_at_human' => 'Receive '.$this->created_at?->diffForHumans(),
-            'attachment_path' => $this->attachment_path ? asset($this->attachment_path) : null,
-            'supplier_status' => $this->getSupplierStatus(auth()->id()),
+            'quote_details' => [
+                'origin' => $this->pickup_address,
+                'destination' => $this->delivery_address,
+                'distance_miles' => $this->distance_miles ?? '210 Miles',
+                'items_summary' => $this->getItemsSummary(),
+                'total_weight' => 'Total weight : '.number_format($this->items()->sum('weight'), 0).' kg',
+                'dimensions_summary' => 'Dimensions per unit: '.$this->getDimensionsSummary(),
+                'client_name' => $this->user?->name ?? 'Unknown',
+                'pickup_date' => $this->pickup_date ? \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : 'N/A',
+                'service_type' => $this->service_type ?? 'Road Freight',
+                'received_at_human' => 'Receive '.($this->created_at?->diffForHumans() ?? 'recently'),
+            ],
+            'quote_submitted' => $supplierQuote ? [
+                'status_label' => $statusLabel,
+                'submitted_price' => '$'.number_format($supplierQuote->amount, 0),
+                'estimated_time' => $supplierQuote->estimated_time ?? '2-3 days',
+            ] : [],
         ];
     }
 

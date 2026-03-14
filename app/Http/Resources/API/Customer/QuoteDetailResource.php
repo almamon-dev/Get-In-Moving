@@ -5,7 +5,7 @@ namespace App\Http\Resources\API\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class QuoteRequestDetailResource extends JsonResource
+class QuoteDetailResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,17 +16,15 @@ class QuoteRequestDetailResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'pickup_address' => $this->pickup_address,
-            'delivery_address' => $this->delivery_address,
+            'origin' => $this->pickup_address,
+            'destination' => $this->delivery_address,
             'distance_miles' => '210 Miles',
             'items_summary' => $this->getItemsSummary(),
-            'total_weight' => 'Total weight : '.$this->items()->sum('weight').' kg',
+            'total_weight' => 'Total weight : '.number_format($this->items()->sum('weight'), 0).' kg',
             'dimensions_summary' => 'Dimensions per unit: '.$this->getDimensionsSummary(),
             'service_type' => $this->service_type,
-            'attachment_path' => $this->attachment_path ? asset($this->attachment_path) : null,
             'requested_date' => $this->created_at?->format('j M Y'),
             'estimated_price_range' => $this->getEstimatedPriceRange(),
-            'status' => $this->status,
         ];
     }
 
@@ -35,6 +33,12 @@ class QuoteRequestDetailResource extends JsonResource
         $count = $this->items()->sum('quantity');
         $firstItem = $this->items()->first();
         $type = $firstItem ? $firstItem->item_type : 'Items';
+
+        // If all items are the same type, use it. Otherwise say "Mixed Items" or pluralize.
+        $distinctTypes = $this->items()->pluck('item_type')->unique()->count();
+        if ($distinctTypes > 1) {
+            $type = 'Mixed Items';
+        }
 
         return "{$count} {$type}";
     }
@@ -46,7 +50,7 @@ class QuoteRequestDetailResource extends JsonResource
             return 'N/A';
         }
 
-        return "{$firstItem->length} x {$firstItem->width} x {$firstItem->height} cm";
+        return "{$firstItem->length} × {$firstItem->width} × {$firstItem->height} cm";
     }
 
     private function getEstimatedPriceRange(): string

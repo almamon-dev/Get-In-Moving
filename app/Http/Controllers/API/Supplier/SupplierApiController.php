@@ -263,7 +263,7 @@ class SupplierApiController extends Controller
                 ]);
             }
 
-            return $this->sendResponse(new QuoteResource($existing->load('user')), 'Revised offer submitted successfully.', null, 200);
+            return $this->sendResponse([], 'Revised offer submitted successfully.');
         }
 
         $quote = Quote::create([
@@ -421,23 +421,23 @@ class SupplierApiController extends Controller
         if ($request->status === 'completed' && $order->status !== 'completed') {
             \Illuminate\Support\Facades\DB::transaction(function () use ($order, $updateData) {
                 $order->update($updateData);
-                
+
                 $invoice = $order->invoice;
                 if ($invoice) {
                     $amount = $invoice->supplier_amount;
-                    
+
                     // Increment supplier balance
                     $order->supplier->increment('balance', $amount);
-                    
+
                     // Record transaction
                     \App\Models\SupplierTransaction::create([
                         'supplier_id' => $order->supplier_id,
                         'order_id' => $order->id,
                         'amount' => $amount,
                         'type' => 'earning',
-                        'description' => 'Earnings from Order #' . $order->order_number,
+                        'description' => 'Earnings from Order #'.$order->order_number,
                     ]);
-                    
+
                     $invoice->update(['status' => 'paid', 'paid_at' => now()]);
                 }
             });

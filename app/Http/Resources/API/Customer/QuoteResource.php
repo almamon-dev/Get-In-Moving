@@ -14,28 +14,20 @@ class QuoteResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $supplierUser = $this->supplier?->user;
+        $rating = \App\Models\Review::where('supplier_id', $supplierUser?->id)->avg('rating') ?? 0.0;
+        $completedOrders = \App\Models\Order::where('supplier_id', $this->supplier_id)->where('status', 'completed')->count() ?? 0;
+
         return [
             'id' => $this->id,
-            'amount' => (float) $this->amount,
-            'amount_formatted' => '$'.number_format($this->amount, 0),
-            'estimated_delivery' => $this->estimated_time,
-            'status' => $this->status,
-            'revised_amount' => $this->revised_amount ? (float) $this->revised_amount : null,
-            'revised_amount_formatted' => $this->revised_amount ? '$' . number_format($this->revised_amount, 0) : null,
-            'revised_estimated_time' => $this->revised_estimated_time,
-            'revision_status' => $this->revision_status,
-            'chat_id' => $this->id, // Using Quote ID as Chat ID for now
-            'pickup_date' => $this->quoteRequest?->pickup_date,
-            'service_type' => $this->quoteRequest?->service_type,
-            'supplier' => [
-               'id' => $this->supplier?->id,
-               'name' => $this->supplier?->name,
-               'company_name' => $this->supplier?->company_name ?? $this->supplier?->name,
-               'rating' => 4.9,
-               'completed_orders' => '234 completed orders',
-               'available_capacity' => '15 Pallets',
-            ],
-            'created_at' => $this->created_at?->toDateTimeString(),
+            'amount' => '$'.number_format($this->amount, 0),
+            'supplier_name' => $supplierUser->name ?? 'Swift Transport Co.',
+            'rating' => round($rating, 1),
+            'completed_orders' => "{$completedOrders} completed orders",
+            'available_capacity' => 'Available Capacity : 15 Pallets',
+            'pickup_date' => $this->pickup_date ? \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : '2 Jan 2026',
+            'service_type' => 'Road Freight',
+            'estimated_delivery' => '2-3 days',
         ];
     }
 }

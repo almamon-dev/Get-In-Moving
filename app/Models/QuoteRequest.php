@@ -44,7 +44,9 @@ class QuoteRequest extends Model
 
     public function getSupplierStatus($userId)
     {
-        if (!$userId) return 'new';
+        if (! $userId) {
+            return 'new';
+        }
 
         if ($this->quotes()->where('user_id', $userId)->exists()) {
             return 'quoted';
@@ -52,6 +54,7 @@ class QuoteRequest extends Model
         if ($this->views()->where('user_id', $userId)->exists()) {
             return 'viewed';
         }
+
         return 'new';
     }
 }
