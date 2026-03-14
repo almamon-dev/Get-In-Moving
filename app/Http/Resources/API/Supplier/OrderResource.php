@@ -3,7 +3,8 @@
 namespace App\Http\Resources\API\Supplier;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Json\JsonResource;
+use App\Helpers\Helper;
 use Illuminate\Support\Carbon;
 
 class OrderResource extends JsonResource
@@ -55,7 +56,7 @@ class OrderResource extends JsonResource
                 'current_step' => $statusTimeline[$this->status] ?? 0,
                 'steps' => ['Confirm', 'In Progress', 'Picked Up', 'Delivered'],
                 'note' => $this->status_note,
-                'proof' => $this->proof_of_delivery ? asset('storage/'.$this->proof_of_delivery) : null,
+                'proof' => Helper::generateURL($this->proof_of_delivery),
             ],
 
             'next_step' => $nextActions[$this->status] ?? null,
