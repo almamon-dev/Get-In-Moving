@@ -12,7 +12,10 @@ class InvoicePaymentService
 {
     public function __construct()
     {
-        Stripe::setApiKey(config('services.stripe.secret'));
+        $stripeSecret = \App\Models\Setting::where('key', 'stripe_secret')->first()?->value 
+                        ?? config('services.stripe.secret');
+
+        Stripe::setApiKey($stripeSecret);
     }
 
     /**
