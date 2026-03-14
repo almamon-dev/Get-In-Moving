@@ -988,7 +988,37 @@ class CustomerApiController extends Controller
             return $this->sendError('Order not found.', [], 404);
         }
 
-        $order->update(['pod_status' => 'confirmed', 'status' => 'completed']);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($order) {
+            $order->update(['pod_status' => 'confirmed', 'status' => 'completed']);
+
+            // Add to timeline
+            $order->updates()->create([
+                'status' => 'completed',
+                'title' => 'Order Completed',
+                'description' => 'The customer has approved the Proof of Delivery and the order is now closed.',
+            ]);
+
+            $invoice = $order->invoice;
+            if ($invoice) {
+                $amount = $invoice->supplier_amount;
+
+                // Increment supplier balance
+                $order->supplier->increment('balance', $amount);
+
+                // Record transaction
+                \App\Models\SupplierTransaction::create([
+                    'supplier_id' => $order->supplier_id,
+                    'order_id' => $order->id,
+                    'amount' => $amount,
+                    'type' => 'earning',
+                    'description' => 'Earnings from Order #'.$order->order_number,
+                ]);
+
+                if ($invoice->status !== 'paid') {
+                    $invoice->update(['status' => 'paid', 'paid_at' => now()]);
+                }
+            }
+        });
 
         return $this->sendResponse(new OrderResource($order), 'Proof of Delivery approved.');
     }
@@ -1011,6 +1041,13 @@ class CustomerApiController extends Controller
         $order->update([
             'pod_status' => 'rejected',
             'status_note' => $request->note,
+        ]);
+
+        // Add to timeline
+        $order->updates()->create([
+            'status' => 'rejected',
+            'title' => 'POD Rejected',
+            'description' => $request->note ?? 'The customer has rejected the Proof of Delivery and requested a re-upload.',
         ]);
 
         return $this->sendResponse(new OrderResource($order), 'Issue raised and Proof of Delivery rejected.');

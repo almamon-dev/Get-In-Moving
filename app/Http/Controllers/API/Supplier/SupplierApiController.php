@@ -418,48 +418,15 @@ class SupplierApiController extends Controller
             $updateData['pod_status'] = 'pending';
         }
 
-        if ($request->status === 'completed' && $order->status !== 'completed') {
-            \Illuminate\Support\Facades\DB::transaction(function () use ($order, $updateData, $request) {
-                $order->update($updateData);
+        $order->update($updateData);
 
-                // Add to history with rich content
-                $content = $this->getTimelineContent($request->status, $order, $request->note);
-                $order->updates()->create([
-                    'status' => $request->status,
-                    'title' => $content['title'],
-                    'description' => $content['description'],
-                ]);
-
-                $invoice = $order->invoice;
-                if ($invoice) {
-                    $amount = $invoice->supplier_amount;
-
-                    // Increment supplier balance
-                    $order->supplier->increment('balance', $amount);
-
-                    // Record transaction
-                    \App\Models\SupplierTransaction::create([
-                        'supplier_id' => $order->supplier_id,
-                        'order_id' => $order->id,
-                        'amount' => $amount,
-                        'type' => 'earning',
-                        'description' => 'Earnings from Order #'.$order->order_number,
-                    ]);
-
-                    $invoice->update(['status' => 'paid', 'paid_at' => now()]);
-                }
-            });
-        } else {
-            $order->update($updateData);
-
-            // Add to history with rich content
-            $content = $this->getTimelineContent($request->status, $order, $request->note);
-            $order->updates()->create([
-                'status' => $request->status,
-                'title' => $content['title'],
-                'description' => $content['description'],
-            ]);
-        }
+        // Add to history with rich content
+        $content = $this->getTimelineContent($request->status, $order, $request->note);
+        $order->updates()->create([
+            'status' => $request->status,
+            'title' => $content['title'],
+            'description' => $content['description'],
+        ]);
 
         return $this->sendResponse(new OrderResource($order), "Order status updated to {$request->status}.");
     }
