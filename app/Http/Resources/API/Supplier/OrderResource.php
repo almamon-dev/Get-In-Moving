@@ -3,7 +3,7 @@
 namespace App\Http\Resources\API\Supplier;
 
 use Illuminate\Http\Request;
-use App\Http\Resources\Json\JsonResource;
+use Illuminate\Http\Resources\Json\JsonResource;
 use App\Helpers\Helper;
 use Illuminate\Support\Carbon;
 
