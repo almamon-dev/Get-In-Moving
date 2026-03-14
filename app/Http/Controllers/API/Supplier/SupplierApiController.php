@@ -394,7 +394,7 @@ class SupplierApiController extends Controller
         $request->validate([
             'status' => 'required|in:pending,confirmed,in_progress,picked_up,delivered,completed,cancelled',
             'note' => 'nullable|string',
-            'proof' => 'required_if:status,delivered|image|max:20048',
+            'proof' => 'required_if:status,delivered|mimes:jpg,jpeg,png,pdf|max:20048',
         ], [
             'proof.required_if' => 'Proof of delivery is required when marking the order as delivered.',
         ]);
@@ -517,7 +517,7 @@ class SupplierApiController extends Controller
     public function reuploadPod(Request $request, $id)
     {
         $request->validate([
-            'proof' => 'required|image|max:20048',
+            'proof' => 'required|mimes:jpg,jpeg,png,pdf|max:20048',
         ]);
 
         $order = Order::where('supplier_id', auth()->id())->find($id);
