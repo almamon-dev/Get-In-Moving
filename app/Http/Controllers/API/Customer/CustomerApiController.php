@@ -382,6 +382,14 @@ class CustomerApiController extends Controller
                 'status' => 'confirmed',
             ]);
 
+            // Add to timeline
+            $supplierName = $order->supplier?->company_name ?? $order->supplier?->name ?? 'Supplier';
+            $order->updates()->create([
+                'status' => 'confirmed',
+                'title' => 'Order Confirmed',
+                'description' => "Your order has been confirmed by {$supplierName}.",
+            ]);
+
             // Copy items to OrderItems
             foreach ($quote->quoteRequest->items as $item) {
                 OrderItem::create([
@@ -539,6 +547,14 @@ class CustomerApiController extends Controller
                 'pickup_date' => $quote->quoteRequest->pickup_date,
                 'estimated_time' => $quote->estimated_time,
                 'status' => 'confirmed',
+            ]);
+
+            // Add to timeline
+            $supplierName = $order->supplier?->company_name ?? $order->supplier?->name ?? 'Supplier';
+            $order->updates()->create([
+                'status' => 'confirmed',
+                'title' => 'Order Confirmed',
+                'description' => "Your order has been confirmed by {$supplierName}.",
             ]);
 
             // Copy items to OrderItems

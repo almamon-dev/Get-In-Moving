@@ -2,9 +2,9 @@
 
 namespace App\Http\Resources\API\Supplier;
 
+use App\Helpers\Helper;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Helpers\Helper;
 use Illuminate\Support\Carbon;
 
 class OrderResource extends JsonResource
@@ -57,13 +57,19 @@ class OrderResource extends JsonResource
                 'steps' => ['Confirm', 'In Progress', 'Picked Up', 'Delivered'],
                 'note' => $this->status_note,
                 'proof' => Helper::generateURL($this->proof_of_delivery),
+                'history' => $this->updates->map(fn ($update) => [
+                    'status' => $update->status,
+                    'title' => $update->title,
+                    'description' => $update->description,
+                    'date' => $update->created_at->format('d M Y, h:i A'),
+                ]),
             ],
 
             'next_step' => $nextActions[$this->status] ?? null,
 
             'shipment' => [
                 'items_count' => $this->items()->count(),
-                'total_weight' => $this->items()->sum('weight') > 0 ? $this->items()->sum('weight') . ' kg' : 'N/A',
+                'total_weight' => $this->items()->sum('weight') > 0 ? $this->items()->sum('weight').' kg' : 'N/A',
                 'dimensions' => ($firstItem = $this->items()->first()) ? "{$firstItem->length} × {$firstItem->width} × {$firstItem->height} cm" : 'N/A',
                 'description' => $this->getItemsSummary(),
             ],
@@ -75,11 +81,13 @@ class OrderResource extends JsonResource
     private function getItemsSummary(): string
     {
         $items = $this->items;
-        if (!$items || $items->isEmpty()) return '0 Items';
-        
+        if (! $items || $items->isEmpty()) {
+            return '0 Items';
+        }
+
         $count = $items->sum('quantity');
         $type = $items->first()->item_type ?? 'Items';
-        
+
         return "{$count} {$type}";
     }
 

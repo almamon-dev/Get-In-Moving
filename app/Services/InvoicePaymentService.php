@@ -83,6 +83,13 @@ class InvoicePaymentService
                     $invoice->order->update([
                         'status' => 'in_progress',
                     ]);
+
+                    // Add to timeline
+                    $invoice->order->updates()->create([
+                        'status' => 'in_progress',
+                        'title' => 'In Progress',
+                        'description' => "Supplier is preparing your order for pickup.",
+                    ]);
                 }
                 Log::info("Stripe Webhook: Invoice {$invoice->invoice_number} marked as PAID. Transaction record created.");
             }

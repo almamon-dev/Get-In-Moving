@@ -419,8 +419,16 @@ class SupplierApiController extends Controller
         }
 
         if ($request->status === 'completed' && $order->status !== 'completed') {
-            \Illuminate\Support\Facades\DB::transaction(function () use ($order, $updateData) {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($order, $updateData, $request) {
                 $order->update($updateData);
+
+                // Add to history with rich content
+                $content = $this->getTimelineContent($request->status, $order, $request->note);
+                $order->updates()->create([
+                    'status' => $request->status,
+                    'title' => $content['title'],
+                    'description' => $content['description'],
+                ]);
 
                 $invoice = $order->invoice;
                 if ($invoice) {
@@ -443,9 +451,69 @@ class SupplierApiController extends Controller
             });
         } else {
             $order->update($updateData);
+
+            // Add to history with rich content
+            $content = $this->getTimelineContent($request->status, $order, $request->note);
+            $order->updates()->create([
+                'status' => $request->status,
+                'title' => $content['title'],
+                'description' => $content['description'],
+            ]);
         }
 
         return $this->sendResponse(new OrderResource($order), "Order status updated to {$request->status}.");
+    }
+
+    /**
+     * Generate rich content for the order timeline.
+     */
+    private function getTimelineContent($status, $order, $note = null)
+    {
+        $supplierName = $order->supplier?->company_name ?? $order->supplier?->name ?? 'Supplier';
+        $location = $order->pickup_address ? explode(',', $order->pickup_address)[0] : 'the pickup location';
+
+        $contents = [
+            'confirmed' => [
+                'title' => 'Order Confirmed',
+                'description' => "Your order has been confirmed by {$supplierName}."
+            ],
+            'in_progress' => [
+                'title' => 'In Progress',
+                'description' => "Supplier is preparing your order for pickup."
+            ],
+            'picked_up' => [
+                'title' => 'Order Picked Up',
+                'description' => "Order has been picked up from {$location}."
+            ],
+            'on_the_way' => [ // Fallback for custom logic if needed
+                'title' => 'Order On the way',
+                'description' => "Your order is currently on the way to the delivery location."
+            ],
+            'delivered' => [
+                'title' => 'Order Delivered',
+                'description' => "Your order has been delivered to the destination."
+            ],
+            'completed' => [
+                'title' => 'Order Completed',
+                'description' => "Order has been successfully completed and closed."
+            ],
+            'cancelled' => [
+                'title' => 'Order Cancelled',
+                'description' => "Order has been cancelled by the supplier."
+            ],
+        ];
+
+        $content = $contents[$status] ?? [
+            'title' => 'Order ' . ucfirst($status),
+            'description' => "Order status has been updated to {$status}."
+        ];
+
+        // If the supplier provided a custom note, use it as the description
+        if ($note) {
+            $content['description'] = $note;
+        }
+
+        return $content;
     }
 
     /**
