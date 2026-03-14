@@ -49,6 +49,12 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     icon: <DollarSign />, 
                     route: "admin.withdrawals.index" 
                 },
+                { 
+                    label: "Transactions", 
+                    path: route('admin.transactions.index'), 
+                    icon: <CircleDollarSign />, 
+                    route: "admin.transactions.index" 
+                },
             ]
         },
        

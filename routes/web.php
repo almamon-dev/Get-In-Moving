@@ -24,6 +24,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('suppliers/{supplier}/verification', [\App\Http\Controllers\Admin\SupplierController::class, 'updateVerification'])->name('suppliers.verification');
 
         // Finance Management
+        Route::get('transactions', [\App\Http\Controllers\Admin\TransactionController::class, 'index'])->name('transactions.index');
         Route::resource('withdrawals', \App\Http\Controllers\Admin\WithdrawRequestController::class)->only(['index', 'destroy']);
         Route::patch('withdrawals/{withdraw_request}/status', [\App\Http\Controllers\Admin\WithdrawRequestController::class, 'updateStatus'])->name('withdrawals.status');
 
