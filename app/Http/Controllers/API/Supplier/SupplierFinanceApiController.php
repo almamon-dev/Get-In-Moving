@@ -5,9 +5,12 @@ namespace App\Http\Controllers\API\Supplier;
 use App\Http\Controllers\Controller;
 use App\Models\SupplierTransaction;
 use App\Models\WithdrawRequest;
+use App\Models\User;
+use App\Notifications\NewWithdrawRequestNotification;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 class SupplierFinanceApiController extends Controller
 {
@@ -91,6 +94,15 @@ class SupplierFinanceApiController extends Controller
             ]);
 
             DB::commit();
+
+            // Send notification to admins
+            try {
+                $admins = User::where('user_type', 'admin')->get();
+                Notification::send($admins, new NewWithdrawRequestNotification($withdrawRequest));
+            } catch (\Exception $e) {
+                // Silently fail notification for now
+                \Log::error('Admin withdrawal notification failed: ' . $e->getMessage());
+            }
 
             return $this->sendResponse($withdrawRequest, 'Withdrawal request submitted successfully.');
         } catch (\Exception $e) {

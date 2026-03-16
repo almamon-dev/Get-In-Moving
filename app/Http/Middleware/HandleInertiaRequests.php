@@ -39,6 +39,8 @@ class HandleInertiaRequests extends Middleware
                     'user_type' => $request->user()->user_type,
                     'designation' => $request->user()->designation,
                     'profile_picture' => \App\Helpers\Helper::generateURL($request->user()->profile_picture),
+                    'notifications' => $request->user()->unreadNotifications()->limit(10)->get(),
+                    'unread_notifications_count' => $request->user()->unreadNotifications()->count(),
                 ] : null,
             ],
             'settings' => [
