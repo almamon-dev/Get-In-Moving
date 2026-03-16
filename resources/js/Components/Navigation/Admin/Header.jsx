@@ -44,19 +44,8 @@ const Header = ({ onMenuClick }) => {
                 </button>
             </div>
 
-            {/* CENTER: Search Bar */}
-            <div className="flex-1 px-4 max-w-xl hidden md:block">
-                <div className="relative group">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#0a66c2] transition-colors">
-                        <Search size={18} strokeWidth={2} />
-                    </div>
-                    <input
-                        type="text"
-                        placeholder="Search services, domains, settings..."
-                        className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#0a66c2]/10 focus:bg-white transition-all placeholder:text-slate-400"
-                    />
-                </div>
-            </div>
+            {/* CENTER: Spacer (since search is removed) */}
+            <div className="flex-1" />
 
             {/* RIGHT: Actions & Profile */}
             <div className="flex items-center gap-2 md:gap-4 ml-auto">
