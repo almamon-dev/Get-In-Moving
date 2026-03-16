@@ -16,11 +16,11 @@ class OrderResource extends JsonResource
     {
         $statusTimeline = [
             'pending' => 0,
-            'confirmed' => 0,
-            'in_progress' => 1,
-            'picked_up' => 2,
-            'delivered' => 3,
-            'completed' => 3,
+            'confirmed' => 1,
+            'in_progress' => 2,
+            'picked_up' => 3,
+            'delivered' => 4,
+            'completed' => 5,
         ];
 
         return [
@@ -39,7 +39,7 @@ class OrderResource extends JsonResource
             'pod_status' => $this->pod_status,
             'tracking' => [
                 'current_step' => $statusTimeline[$this->status] ?? 0,
-                'steps' => ['Confirm', 'In Progress', 'Picked Up', 'Delivered'],
+                'steps' => ['Pending', 'Confirmed', 'In Progress', 'Picked Up', 'Delivered', 'Completed'],
             ],
             'items' => $this->whenLoaded('items', function () {
                 return $this->items->map(function ($item) {
