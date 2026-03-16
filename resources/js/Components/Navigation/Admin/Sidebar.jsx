@@ -5,7 +5,7 @@ import {
     Cloud, CreditCard, Store, ChevronRight, ChevronsLeft,
     Settings, ShieldCheck, DollarSign, Cog, Users, FolderTree,
     Smartphone, Monitor, CircleDollarSign, Hexagon, LogOut, User,
-    Truck, UserCircle
+    Truck, UserCircle, AlertCircle
 } from "lucide-react";
 
 const Sidebar = ({ isCollapsed, toggleCollapse }) => {
