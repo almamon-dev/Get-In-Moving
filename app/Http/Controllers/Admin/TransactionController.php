@@ -17,53 +17,57 @@ class TransactionController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
-        $type = $request->input('type', 'all');
+        $status = $request->input('status', 'all');
 
-        $query = SupplierTransaction::with(['supplier', 'order'])
+        $query = \App\Models\Payment::with(['invoice.order.customer', 'invoice.order.supplier'])
             ->latest();
 
-        if ($type !== 'all') {
-            $query->where('type', $type);
+        if ($status !== 'all') {
+            $query->where('status', $status);
         }
 
         if ($search) {
-            $query->whereHas('supplier', function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('company_name', 'like', "%{$search}%");
-            })->orWhereHas('order', function($q) use ($search) {
-                $q->where('order_number', 'like', "%{$search}%");
+            $query->where(function($q) use ($search) {
+                $q->where('transaction_id', 'like', "%{$search}%")
+                  ->orWhereHas('invoice.order', function($sq) use ($search) {
+                      $sq->where('order_number', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('invoice.order.supplier', function($sq) use ($search) {
+                      $sq->where('name', 'like', "%{$search}%")
+                        ->orWhere('company_name', 'like', "%{$search}%");
+                  });
             });
         }
 
-        $transactions = $query->paginate(15)->withQueryString();
+        $payments = $query->paginate(15)->withQueryString();
 
         // Calculate Statistics
-        $totalEarnings = SupplierTransaction::where('type', 'earning')->where('status', 'completed')->sum('amount');
-        $totalWithdrawn = SupplierTransaction::where('type', 'withdrawal')->sum('amount');
+        $totalVolume = \App\Models\Payment::where('status', 'succeeded')->sum('amount');
+        $releasedAmount = \App\Models\Payment::where('status', 'succeeded')->where('is_released', true)->sum('amount');
+        $escrowAmount = \App\Models\Payment::where('status', 'succeeded')->where('is_released', false)->sum('amount');
         
-        $pendingWithdrawals = WithdrawRequest::where('status', 'pending')->count();
-        $pendingWithdrawalAmount = WithdrawRequest::where('status', 'pending')->sum('amount');
+        $pendingClearanceCount = \App\Models\Payment::where('status', 'succeeded')->where('is_released', false)->count();
 
-        // Escrow Statistics
-        $totalEscrowAmount = SupplierTransaction::where('type', 'earning')
-            ->where('status', 'pending')
-            ->sum('amount');
-        $pendingEscrowCount = SupplierTransaction::where('type', 'earning')
-            ->where('status', 'pending')
-            ->count();
+        // Transform payments to include remaining days
+        $payments->getCollection()->transform(function($payment) {
+            $payment->remaining_days = null;
+            if ($payment->available_at && !$payment->is_released) {
+                $days = now()->diffInDays($payment->available_at, false);
+                $payment->remaining_days = max(0, (int) $days);
+            }
+            return $payment;
+        });
 
         return Inertia::render('Admin/Finance/Transactions/Index', [
-            'transactions' => $transactions,
+            'payments' => $payments,
             'stats' => [
-                'total_earnings' => $totalEarnings,
-                'total_withdrawn' => $totalWithdrawn,
-                'pending_requests_count' => $pendingWithdrawals,
-                'pending_withdrawal_amount' => $pendingWithdrawalAmount,
-                'total_escrow_amount' => $totalEscrowAmount,
-                'pending_escrow_count' => $pendingEscrowCount,
+                'total_volume' => $totalVolume,
+                'released_amount' => $releasedAmount,
+                'escrow_amount' => $escrowAmount,
+                'pending_clearance_count' => $pendingClearanceCount,
             ],
             'filters' => [
-                'type' => $type,
+                'status' => $status,
                 'search' => $search,
             ]
         ]);

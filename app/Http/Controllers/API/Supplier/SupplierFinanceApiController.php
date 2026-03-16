@@ -41,7 +41,7 @@ class SupplierFinanceApiController extends Controller
         $withdrawRequests = WithdrawRequest::where('supplier_id', $user->id)
             ->latest()
             ->limit(5)
-            ->get(['*']);
+            ->get();
 
         return $this->sendResponse([
             'current_balance' => (float) $user->balance,
