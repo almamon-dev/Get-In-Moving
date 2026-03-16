@@ -13,15 +13,18 @@ return new class extends Migration
     {
         Schema::create('quote_requests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Customer
-            $table->string('service_type')->nullable(); // e.g. Full Truckload
-            $table->string('pickup_address')->nullable();
-            $table->string('delivery_address')->nullable();
-            $table->date('pickup_date')->nullable();
-            $table->time('pickup_time_from')->nullable();
-            $table->time('pickup_time_till')->nullable();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('pickup_address');
+            $table->string('delivery_address');
+            $table->date('pickup_date');
+            $table->time('pickup_time_from');
+            $table->time('pickup_time_till');
+            $table->date('delivery_date')->nullable();
+            $table->time('delivery_time_from')->nullable();
+            $table->time('delivery_time_till')->nullable();
             $table->text('additional_notes')->nullable();
             $table->string('attachment_path')->nullable();
+            $table->date('requested_date')->nullable();
             $table->enum('status', ['pending', 'active', 'completed', 'cancelled'])->default('pending');
             $table->timestamps();
         });

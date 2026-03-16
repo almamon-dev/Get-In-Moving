@@ -262,7 +262,7 @@ class SupplierApiController extends Controller
                 ]);
             }
 
-            return $this->sendResponse([], 'Revised offer submitted successfully.');
+            return $this->sendResponse(new \App\Http\Resources\API\Supplier\QuoteResource($existing), 'Your offer has been updated.');
         }
 
         $quote = Quote::create([
@@ -272,6 +272,9 @@ class SupplierApiController extends Controller
             'estimated_time' => $request->estimated_time,
             'status' => 'pending',
         ]);
+
+        // Update the requested_date on the parent request to the latest submission date
+        $quoteRequest->update(['requested_date' => now()]);
 
         // Notify the customer
         $customer = $quoteRequest->user;

@@ -11,7 +11,6 @@ class QuoteRequest extends Model
 
     protected $fillable = [
         'user_id',
-        'service_type',
         'pickup_address',
         'delivery_address',
         'pickup_date',
@@ -22,12 +21,14 @@ class QuoteRequest extends Model
         'delivery_time_till',
         'additional_notes',
         'attachment_path',
+        'requested_date',
         'status',
     ];
 
     protected $casts = [
         'pickup_date' => 'date',
         'delivery_date' => 'date',
+        'requested_date' => 'date',
     ];
 
     public function user()

@@ -31,14 +31,14 @@ class QuoteRequestDetailResource extends JsonResource
             'quote_details' => [
                 'origin' => $this->pickup_address,
                 'destination' => $this->delivery_address,
-                'distance_miles' => $this->distance_miles ?? '210 Miles',
+                'distance_miles' => $this->distance_miles,
                 'items_summary' => $this->getItemsSummary(),
-                'total_weight' => 'Total weight : '.number_format($this->items()->sum('weight'), 0).' kg',
+                'total_weight' => 'Total weight : '.number_format($this->items()->sum(\DB::raw('weight * quantity')), 0).' kg',
                 'dimensions_summary' => 'Dimensions per unit: '.$this->getDimensionsSummary(),
                 'client_name' => $this->user?->name ?? 'Unknown',
-                'pickup_date' => !empty($this->pickup_date) ? \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : 'N/A',
-                'delivery_date' => !empty($this->delivery_date) ? \Carbon\Carbon::parse($this->delivery_date)->format('j M Y') : 'N/A',
-                'service_type' => $this->service_type ?? 'Road Freight',
+                'pickup_date' => ! empty($this->pickup_date) ? \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : '',
+                'delivery_date' => ! empty($this->delivery_date) ? \Carbon\Carbon::parse($this->delivery_date)->format('j M Y') : '',
+                'requested_date' => $this->requested_date ? $this->requested_date->format('j M Y') : '',
                 'received_at_human' => 'Receive '.($this->created_at?->diffForHumans() ?? 'recently'),
             ],
             'quote_submitted' => $supplierQuote ? [
@@ -60,11 +60,23 @@ class QuoteRequestDetailResource extends JsonResource
 
     private function getDimensionsSummary(): string
     {
-        $firstItem = $this->items()->first();
-        if (! $firstItem || ! $firstItem->length) {
-            return 'N/A';
+        $uniqueDimensions = $this->items()
+            ->select('length', 'width', 'height')
+            ->distinct()
+            ->get();
+
+        if ($uniqueDimensions->isEmpty() || ! $uniqueDimensions->first()->length) {
+            return '';
         }
 
-        return "{$firstItem->length} × {$firstItem->width} × {$firstItem->height} cm";
+        if ($uniqueDimensions->count() === 1) {
+            $dim = $uniqueDimensions->first();
+
+            return "{$dim->length} × {$dim->width} × {$dim->height} cm";
+        }
+
+        return $uniqueDimensions->map(function ($dim) {
+            return (float) $dim->length.' × '.(float) $dim->width.' × '.(float) $dim->height;
+        })->implode(', ').' cm';
     }
 }

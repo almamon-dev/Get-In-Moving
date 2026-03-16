@@ -28,7 +28,6 @@ class OrderResource extends JsonResource
             'order_number' => $this->order_number,
             'total_amount' => (float) $this->total_amount,
             'total_amount_formatted' => '$'.number_format($this->total_amount, 2),
-            'service_type' => $this->service_type,
             'status' => $this->status,
             'status_note' => $this->status_note,
             'pickup_address' => $this->pickup_address,

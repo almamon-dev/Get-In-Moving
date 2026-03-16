@@ -22,8 +22,7 @@ class QuoteDetailResource extends JsonResource
             'items_summary' => $this->getItemsSummary(),
             'total_weight' => 'Total weight : '.number_format($this->items()->sum('weight'), 0).' kg',
             'dimensions_summary' => 'Dimensions per unit: '.$this->getDimensionsSummary(),
-            'service_type' => $this->service_type,
-            'requested_date' => $this->created_at?->format('j M Y'),
+            'requested_date' => $this->requested_date ? $this->requested_date->format('j M Y') : '',
             'estimated_price_range' => $this->getEstimatedPriceRange(),
         ];
     }

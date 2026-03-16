@@ -58,7 +58,6 @@ class CustomerApiController extends Controller
         try {
             $quoteRequest = QuoteRequest::create([
                 'user_id' => $request->user()->id,
-                'service_type' => $request->service_type,
                 'pickup_address' => $request->pickup_address,
                 'delivery_address' => $request->delivery_address,
                 'pickup_date' => $request->pickup_date,

@@ -23,12 +23,12 @@ class QuoteRequestResource extends JsonResource
                 'origin' => $this->pickup_address,
                 'destination' => $this->delivery_address,
             ],
-            'pickup_date' => !empty($this->pickup_date) ? 'Pickup: ' . \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : 'N/A',
-            'delivery_date' => !empty($this->delivery_date) ? 'Delivery: ' . \Carbon\Carbon::parse($this->delivery_date)->format('j M Y') : 'N/A',
+            'pickup_date' => !empty($this->pickup_date) ? 'Pickup: ' . \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : '',
+            'delivery_date' => !empty($this->delivery_date) ? 'Delivery: ' . \Carbon\Carbon::parse($this->delivery_date)->format('j M Y') : '',
             'status' => ucfirst($this->getSupplierStatus(auth()->id())),
             'client_name' => $this->user?->name ?? 'Unknown',
             'items_summary' => $this->getItemsSummary() . ', ' . number_format($this->items()->sum('weight'), 0) . ' kg',
-            'service_type' => $this->service_type ?? 'Road Freight',
+            'service_type' => $this->service_type,
             'time_ago' => 'receive ' . ($this->created_at?->diffForHumans() ?? 'recently'),
         ];
     }
