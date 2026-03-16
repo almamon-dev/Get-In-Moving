@@ -1,119 +1,137 @@
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { 
-    AlertCircle, 
-    Search, 
-    ArrowRight,
-    User,
-    Truck,
-    Calendar,
-    MoreHorizontal,
-    CheckCircle
+    AlertCircle, Search, Home, 
+    User, Truck, Calendar, 
+    MoreHorizontal, CheckCircle, ArrowUpRight
 } from 'lucide-react';
 import { useState } from 'react';
 
-export default function Index({ issues, filters }) {
+export default function Index({ issues, filters, auth }) {
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
     
     const handleSearch = (e) => {
         e.preventDefault();
-        // Trigger inertia visit for search
+        router.get(route('admin.issues.index'), { search: searchQuery }, { preserveState: true });
     };
 
     return (
-        <AdminLayout
-            header={
-                <h2 className="text-xl font-bold leading-tight text-slate-800">
-                    Raised Issues & Disputes
-                </h2>
-            }
-        >
+        <AdminLayout user={auth?.user}>
             <Head title="Raised Issues" />
 
-            <div className="space-y-6">
-                {/* Header & Search */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="relative flex-1 max-w-md">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search className="h-4 w-4 text-slate-400" />
+            <div className="space-y-6 max-w-8xl mx-auto pb-20">
+                {/* Top Header */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <h1 className="text-[24px] font-bold text-[#2f3344] tracking-tight">
+                            Raised Issues & Disputes
+                        </h1>
+                        <div className="flex items-center gap-2 text-[13px] text-[#727586] mt-1">
+                            <Home size={16} className="text-[#727586]" />
+                            <span className="text-[#c3c4ca]">-</span>
+                            <span>Orders</span>
+                            <span className="text-[#c3c4ca]">-</span>
+                            <span>Disputes</span>
                         </div>
-                        <input
-                            type="text"
-                            className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl bg-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0a66c2]/20 focus:border-[#0a66c2] transition-all"
-                            placeholder="Search by order number, customer or supplier..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                        />
                     </div>
                 </div>
 
-                {/* Issues Table/List */}
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50/50">
-                                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Order & Date</th>
-                                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Parties Involved</th>
-                                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Issue Reason</th>
-                                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Amount</th>
-                                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                            {issues.data.length > 0 ? (
-                                issues.data.map((issue) => (
-                                    <tr key={issue.id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-6 py-5">
-                                            <div className="flex flex-col">
-                                                <span className="font-bold text-[#0a66c2] text-sm">#{issue.order_number}</span>
-                                                <span className="text-xs text-slate-400 flex items-center gap-1 mt-1">
-                                                    <Calendar size={12} /> {new Date(issue.created_at).toLocaleDateString()}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                                    <User size={14} className="text-slate-400" />
-                                                    <span className="font-medium">{issue.customer?.name}</span>
-                                                    <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded uppercase font-bold">Client</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                                    <Truck size={14} className="text-slate-400" />
-                                                    <span className="font-medium">{issue.supplier?.name}</span>
-                                                    <span className="text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded uppercase font-bold">Supplier</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <div className="max-w-xs">
-                                                <p className="text-sm text-slate-600 italic line-clamp-2">
-                                                    "{issue.status_note || 'The customer rejected the delivery confirmation.'}"
+                {/* Main Content Card */}
+                <div className="bg-white rounded-[12px] border border-[#e3e4e8] shadow-sm overflow-hidden">
+                    {/* Header & Filters */}
+                    <div className="p-6 border-b border-[#e3e4e8] flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-600">
+                                <AlertCircle size={20} />
+                            </div>
+                            <div>
+                                <h3 className="text-[16px] font-bold text-[#2f3344]">Active Cases</h3>
+                                <p className="text-[12px] text-[#727586]">Manage and resolve customer complaints</p>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleSearch} className="relative w-full sm:w-auto">
+                            <input
+                                type="text"
+                                placeholder="Order #, customer or supplier..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full sm:w-[320px] h-[42px] pl-10 pr-4 rounded-[8px] bg-[#f8f9fa] border-transparent focus:border-[#673ab7] focus:bg-white text-[13px] transition-all focus:ring-1 focus:ring-[#673ab7]/20 placeholder-[#a0a3af] text-[#2f3344] outline-none"
+                            />
+                            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a0a3af]" />
+                        </form>
+                    </div>
+
+                    {/* Table Area */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-[#e3e4e8] bg-[#fdfdfd]">
+                                    <th className="text-left px-7 py-4 text-[12px] font-bold text-[#727586] uppercase tracking-wider">Order & Date</th>
+                                    <th className="text-left px-5 py-4 text-[12px] font-bold text-[#727586] uppercase tracking-wider">Involved Parties</th>
+                                    <th className="text-left px-5 py-4 text-[12px] font-bold text-[#727586] uppercase tracking-wider">Issue Reason</th>
+                                    <th className="text-left px-5 py-4 text-[12px] font-bold text-[#727586] uppercase tracking-wider text-right">Amount</th>
+                                    <th className="text-right px-7 py-4 text-[12px] font-bold text-[#727586] uppercase tracking-wider">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#f1f2f4]">
+                                {issues.data.length > 0 ? (
+                                    issues.data.map((issue) => (
+                                        <tr key={issue.id} className="hover:bg-[#fafbfc] transition-colors group">
+                                            <td className="px-7 py-5">
+                                                <p className="text-[13px] font-bold text-[#673ab7]">#{issue.order_number}</p>
+                                                <p className="text-[12px] text-[#727586] mt-1 flex items-center gap-1">
+                                                    <Calendar size={12} className="text-[#a0a3af]" /> 
+                                                    {new Date(issue.created_at).toLocaleDateString()}
                                                 </p>
+                                            </td>
+                                            <td className="px-5 py-5">
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 text-[10px] font-bold uppercase">C</div>
+                                                        <span className="text-[13px] font-bold text-[#2f3344]">{issue.customer?.name}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-6 h-6 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 text-[10px] font-bold uppercase">S</div>
+                                                        <span className="text-[13px] font-bold text-[#2f3344]">{issue.supplier?.name}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-5">
+                                                <div className="max-w-[280px]">
+                                                    <p className="text-[13px] text-[#424453] leading-relaxed italic border-l-2 border-rose-200 pl-3">
+                                                        "{issue.status_note || 'The customer rejected the delivery confirmation.'}"
+                                                    </p>
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-5 text-right">
+                                                <p className="text-[15px] font-bold text-[#2f3344]">
+                                                    ${parseFloat(issue.total_amount).toLocaleString()}
+                                                </p>
+                                            </td>
+                                            <td className="px-7 py-5 text-right">
+                                                <button className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#673ab7] text-white text-[12px] font-bold rounded-lg hover:bg-[#5e35b1] transition-colors shadow-sm">
+                                                    Resolve Case <ArrowUpRight size={14} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="5" className="px-7 py-24 text-center">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="w-16 h-16 bg-[#f8f9fa] rounded-full flex items-center justify-center mb-2">
+                                                    <AlertCircle size={32} className="text-[#c3c4ca]" />
+                                                </div>
+                                                <p className="text-[16px] font-bold text-[#2f3344]">No active issues reported</p>
+                                                <p className="text-[14px] text-[#727586]">Everything looks clear for now!</p>
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <span className="font-bold text-slate-700">${parseFloat(issue.total_amount).toLocaleString()}</span>
-                                        </td>
-                                        <td className="px-6 py-5 text-right">
-                                            <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors">
-                                                <MoreHorizontal size={18} />
-                                            </button>
                                         </td>
                                     </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="5" className="px-6 py-12 text-center">
-                                        <div className="flex flex-col items-center">
-                                            <AlertCircle size={40} className="text-slate-200 mb-3" />
-                                            <p className="text-slate-500 font-medium">No active issues or disputes reported.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </AdminLayout>
