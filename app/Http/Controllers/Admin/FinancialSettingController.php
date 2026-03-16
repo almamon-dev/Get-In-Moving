@@ -16,6 +16,7 @@ class FinancialSettingController extends Controller
             'stripe_key' => config('services.stripe.key'),
             'stripe_secret' => config('services.stripe.secret'),
             'stripe_webhook_secret' => config('services.stripe.webhook_secret'),
+            'fund_hold_minutes' => env('FUND_HOLD_MINUTES', 5),
         ];
 
         return Inertia::render('Admin/Settings/Financial/Gateway', [
@@ -29,12 +30,14 @@ class FinancialSettingController extends Controller
             'stripe_key' => 'nullable|string',
             'stripe_secret' => 'nullable|string',
             'stripe_webhook_secret' => 'nullable|string',
+            'fund_hold_minutes' => 'nullable|integer|min:0',
         ]);
 
         $envMapping = [
             'stripe_key' => 'STRIPE_KEY',
             'stripe_secret' => 'STRIPE_SECRET',
-            'stripe_webhook_secret' => 'STRIPE_WEBHOOK_SECRET'
+            'stripe_webhook_secret' => 'STRIPE_WEBHOOK_SECRET',
+            'fund_hold_minutes' => 'FUND_HOLD_MINUTES',
         ];
 
         foreach ($validated as $key => $value) {

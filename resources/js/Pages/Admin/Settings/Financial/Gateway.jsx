@@ -14,6 +14,7 @@ export default function FinancialGateway({ settings }) {
         stripe_key: settings.stripe_key || '',
         stripe_secret: settings.stripe_secret || '',
         stripe_webhook_secret: settings.stripe_webhook_secret || '',
+        fund_hold_minutes: settings.fund_hold_minutes || 5,
     });
 
     const handleCopy = (text, field) => {
@@ -159,6 +160,40 @@ export default function FinancialGateway({ settings }) {
                                     </div>
                                 </div>
                                 {errors.stripe_webhook_secret && <p className="text-red-500 text-xs mt-1">{errors.stripe_webhook_secret}</p>}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Fund Hold Management */}
+                    <div className="space-y-8">
+                        <div className="flex items-center gap-2 pb-2 border-b border-[#f1f2f4]">
+                            <Clock size={20} className="text-[#673ab7]" />
+                            <h3 className="text-[16px] font-bold text-[#2f3344]">Escrow & Fund Management</h3>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-2">
+                                <label className="text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                    Supplier Fund Hold Period (Minutes)
+                                </label>
+                                <div className="relative">
+                                    <input 
+                                        type="number" 
+                                        value={data.fund_hold_minutes}
+                                        onChange={e => setData('fund_hold_minutes', e.target.value)}
+                                        placeholder="5"
+                                        min="0"
+                                        className={`w-full h-[52px] pl-4 pr-12 bg-white border ${errors.fund_hold_minutes ? 'border-red-500' : 'border-[#e3e4e8]'} rounded-[8px] text-[14px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all`}
+                                    />
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#727586] text-[12px] font-bold uppercase">
+                                        Min
+                                    </div>
+                                </div>
+                                <p className="text-[12px] text-[#727586]">
+                                    Number of minutes funds will be held in escrow before being released to the supplier balance. 
+                                    (e.g., 20160 for 14 days, 5 for testing).
+                                </p>
+                                {errors.fund_hold_minutes && <p className="text-red-500 text-xs mt-1">{errors.fund_hold_minutes}</p>}
                             </div>
                         </div>
                     </div>

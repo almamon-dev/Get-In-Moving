@@ -70,7 +70,7 @@ class InvoicePaymentService
                     'status' => 'succeeded',
                     'payment_method' => $session->payment_method_types[0] ?? 'card',
                     'metadata' => (array) $session->metadata,
-                    'available_at' => now()->addMinutes(5),
+                    'available_at' => now()->addMinutes((int) env('FUND_HOLD_MINUTES', 5)),
                 ]);
 
                 // 2. Create Pending Transaction Record (Visible but not in balance)
