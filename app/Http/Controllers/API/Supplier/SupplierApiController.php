@@ -155,8 +155,13 @@ class SupplierApiController extends Controller
         $search = $request->input('search');
 
         $query = QuoteRequest::with(['items', 'user'])
-            ->withCount('quotes')
-            ->where('status', 'active');
+            ->withCount('quotes');
+
+        if ($tab === 'quoted') {
+            $query->whereIn('status', ['active', 'completed']);
+        } else {
+            $query->where('status', 'active');
+        }
 
         // Search by location or service type
         if ($search) {
@@ -188,10 +193,11 @@ class SupplierApiController extends Controller
                 ->whereNotIn('id', $viewedIds)
                 ->whereNotIn('id', $quotedIds)
                 ->count(),
-            'viewed' => QuoteRequestView::where('user_id', $user->id)
-                ->whereNotIn('quote_request_id', $quotedIds)
+            'viewed' => QuoteRequest::where('status', 'active')
+                ->whereIn('id', $viewedIds)
+                ->whereNotIn('id', $quotedIds)
                 ->count(),
-            'quoted' => QuoteRequest::where('status', 'active')
+            'quoted' => QuoteRequest::whereIn('status', ['active', 'completed'])
                 ->whereIn('id', $quotedIds)
                 ->count(),
         ];
@@ -444,37 +450,37 @@ class SupplierApiController extends Controller
         $contents = [
             'confirmed' => [
                 'title' => 'Order Confirmed',
-                'description' => "Your order has been confirmed by {$supplierName}."
+                'description' => "Your order has been confirmed by {$supplierName}.",
             ],
             'in_progress' => [
                 'title' => 'In Progress',
-                'description' => "Supplier is preparing your order for pickup."
+                'description' => 'Supplier is preparing your order for pickup.',
             ],
             'picked_up' => [
                 'title' => 'Order Picked Up',
-                'description' => "Order has been picked up from {$location}."
+                'description' => "Order has been picked up from {$location}.",
             ],
             'on_the_way' => [ // Fallback for custom logic if needed
                 'title' => 'Order On the way',
-                'description' => "Your order is currently on the way to the delivery location."
+                'description' => 'Your order is currently on the way to the delivery location.',
             ],
             'delivered' => [
                 'title' => 'Order Delivered',
-                'description' => "Your order has been delivered to the destination."
+                'description' => 'Your order has been delivered to the destination.',
             ],
             'completed' => [
                 'title' => 'Order Completed',
-                'description' => "Order has been successfully completed and closed."
+                'description' => 'Order has been successfully completed and closed.',
             ],
             'cancelled' => [
                 'title' => 'Order Cancelled',
-                'description' => "Order has been cancelled by the supplier."
+                'description' => 'Order has been cancelled by the supplier.',
             ],
         ];
 
         $content = $contents[$status] ?? [
-            'title' => 'Order ' . ucfirst($status),
-            'description' => "Order status has been updated to {$status}."
+            'title' => 'Order '.ucfirst($status),
+            'description' => "Order status has been updated to {$status}.",
         ];
 
         // If the supplier provided a custom note, use it as the description

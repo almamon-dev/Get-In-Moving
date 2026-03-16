@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources\API\Supplier;
 
-use App\Http\Resources\API\Customer\QuoteRequestResource;
+use App\Http\Resources\API\Supplier\QuoteRequestResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
