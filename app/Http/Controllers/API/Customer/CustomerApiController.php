@@ -991,7 +991,7 @@ class CustomerApiController extends Controller
         \Illuminate\Support\Facades\DB::transaction(function () use ($order) {
             $order->update([
                 'status' => 'completed',
-                'pod_status' => 'approved',
+                'pod_status' => 'confirmed',
             ]);
 
             // Add to timeline
