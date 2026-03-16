@@ -5,8 +5,57 @@ import {
     Home, Search, ChevronLeft, ChevronRight, 
     TrendingUp, Clock, Activity,
     DollarSign, ArrowUpRight, ShieldCheck,
-    CreditCard, Calendar, User, Info
+    CreditCard, Calendar, User, Info, Timer 
 } from 'lucide-react';
+import { useEffect } from 'react';
+
+const CountdownTimer = ({ targetDate }) => {
+    const calculateTimeLeft = () => {
+        const difference = +new Date(targetDate) - +new Date();
+        let timeLeft = {};
+
+        if (difference > 0) {
+            timeLeft = {
+                d: Math.floor(difference / (1000 * 60 * 60 * 24)),
+                h: Math.floor((difference / (1000 * 60 * 60)) % 24),
+                m: Math.floor((difference / 1000 / 60) % 60),
+                s: Math.floor((difference / 1000) % 60),
+            };
+        } else {
+            timeLeft = null;
+        }
+
+        return timeLeft;
+    };
+
+    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setTimeLeft(calculateTimeLeft());
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [targetDate]);
+
+    if (!timeLeft) {
+        return <span className="text-emerald-600 font-bold uppercase tracking-wider flex items-center gap-1">
+            <ShieldCheck size={12} /> Ready to Release
+        </span>;
+    }
+
+    return (
+        <span className="flex items-center gap-1 font-mono tabular-nums tracking-tight text-[10px] sm:text-[11px]">
+            <span className="opacity-70 mr-0.5">RELEASING IN</span>
+            {timeLeft.d > 0 && <span className="font-bold">{timeLeft.d}d</span>}
+            <span className="font-bold">{String(timeLeft.h).padStart(2, '0')}h</span>
+            <span className="animate-pulse opacity-50">:</span>
+            <span className="font-bold">{String(timeLeft.m).padStart(2, '0')}m</span>
+            <span className="animate-pulse opacity-50">:</span>
+            <span className="font-bold text-amber-500">{String(timeLeft.s).padStart(2, '0')}s</span>
+        </span>
+    );
+};
 
 export default function Index({ auth, payments, stats, filters = {} }) {
     const [statusFilter, setStatusFilter] = useState(filters.status || 'all');
@@ -205,9 +254,9 @@ export default function Index({ auth, payments, stats, filters = {} }) {
                                                                 {payment.is_released ? (
                                                                     <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">RELEASED</span>
                                                                 ) : (
-                                                                    <span className="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 flex items-center gap-1">
-                                                                        <Calendar size={10} />
-                                                                        RELEASING IN {payment.remaining_days} DAYS
+                                                                    <span className="text-[10px] sm:text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-100 flex items-center gap-1.5 shadow-sm">
+                                                                        <Timer size={12} className="animate-pulse" />
+                                                                        <CountdownTimer targetDate={payment.available_at} />
                                                                     </span>
                                                                 )}
                                                             </div>

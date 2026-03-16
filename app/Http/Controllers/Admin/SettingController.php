@@ -51,7 +51,8 @@ class SettingController extends Controller
             'stripe_mode',
             'stripe_key',
             'stripe_secret',
-            'stripe_webhook_secret'
+            'stripe_webhook_secret',
+            'fund_hold_minutes'
         ];
 
         $dbSettings = Setting::whereIn('key', $keys)->pluck('value', 'key');
@@ -61,6 +62,7 @@ class SettingController extends Controller
             'stripe_key' => $dbSettings['stripe_key'] ?? config('services.stripe.key'),
             'stripe_secret' => $dbSettings['stripe_secret'] ?? config('services.stripe.secret'),
             'stripe_webhook_secret' => $dbSettings['stripe_webhook_secret'] ?? config('services.stripe.webhook_secret'),
+            'fund_hold_minutes' => $dbSettings['fund_hold_minutes'] ?? env('FUND_HOLD_MINUTES', 5),
         ];
 
         return Inertia::render('Admin/Settings/Financial/Gateway', [
@@ -188,6 +190,16 @@ class SettingController extends Controller
     {
         $settings = $request->except(['_token', '_method']);
         
+        // Keys that should also be updated in .env
+        $envKeysMapping = [
+            'stripe_key' => 'STRIPE_KEY',
+            'stripe_secret' => 'STRIPE_SECRET',
+            'stripe_webhook_secret' => 'STRIPE_WEBHOOK_SECRET',
+            'fund_hold_minutes' => 'FUND_HOLD_MINUTES',
+        ];
+
+        $envUpdateData = [];
+
         foreach ($settings as $key => $value) {
             if (is_array($value)) {
                 $finalValue = json_encode($value);
@@ -199,6 +211,16 @@ class SettingController extends Controller
                 ['key' => $key],
                 ['value' => $finalValue]
             );
+
+            // Collect data for .env update if matches mapping
+            if (isset($envKeysMapping[$key])) {
+                $envUpdateData[$envKeysMapping[$key]] = $finalValue;
+            }
+        }
+
+        // Batch update .env if needed
+        if (!empty($envUpdateData)) {
+            $this->updateEnv($envUpdateData);
         }
 
         return redirect()->back()->with('success', 'Settings updated successfully.');
