@@ -35,7 +35,13 @@ class DashboardController extends Controller
             ->selectRaw('MONTHNAME(created_at) as month, SUM(amount) as total')
             ->groupBy('month')
             ->orderBy('created_at')
-            ->get();
+            ->get()
+            ->map(function($item) {
+                return [
+                    'month' => $item->month,
+                    'total' => (float) $item->total
+                ];
+            });
 
         // 4. Chart Data: User Distribution
         $userDistribution = [
