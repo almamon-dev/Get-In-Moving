@@ -15,10 +15,26 @@ class IssueController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
+        $status = $request->input('status', 'all');
 
-        $query = Order::where('pod_status', 'rejected')
+        $query = Order::query()
             ->with(['customer', 'supplier', 'invoice'])
             ->latest();
+
+        // Count for stats
+        $stats = [
+            'total' => Order::whereIn('pod_status', ['rejected', 'confirmed'])->whereNotNull('pod_status')->count(),
+            'rejected' => Order::where('pod_status', 'rejected')->count(),
+            'pending' => Order::where('pod_status', 'rejected')->where('status', '!=', 'completed')->count(),
+            'resolved' => Order::where('pod_status', 'confirmed')->where('status', 'completed')->count(),
+        ];
+
+        // Filter by rejection initially
+        if ($status === 'all') {
+            $query->where('pod_status', 'rejected');
+        } elseif ($status === 'resolved') {
+            $query->where('pod_status', 'confirmed');
+        }
 
         if ($search) {
             $query->where(function($q) use ($search) {
@@ -36,8 +52,10 @@ class IssueController extends Controller
 
         return Inertia::render('Admin/Issues/Index', [
             'issues' => $issues,
+            'stats' => $stats,
             'filters' => [
                 'search' => $search,
+                'status' => $status
             ]
         ]);
     }
