@@ -73,6 +73,7 @@ class InvoicePaymentService
                     'status' => 'succeeded',
                     'payment_method' => $session->payment_method_types[0] ?? 'card',
                     'metadata' => (array) $session->metadata,
+                    'available_at' => now()->addDays(14),
                 ]);
 
                 // 2. Update Invoice

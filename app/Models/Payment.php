@@ -15,10 +15,14 @@ class Payment extends Model
         'status',
         'payment_method',
         'metadata',
+        'available_at',
+        'is_released',
     ];
 
     protected $casts = [
         'metadata' => 'array',
+        'available_at' => 'datetime',
+        'is_released' => 'boolean',
     ];
 
     public function invoice()
