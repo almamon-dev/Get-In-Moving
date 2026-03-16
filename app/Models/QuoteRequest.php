@@ -15,11 +15,19 @@ class QuoteRequest extends Model
         'pickup_address',
         'delivery_address',
         'pickup_date',
+        'delivery_date',
         'pickup_time_from',
         'pickup_time_till',
+        'delivery_time_from',
+        'delivery_time_till',
         'additional_notes',
         'attachment_path',
         'status',
+    ];
+
+    protected $casts = [
+        'pickup_date' => 'date',
+        'delivery_date' => 'date',
     ];
 
     public function user()

@@ -25,7 +25,8 @@ class QuoteResource extends JsonResource
             'rating' => round($rating, 1),
             'completed_orders' => "{$completedOrders} completed orders",
             'available_capacity' => 'Available Capacity : 15 Pallets',
-            'pickup_date' => $this->pickup_date ? \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : '2 Jan 2026',
+            'pickup_date' => $this->pickup_date ? \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : '',
+            'delivery_date' => $this->delivery_date ? \Carbon\Carbon::parse($this->delivery_date)->format('j M Y') : '',
             'service_type' => 'Road Freight',
             'estimated_delivery' => '2-3 days',
         ];

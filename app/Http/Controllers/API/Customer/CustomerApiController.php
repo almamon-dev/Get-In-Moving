@@ -62,8 +62,11 @@ class CustomerApiController extends Controller
                 'pickup_address' => $request->pickup_address,
                 'delivery_address' => $request->delivery_address,
                 'pickup_date' => $request->pickup_date,
+                'delivery_date' => $request->delivery_date,
                 'pickup_time_from' => $request->pickup_time_from,
                 'pickup_time_till' => $request->pickup_time_till,
+                'delivery_time_from' => $request->delivery_time_from,
+                'delivery_time_till' => $request->delivery_time_till,
                 'additional_notes' => $request->additional_notes,
                 'status' => 'active',
             ]);
