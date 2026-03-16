@@ -191,7 +191,9 @@ class SupplierApiController extends Controller
             'viewed' => QuoteRequestView::where('user_id', $user->id)
                 ->whereNotIn('quote_request_id', $quotedIds)
                 ->count(),
-            'quoted' => Quote::where('user_id', $user->id)->count(),
+            'quoted' => QuoteRequest::where('status', 'active')
+                ->whereIn('id', $quotedIds)
+                ->count(),
         ];
 
         return $this->sendResponse([
