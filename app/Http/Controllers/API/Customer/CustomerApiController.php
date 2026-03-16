@@ -408,8 +408,8 @@ class CustomerApiController extends Controller
                 'order_id' => $order->id,
                 'invoice_number' => 'INV-'.(Invoice::count() + 202545),
                 'supplier_amount' => $quote->amount,
-                'platform_fee' => $quote->amount * 0.05,
-                'total_amount' => $quote->amount * 1.05,
+                'platform_fee' => 0,
+                'total_amount' => $quote->amount,
                 'status' => 'due',
                 'due_date' => now()->addDays(30),
             ]);
@@ -575,8 +575,8 @@ class CustomerApiController extends Controller
                 'order_id' => $order->id,
                 'invoice_number' => 'INV-'.(Invoice::count() + 202545),
                 'supplier_amount' => $quote->amount,
-                'platform_fee' => $quote->amount * 0.05,
-                'total_amount' => $quote->amount * 1.05,
+                'platform_fee' => 0,
+                'total_amount' => $quote->amount,
                 'status' => 'due',
                 'due_date' => now()->addDays(30),
             ]);
