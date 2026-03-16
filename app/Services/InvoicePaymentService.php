@@ -70,7 +70,7 @@ class InvoicePaymentService
                     'status' => 'succeeded',
                     'payment_method' => $session->payment_method_types[0] ?? 'card',
                     'metadata' => (array) $session->metadata,
-                    'available_at' => now()->addDays(14),
+                    'available_at' => now()->addMinutes(5),
                 ]);
 
                 // 2. Create Pending Transaction Record (Visible but not in balance)
@@ -81,7 +81,7 @@ class InvoicePaymentService
                     'type' => 'earning',
                     'status' => 'pending',
                     'available_at' => $payment->available_at,
-                    'description' => "Earnings held in escrow for Order #{$invoice->order->order_number} (Available: {$payment->available_at->format('d M Y')})",
+                    'description' => "Earnings held in escrow for Order #{$invoice->order->order_number} (Available: {$payment->available_at->format('d M Y, h:i A')})",
                 ]);
 
                 // 3. Update Invoice

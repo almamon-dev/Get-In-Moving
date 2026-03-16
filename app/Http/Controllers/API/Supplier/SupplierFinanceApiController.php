@@ -4,8 +4,8 @@ namespace App\Http\Controllers\API\Supplier;
 
 use App\Http\Controllers\Controller;
 use App\Models\SupplierTransaction;
-use App\Models\WithdrawRequest;
 use App\Models\User;
+use App\Models\WithdrawRequest;
 use App\Notifications\NewWithdrawRequestNotification;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -35,6 +35,7 @@ class SupplierFinanceApiController extends Controller
                     $days = now()->diffInDays($transaction->available_at, false);
                     $transaction->days_remaining = max(0, (int) $days);
                 }
+
                 return $transaction;
             });
 
@@ -102,7 +103,7 @@ class SupplierFinanceApiController extends Controller
                 Notification::send($admins, new NewWithdrawRequestNotification($withdrawRequest));
             } catch (\Exception $e) {
                 // Silently fail notification for now
-                Log::error('Admin withdrawal notification failed: ' . $e->getMessage());
+                Log::error('Admin withdrawal notification failed: '.$e->getMessage());
             }
 
             return $this->sendResponse($withdrawRequest, 'Withdrawal request submitted successfully.');
