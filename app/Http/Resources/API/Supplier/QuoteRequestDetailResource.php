@@ -37,6 +37,7 @@ class QuoteRequestDetailResource extends JsonResource
                 'dimensions_summary' => 'Dimensions per unit: '.$this->getDimensionsSummary(),
                 'client_name' => $this->user?->name ?? 'Unknown',
                 'pickup_date' => $this->pickup_date ? \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : 'N/A',
+                'delivery_date' => $this->pickup_date ? \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : 'N/A',
                 'service_type' => $this->service_type ?? 'Road Freight',
                 'received_at_human' => 'Receive '.($this->created_at?->diffForHumans() ?? 'recently'),
             ],

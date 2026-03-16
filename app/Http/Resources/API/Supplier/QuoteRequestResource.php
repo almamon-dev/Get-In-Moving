@@ -24,6 +24,7 @@ class QuoteRequestResource extends JsonResource
                 'destination' => $this->delivery_address,
             ],
             'pickup_date' => $this->pickup_date ? 'Pickup: ' . \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : 'N/A',
+            'delivery_date' => $this->pickup_date ? 'Delivery: ' . \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : 'N/A',
             'status' => ucfirst($this->getSupplierStatus(auth()->id())),
             'client_name' => $this->user?->name ?? 'Unknown',
             'items_summary' => $this->getItemsSummary() . ', ' . number_format($this->items()->sum('weight'), 0) . ' kg',
