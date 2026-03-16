@@ -38,6 +38,12 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     route: "admin.suppliers.index" 
                 },
                 { 
+                    label: "Raised Issues", 
+                    path: route('admin.issues.index'), 
+                    icon: <AlertCircle />, 
+                    route: "admin.issues.index" 
+                },
+                { 
                     label: "Pricing Plans", 
                     path: route('admin.pricing-plans.index'), 
                     icon: <CircleDollarSign />, 

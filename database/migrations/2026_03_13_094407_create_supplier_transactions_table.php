@@ -17,6 +17,8 @@ return new class extends Migration
             $table->foreignId('order_id')->nullable()->constrained('orders')->onDelete('set null');
             $table->decimal('amount', 12, 2);
             $table->enum('type', ['earning', 'withdrawal', 'refund', 'adjustment']);
+            $table->enum('status', ['pending', 'completed'])->default('completed');
+            $table->timestamp('available_at')->nullable();
             $table->string('description')->nullable();
             $table->timestamps();
         });

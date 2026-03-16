@@ -4,9 +4,9 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -22,6 +22,10 @@ Route::middleware('auth')->group(function () {
         Route::resource('suppliers', \App\Http\Controllers\Admin\SupplierController::class)->only(['index', 'show', 'destroy']);
         Route::patch('suppliers/{supplier}/compliance', [\App\Http\Controllers\Admin\SupplierController::class, 'updateCompliance'])->name('suppliers.compliance');
         Route::patch('suppliers/{supplier}/verification', [\App\Http\Controllers\Admin\SupplierController::class, 'updateVerification'])->name('suppliers.verification');
+
+        // Issue/Dispute Management
+        Route::get('issues', [\App\Http\Controllers\Admin\IssueController::class, 'index'])->name('issues.index');
+        Route::post('issues/{order}/resolve', [\App\Http\Controllers\Admin\IssueController::class, 'resolve'])->name('issues.resolve');
 
         // Finance Management
         Route::get('transactions', [\App\Http\Controllers\Admin\TransactionController::class, 'index'])->name('transactions.index');

@@ -59,14 +59,29 @@ class ReleaseSupplierFunds extends Command
                 // 1. Update Supplier Balance
                 $supplier->increment('balance', $releaseAmount);
 
-                // 2. Create Transaction Record
-                \App\Models\SupplierTransaction::create([
-                    'supplier_id' => $supplier->id,
-                    'order_id' => $order->id,
-                    'amount' => $releaseAmount,
-                    'type' => 'earning',
-                    'description' => "Earning released for Order #{$order->order_number} (Invoice #{$invoice->invoice_number})",
-                ]);
+                // 2. Mark SupplierTransaction as Completed
+                $transaction = \App\Models\SupplierTransaction::where('order_id', $order->id)
+                    ->where('supplier_id', $supplier->id)
+                    ->where('type', 'earning')
+                    ->where('status', 'pending')
+                    ->first();
+
+                if ($transaction) {
+                    $transaction->update([
+                        'status' => 'completed',
+                        'description' => "Earning released to balance for Order #{$order->order_number}",
+                    ]);
+                } else {
+                    // Fail-safe: create transaction if not exists (though it should)
+                    \App\Models\SupplierTransaction::create([
+                        'supplier_id' => $supplier->id,
+                        'order_id' => $order->id,
+                        'amount' => $releaseAmount,
+                        'type' => 'earning',
+                        'status' => 'completed',
+                        'description' => "Earning released for Order #{$order->order_number} (Auto-created)",
+                    ]);
+                }
 
                 // 3. Mark Payment as Released
                 $payment->update(['is_released' => true]);

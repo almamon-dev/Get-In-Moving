@@ -9,16 +9,22 @@ class SupplierTransaction extends Model
 {
     use HasFactory;
 
+    const STATUS_PENDING = 'pending';
+    const STATUS_COMPLETED = 'completed';
+
     protected $fillable = [
         'supplier_id',
         'order_id',
         'amount',
         'type',
+        'status',
+        'available_at',
         'description',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'available_at' => 'datetime',
     ];
 
     public function supplier()

@@ -12,10 +12,7 @@ class InvoicePaymentService
 {
     public function __construct()
     {
-        $stripeSecret = \App\Models\Setting::where('key', 'stripe_secret')->first()?->value 
-                        ?? config('services.stripe.secret');
-
-        Stripe::setApiKey($stripeSecret);
+        Stripe::setApiKey(config('services.stripe.secret'));
     }
 
     /**
@@ -63,8 +60,8 @@ class InvoicePaymentService
             $invoice = Invoice::with('order')->find($invoiceId);
 
             if ($invoice && $invoice->status !== 'paid') {
-                // 1. Create Payment Record
-                \App\Models\Payment::create([
+                // 1. Create Payment Record (Escrow)
+                $payment = \App\Models\Payment::create([
                     'invoice_id' => $invoice->id,
                     'transaction_id' => $session->payment_intent,
                     'session_id' => $session->id,
@@ -76,26 +73,37 @@ class InvoicePaymentService
                     'available_at' => now()->addDays(14),
                 ]);
 
-                // 2. Update Invoice
+                // 2. Create Pending Transaction Record (Visible but not in balance)
+                \App\Models\SupplierTransaction::create([
+                    'supplier_id' => $invoice->order->supplier_id,
+                    'order_id' => $invoice->order->id,
+                    'amount' => $invoice->supplier_amount,
+                    'type' => 'earning',
+                    'status' => 'pending',
+                    'available_at' => $payment->available_at,
+                    'description' => "Earnings held in escrow for Order #{$invoice->order->order_number} (Available: {$payment->available_at->format('d M Y')})",
+                ]);
+
+                // 3. Update Invoice
                 $invoice->update([
                     'status' => 'paid',
                     'paid_at' => now(),
                 ]);
 
-                // 3. Update Order Status
+                // 4. Update Order Status
                 if ($invoice->order) {
                     $invoice->order->update([
-                        'status' => 'in_progress',
+                        'status' => 'confirmed', // Keep as confirmed or move to in_progress? Confirmed is safer until supplier starts.
                     ]);
 
                     // Add to timeline
                     $invoice->order->updates()->create([
-                        'status' => 'in_progress',
-                        'title' => 'In Progress',
-                        'description' => "Supplier is preparing your order for pickup.",
+                        'status' => 'confirmed',
+                        'title' => 'Payment Successful',
+                        'description' => "Payment for this order has been successfully processed and held in escrow.",
                     ]);
                 }
-                Log::info("Stripe Webhook: Invoice {$invoice->invoice_number} marked as PAID. Transaction record created.");
+                Log::info("Stripe Webhook: Invoice {$invoice->invoice_number} paid. Funds escrowed for 14 days.");
             }
 
             DB::commit();

@@ -19,6 +19,8 @@ return new class extends Migration
             $table->decimal('amount', 12, 2);
             $table->string('currency', 10)->default('usd');
             $table->string('status'); // e.g., succeeded, pending, failed
+            $table->timestamp('available_at')->nullable();
+            $table->boolean('is_released')->default(false);
             $table->string('payment_method')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamps();

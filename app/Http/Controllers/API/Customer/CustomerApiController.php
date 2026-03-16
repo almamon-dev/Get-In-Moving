@@ -989,34 +989,28 @@ class CustomerApiController extends Controller
         }
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($order) {
-            $order->update(['pod_status' => 'confirmed', 'status' => 'completed']);
+            $order->update([
+                'status' => 'completed',
+                'pod_status' => 'approved',
+            ]);
 
             // Add to timeline
             $order->updates()->create([
                 'status' => 'completed',
                 'title' => 'Order Completed',
-                'description' => 'The customer has approved the Proof of Delivery and the order is now closed.',
+                'description' => 'The customer has approved the Proof of Delivery and the order is marked as completed.',
             ]);
 
-            $invoice = $order->invoice;
-            if ($invoice) {
-                $amount = $invoice->supplier_amount;
+            // No immediate fund release here anymore if it's already in escrow
+            // The ReleaseSupplierFunds command will handle the pending earnings after 14 days
+            $hasPendingTransaction = \App\Models\SupplierTransaction::where('order_id', $order->id)
+                ->where('type', 'earning')
+                ->where('status', 'pending')
+                ->exists();
 
-                // Increment supplier balance
-                $order->supplier->increment('balance', $amount);
-
-                // Record transaction
-                \App\Models\SupplierTransaction::create([
-                    'supplier_id' => $order->supplier_id,
-                    'order_id' => $order->id,
-                    'amount' => $amount,
-                    'type' => 'earning',
-                    'description' => 'Earnings from Order #'.$order->order_number,
-                ]);
-
-                if ($invoice->status !== 'paid') {
-                    $invoice->update(['status' => 'paid', 'paid_at' => now()]);
-                }
+            if (!$hasPendingTransaction) {
+                // If for some reason there was no pending transaction (e.g. manual payment), we handle it here or leave for admin
+                 Log::info("POD approved for Order #{$order->order_number} but no pending transaction found.");
             }
         });
 

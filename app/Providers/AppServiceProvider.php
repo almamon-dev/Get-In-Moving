@@ -27,15 +27,7 @@ class AppServiceProvider extends ServiceProvider
             if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
                 $settings = \App\Models\Setting::all()->pluck('value', 'key');
 
-                if (isset($settings['stripe_key'])) {
-                    config(['services.stripe.key' => $settings['stripe_key']]);
-                }
-                if (isset($settings['stripe_secret'])) {
-                    config(['services.stripe.secret' => $settings['stripe_secret']]);
-                }
-                if (isset($settings['stripe_webhook_secret'])) {
-                    config(['services.stripe.webhook_secret' => $settings['stripe_webhook_secret']]);
-                }
+
                 if (isset($settings['site_name'])) {
                     config(['app.name' => $settings['site_name']]);
                 }

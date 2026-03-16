@@ -24,6 +24,8 @@ return new class extends Migration
             $table->timestamp('deletion_requested_at')->nullable();
             $table->string('company_name')->nullable();
             $table->string('phone_number')->nullable();
+            $table->string('designation')->nullable();
+            $table->text('bio')->nullable();
             $table->string('business_address')->nullable();
             $table->string('city')->nullable();
             $table->string('state')->nullable();
@@ -53,6 +55,7 @@ return new class extends Migration
             // Stripe Integration
             $table->string('stripe_account_id')->nullable();
             $table->boolean('is_stripe_connected')->default(false);
+            $table->decimal('balance', 12, 2)->default(0);
 
             // Password & Reset
             $table->string('password');

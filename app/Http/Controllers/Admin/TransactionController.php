@@ -38,11 +38,19 @@ class TransactionController extends Controller
         $transactions = $query->paginate(15)->withQueryString();
 
         // Calculate Statistics
-        $totalEarnings = SupplierTransaction::where('type', 'earning')->sum('amount');
+        $totalEarnings = SupplierTransaction::where('type', 'earning')->where('status', 'completed')->sum('amount');
         $totalWithdrawn = SupplierTransaction::where('type', 'withdrawal')->sum('amount');
         
         $pendingWithdrawals = WithdrawRequest::where('status', 'pending')->count();
         $pendingWithdrawalAmount = WithdrawRequest::where('status', 'pending')->sum('amount');
+
+        // Escrow Statistics
+        $totalEscrowAmount = SupplierTransaction::where('type', 'earning')
+            ->where('status', 'pending')
+            ->sum('amount');
+        $pendingEscrowCount = SupplierTransaction::where('type', 'earning')
+            ->where('status', 'pending')
+            ->count();
 
         return Inertia::render('Admin/Finance/Transactions/Index', [
             'transactions' => $transactions,
@@ -51,6 +59,8 @@ class TransactionController extends Controller
                 'total_withdrawn' => $totalWithdrawn,
                 'pending_requests_count' => $pendingWithdrawals,
                 'pending_withdrawal_amount' => $pendingWithdrawalAmount,
+                'total_escrow_amount' => $totalEscrowAmount,
+                'pending_escrow_count' => $pendingEscrowCount,
             ],
             'filters' => [
                 'type' => $type,

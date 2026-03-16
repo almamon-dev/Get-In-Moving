@@ -24,7 +24,15 @@ class SupplierFinanceApiController extends Controller
             ->with('order')
             ->latest()
             ->limit(10)
-            ->get();
+            ->get()
+            ->map(function ($transaction) {
+                $transaction->days_remaining = null;
+                if ($transaction->status === 'pending' && $transaction->available_at) {
+                    $days = now()->diffInDays($transaction->available_at, false);
+                    $transaction->days_remaining = max(0, (int) $days);
+                }
+                return $transaction;
+            });
 
         $withdrawRequests = WithdrawRequest::where('supplier_id', $user->id)
             ->latest()
