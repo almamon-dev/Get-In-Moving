@@ -10,6 +10,7 @@ use App\Notifications\NewWithdrawRequestNotification;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
 class SupplierFinanceApiController extends Controller
@@ -97,11 +98,11 @@ class SupplierFinanceApiController extends Controller
 
             // Send notification to admins
             try {
-                $admins = User::where('user_type', 'admin')->get();
+                $admins = User::where('user_type', '=', 'admin')->get();
                 Notification::send($admins, new NewWithdrawRequestNotification($withdrawRequest));
             } catch (\Exception $e) {
                 // Silently fail notification for now
-                \Log::error('Admin withdrawal notification failed: ' . $e->getMessage());
+                Log::error('Admin withdrawal notification failed: ' . $e->getMessage());
             }
 
             return $this->sendResponse($withdrawRequest, 'Withdrawal request submitted successfully.');

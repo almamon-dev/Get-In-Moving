@@ -96,22 +96,13 @@ class SupplierApiController extends Controller
         ];
 
         // 4. Active Orders (Table section)
-        $activeOrders = Order::with(['customer'])
+        $activeOrders = Order::with(['customer', 'invoice'])
             ->where('supplier_id', $supplierId)
             ->whereIn('status', ['pending', 'confirmed', 'in_progress', 'picked_up', 'delivered'])
             ->latest()
             ->take(5)
-            ->get()
-            ->map(function ($order) {
-                return [
-                    'id' => $order->id,
-                    'order_id' => $order->order_number,
-                    'client_name' => $order->customer?->name ?? 'N/A',
-                    'route' => $order->pickup_address.' → '.$order->delivery_address,
-                    'status' => $order->status,
-                    'pickup_date' => $order->pickup_date ? \Carbon\Carbon::parse($order->pickup_date)->format('j M Y') : 'N/A',
-                ];
-            });
+            ->get();
+
         // 5. Recent Activity (Latest 5 Notifications)
         $recentActivity = $user->notifications()->latest()->limit(5)->get();
 
@@ -140,7 +131,7 @@ class SupplierApiController extends Controller
             ],
             'orders_completed' => $chartData,
             'earnings' => $earnings,
-            'active_orders' => $activeOrders,
+            'active_orders' => OrderResource::collection($activeOrders),
             'recent_activity' => NotificationResource::collection($recentActivity),
         ], 'Supplier dashboard data retrieved.');
     }

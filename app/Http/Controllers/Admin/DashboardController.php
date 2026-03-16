@@ -34,7 +34,7 @@ class DashboardController extends Controller
             ->where('created_at', '>=', $sixMonthsAgo)
             ->selectRaw('MONTHNAME(created_at) as month, SUM(amount) as total')
             ->groupBy('month')
-            ->orderByRaw('MIN(created_at) ASC')
+            ->orderByRaw('MIN(created_at) ASC', [])
             ->get()
             ->map(function($item) {
                 return [

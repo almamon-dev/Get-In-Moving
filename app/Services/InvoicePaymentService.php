@@ -93,14 +93,14 @@ class InvoicePaymentService
                 // 4. Update Order Status
                 if ($invoice->order) {
                     $invoice->order->update([
-                        'status' => 'confirmed', // Keep as confirmed or move to in_progress? Confirmed is safer until supplier starts.
+                        'status' => 'in_progress',
                     ]);
 
                     // Add to timeline
                     $invoice->order->updates()->create([
-                        'status' => 'confirmed',
-                        'title' => 'Payment Successful',
-                        'description' => "Payment for this order has been successfully processed and held in escrow.",
+                        'status' => 'in_progress',
+                        'title' => 'Payment Successful & Order Started',
+                        'description' => "Payment for this order has been successfully processed. The order is now in progress.",
                     ]);
                 }
                 Log::info("Stripe Webhook: Invoice {$invoice->invoice_number} paid. Funds escrowed for 14 days.");
