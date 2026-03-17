@@ -18,10 +18,10 @@ class QuoteDetailResource extends JsonResource
             'id' => $this->id,
             'origin' => $this->pickup_address,
             'destination' => $this->delivery_address,
-            'distance_miles' => '210 Miles',
+            'distance_miles' => $this->distance_miles,
             'items_summary' => $this->getItemsSummary(),
-            'total_weight' => 'Total weight : '.number_format($this->items()->sum('weight'), 0).' kg',
-            'dimensions_summary' => 'Dimensions per unit: '.$this->getDimensionsSummary(),
+            'total_weight' => number_format($this->items()->sum('weight'), 0).' kg',
+            'dimensions_summary' => $this->getDimensionsSummary(),
             'requested_date' => $this->requested_date ? $this->requested_date->format('j M Y') : '',
             'pickup_date' => $this->pickup_date ? \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : '',
             'delivery_date' => $this->delivery_date ? \Carbon\Carbon::parse($this->delivery_date)->format('j M Y') : '',
@@ -29,7 +29,7 @@ class QuoteDetailResource extends JsonResource
             'pickup_time_till' => $this->pickup_time_till,
             'delivery_time_from' => $this->delivery_time_from,
             'delivery_time_till' => $this->delivery_time_till,
-            'pallet_type' => 'Type of pallets : '.$this->getPalletType(),
+            'pallet_type' => $this->getPalletType(),
             'estimated_price_range' => $this->getEstimatedPriceRange(),
         ];
     }

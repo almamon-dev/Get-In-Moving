@@ -33,7 +33,7 @@ class InvoiceDetailResource extends JsonResource
             'items_summary' => [
                 'description' => $this->getItemsSummary($items),
                 'total_weight' => 'Total weight : '.number_format($items?->sum(fn ($i) => $i->weight * $i->quantity) ?? 0, 0).' kg',
-                'dimensions' => 'Dimensions per unit: '.($firstItem ? "{$firstItem->length} × {$firstItem->width} × {$firstItem->height} cm" : 'N/A'),
+                'dimensions' => ($firstItem ? "{$firstItem->length} × {$firstItem->width} × {$firstItem->height} cm" : 'N/A'),
             ],
 
             'delivery_info' => [
