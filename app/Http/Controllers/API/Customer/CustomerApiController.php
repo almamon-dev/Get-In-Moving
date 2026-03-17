@@ -419,7 +419,11 @@ class CustomerApiController extends Controller
             DB::commit();
             // Notify the supplier that their quote was accepted
             if ($quote->user) {
-                $quote->user->notify(new \App\Notifications\QuoteAcceptedNotification($quote));
+                try {
+                    $quote->user->notify(new \App\Notifications\QuoteAcceptedNotification($quote));
+                } catch (\Exception $e) {
+                    Log::error('Failed to notify supplier of accepted quote: '.$e->getMessage());
+                }
             }
 
             return $this->sendResponse(new \App\Http\Resources\API\Customer\QuoteResource($quote), 'Quote accepted and order created successfully.');
@@ -427,7 +431,7 @@ class CustomerApiController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return $this->sendError('Failed to import data.', ['error' => $e->getMessage()], 500);
+            return $this->sendError('Failed to accept quote.', ['error' => $e->getMessage()], 500);
         }
     }
 
@@ -617,7 +621,11 @@ class CustomerApiController extends Controller
         ]);
 
         if ($quote->user) {
-            $quote->user->notify(new \App\Notifications\QuoteRejectedNotification($quote, true));
+            try {
+                $quote->user->notify(new \App\Notifications\QuoteRejectedNotification($quote, true));
+            } catch (\Exception $e) {
+                Log::error('Failed to notify supplier of rejected revision: '.$e->getMessage());
+            }
         }
 
         return $this->sendResponse(new \App\Http\Resources\API\Customer\QuoteResource($quote), 'Revised offer rejected.');
@@ -1010,9 +1018,9 @@ class CustomerApiController extends Controller
                 ->where('status', 'pending')
                 ->exists();
 
-            if (!$hasPendingTransaction) {
+            if (! $hasPendingTransaction) {
                 // If for some reason there was no pending transaction (e.g. manual payment), we handle it here or leave for admin
-                 Log::info("POD approved for Order #{$order->order_number} but no pending transaction found.");
+                Log::info("POD approved for Order #{$order->order_number} but no pending transaction found.");
             }
         });
 

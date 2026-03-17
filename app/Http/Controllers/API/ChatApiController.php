@@ -8,6 +8,7 @@ use App\Models\Message;
 use App\Models\Quote;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ChatApiController extends Controller
 {
@@ -35,6 +36,7 @@ class ChatApiController extends Controller
             'location' => $quote->quoteRequest?->pickup_address,
             'estimated_delivery' => $quote->estimated_time,
             'pallet_type' => $quote->quoteRequest?->pallet_type,
+            'notes' => $quote->notes,
         ];
 
         $revisedQuote = [];
@@ -44,6 +46,7 @@ class ChatApiController extends Controller
                 'location' => $quote->quoteRequest?->pickup_address,
                 'estimated_delivery' => $quote->revised_estimated_time,
                 'pallet_type' => $quote->quoteRequest?->pallet_type,
+                'notes' => $quote->notes,
                 'status' => $quote->revision_status,
             ];
         }
@@ -93,7 +96,11 @@ class ChatApiController extends Controller
         // Notify the receiver about the new message
         $receiver = \App\Models\User::find($receiverId);
         if ($receiver) {
-            $receiver->notify(new \App\Notifications\NewMessageNotification($message));
+            try {
+                $receiver->notify(new \App\Notifications\NewMessageNotification($message));
+            } catch (\Exception $e) {
+                Log::error('Failed to notify receiver of new message: '.$e->getMessage());
+            }
         }
 
         return $this->sendResponse(

@@ -23,6 +23,7 @@ use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class SupplierApiController extends Controller
 {
@@ -241,7 +242,7 @@ class SupplierApiController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-            if ($existing) {
+        if ($existing) {
             $existing->update([
                 'revised_amount' => $request->amount,
                 'revised_estimated_time' => $request->estimated_time,
@@ -252,14 +253,18 @@ class SupplierApiController extends Controller
             // Notify the customer about the revised offer
             $customer = $quoteRequest->user;
             if ($customer) {
-                $customer->notify(new \App\Notifications\RevisedQuoteNotification($existing));
+                try {
+                    $customer->notify(new \App\Notifications\RevisedQuoteNotification($existing));
+                } catch (\Exception $e) {
+                    Log::error('Failed to notify customer of revised offer: '.$e->getMessage());
+                }
 
                 // Add a message to the chat history about this revision
                 \App\Models\Message::create([
                     'sender_id' => $user->id,
                     'receiver_id' => $customer->id,
                     'quote_id' => $existing->id,
-                    'message' => 'I have submitted a revised offer of $'.number_format($request->amount, 0).' with estimated delivery: '.$request->estimated_time . ($request->notes ? "\n\nNote: " . $request->notes : ""),
+                    'message' => 'I have submitted a revised offer of $'.number_format($request->amount, 0).' with estimated delivery: '.$request->estimated_time.($request->notes ? "\n\nNote: ".$request->notes : ''),
                 ]);
             }
 
@@ -281,7 +286,11 @@ class SupplierApiController extends Controller
         // Notify the customer
         $customer = $quoteRequest->user;
         if ($customer) {
-            $customer->notify(new \App\Notifications\NewQuoteSubmittedNotification($quote));
+            try {
+                $customer->notify(new \App\Notifications\NewQuoteSubmittedNotification($quote));
+            } catch (\Exception $e) {
+                Log::error('Failed to notify customer of new quote: '.$e->getMessage());
+            }
         }
 
         return $this->sendResponse(new QuoteResource($quote->load('user')), 'Quote submitted successfully.', null, 201);
@@ -331,7 +340,11 @@ class SupplierApiController extends Controller
         // Notify the customer
         $customer = $quote->quoteRequest->user;
         if ($customer) {
-            $customer->notify(new \App\Notifications\RevisedQuoteNotification($quote));
+            try {
+                $customer->notify(new \App\Notifications\RevisedQuoteNotification($quote));
+            } catch (\Exception $e) {
+                Log::error('Failed to notify customer of revised offer: '.$e->getMessage());
+            }
 
             // Add the "Optional Sms/Message" to chat history if provided
             $chatMessage = 'I have submitted a revised offer of $'.number_format($request->amount, 0);
