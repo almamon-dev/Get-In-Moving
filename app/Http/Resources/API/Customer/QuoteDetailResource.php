@@ -29,8 +29,24 @@ class QuoteDetailResource extends JsonResource
             'pickup_time_till' => $this->pickup_time_till,
             'delivery_time_from' => $this->delivery_time_from,
             'delivery_time_till' => $this->delivery_time_till,
+            'pallet_type' => $this->getPalletType(),
             'estimated_price_range' => $this->getEstimatedPriceRange(),
         ];
+    }
+
+    private function getPalletType(): string
+    {
+        $firstItem = $this->items()->first();
+        if (! $firstItem || ! $firstItem->item_type) {
+            return 'N/A';
+        }
+
+        $distinctTypes = $this->items()->pluck('item_type')->unique();
+        if ($distinctTypes->count() > 1) {
+            return 'Mixed';
+        }
+
+        return $firstItem->item_type;
     }
 
     private function getItemsSummary(): string
