@@ -35,6 +35,7 @@ class QuoteRequestDetailResource extends JsonResource
                 'items_summary' => $this->getItemsSummary(),
                 'total_weight' => 'Total weight : '.number_format($this->items()->sum(\DB::raw('weight * quantity')), 0).' kg',
                 'dimensions_summary' => 'Dimensions per unit: '.$this->getDimensionsSummary(),
+                'pallet_type' => $this->getPalletType(),
                 'client_name' => $this->user?->name ?? 'Unknown',
                 'pickup_date' => ! empty($this->pickup_date) ? \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : '',
                 'delivery_date' => ! empty($this->delivery_date) ? \Carbon\Carbon::parse($this->delivery_date)->format('j M Y') : '',
@@ -47,6 +48,21 @@ class QuoteRequestDetailResource extends JsonResource
                 'estimated_time' => $supplierQuote->estimated_time ?? '2-3 days',
             ] : [],
         ];
+    }
+
+    private function getPalletType(): string
+    {
+        $firstItem = $this->items()->first();
+        if (! $firstItem || ! $firstItem->item_type) {
+            return 'N/A';
+        }
+
+        $distinctTypes = $this->items()->pluck('item_type')->unique();
+        if ($distinctTypes->count() > 1) {
+            return 'Mixed';
+        }
+
+        return $firstItem->item_type;
     }
 
     private function getItemsSummary(): string
