@@ -44,7 +44,7 @@ class OrderResource extends JsonResource
             ],
 
             'shipping' => [
-                'service' => $this->service_type,
+                'service' => $this->pallet_type,
                 'route' => $this->getLocationSummary(),
                 'pickup_at' => $this->pickup_date ? Carbon::parse($this->pickup_date)->format('d M Y') : null,
                 'from' => $this->pickup_address,

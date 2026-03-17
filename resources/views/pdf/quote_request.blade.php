@@ -23,7 +23,7 @@
 
     <div class="section">
         <div class="section-title">General Information</div>
-        <p><strong>Service Type:</strong> {{ $quoteRequest->service_type }}</p>
+        <p><strong>Service Type:</strong> {{ $quoteRequest->pallet_type }}</p>
         <p><strong>Customer Name:</strong> {{ $quoteRequest->user->name }}</p>
         <p><strong>Status:</strong> {{ ucfirst($quoteRequest->status) }}</p>
     </div>

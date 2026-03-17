@@ -64,7 +64,7 @@ class NegotiationApiController extends Controller
                 'profile_picture' => $otherParty->profile_picture ?? 'https://ui-avatars.com/api/?name='.urlencode($otherParty->name).'&color=7F9CF5&background=EBF4FF',
                 'message_snippet' => $latestMessage?->message ?? 'No messages yet',
                 'time_ago' => $lastActivityTime->diffForHumans(),
-                'service_type' => $quote->quoteRequest->service_type,
+                'pallet_type' => $quote->quoteRequest->pallet_type,
                 'amount' => $quote->amount,
                 'revised_amount' => $quote->revised_amount ?? '',
                 'revised_estimated_time' => $quote->revised_estimated_time ?? '',

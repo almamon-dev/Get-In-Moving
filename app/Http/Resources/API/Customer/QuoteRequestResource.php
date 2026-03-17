@@ -19,6 +19,7 @@ class QuoteRequestResource extends JsonResource
             'pickup_address' => $this->pickup_address,
             'delivery_address' => $this->delivery_address,
             'status' => $this->status,
+            'type_of_pallets' => $this->getPalletType(),
             'pickup_date' => $this->pickup_date ? \Carbon\Carbon::parse($this->pickup_date)->format('j M Y') : '',
             'delivery_date' => $this->delivery_date ? \Carbon\Carbon::parse($this->delivery_date)->format('j M Y') : '',
             'created_at' => $this->created_at,

@@ -23,17 +23,17 @@ class InvoiceDetailResource extends JsonResource
             'invoice_number' => $this->invoice_number,
             'status' => $this->status,
             'status_label' => ucfirst($this->status),
-            
+
             'order_info' => [
                 'order_number' => $order?->order_number,
-                'service_type' => $order?->service_type ?? 'Road Freight/ Pallet Transport',
+                'pallet_type' => $order?->getPalletType() ?? 'Road Freight/ Pallet Transport',
                 'supplier_name' => $order?->supplier?->name ?? 'Swift Transport Co.',
             ],
 
             'items_summary' => [
                 'description' => $this->getItemsSummary($items),
-                'total_weight' => 'Total weight : ' . number_format($items?->sum(fn($i) => $i->weight * $i->quantity) ?? 0, 0) . ' kg',
-                'dimensions' => 'Dimensions per unit: ' . ($firstItem ? "{$firstItem->length} × {$firstItem->width} × {$firstItem->height} cm" : 'N/A'),
+                'total_weight' => 'Total weight : '.number_format($items?->sum(fn ($i) => $i->weight * $i->quantity) ?? 0, 0).' kg',
+                'dimensions' => 'Dimensions per unit: '.($firstItem ? "{$firstItem->length} × {$firstItem->width} × {$firstItem->height} cm" : 'N/A'),
             ],
 
             'delivery_info' => [
@@ -49,13 +49,13 @@ class InvoiceDetailResource extends JsonResource
 
             'pod_status' => [
                 'status' => $order?->pod_status ?? 'awaiting',
-                'label' => 'POD (' . ucfirst($order?->pod_status ?? 'awaiting') . ')',
+                'label' => 'POD ('.ucfirst($order?->pod_status ?? 'awaiting').')',
             ],
 
             'amount_breakdown' => [
-                'supplier_amount' => '$' . number_format($this->supplier_amount, 0),
-                'platform_fee' => '$' . number_format($this->platform_fee, 0),
-                'total_payable' => '$' . number_format($this->total_amount, 0),
+                'supplier_amount' => '$'.number_format($this->supplier_amount, 0),
+                'platform_fee' => '$'.number_format($this->platform_fee, 0),
+                'total_payable' => '$'.number_format($this->total_amount, 0),
             ],
 
             'payment_details' => [
@@ -68,11 +68,13 @@ class InvoiceDetailResource extends JsonResource
 
     private function getItemsSummary($items): string
     {
-        if (!$items || $items->isEmpty()) return '0 Items';
-        
+        if (! $items || $items->isEmpty()) {
+            return '0 Items';
+        }
+
         $count = $items->sum('quantity');
         $type = $items->first()->item_type ?? 'Items';
-        
+
         return "{$count} {$type}";
     }
 }

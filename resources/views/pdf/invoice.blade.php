@@ -153,7 +153,7 @@
                     <div class="value">{{ $invoice->order->order_number }}</div>
                     
                     <div class="label">SERVICE TYPE</div>
-                    <div class="value">{{ $invoice->order->service_type }}</div>
+                    <div class="value">{{ $invoice->order->pallet_type }}</div>
                 </div>
                 <div class="col">
                     <div class="label">SUPPLIER</div>

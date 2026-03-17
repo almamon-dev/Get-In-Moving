@@ -28,7 +28,7 @@ class QuoteRequestResource extends JsonResource
             'status' => ucfirst($this->getSupplierStatus(auth()->id())),
             'client_name' => $this->user?->name ?? 'Unknown',
             'items_summary' => $this->getItemsSummary() . ', ' . number_format($this->items()->sum('weight'), 0) . ' kg',
-            'service_type' => $this->service_type,
+            'pallet_type' => $this->pallet_type,
             'time_ago' => 'receive ' . ($this->created_at?->diffForHumans() ?? 'recently'),
         ];
     }

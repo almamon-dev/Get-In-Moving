@@ -50,21 +50,6 @@ class QuoteRequestDetailResource extends JsonResource
         ];
     }
 
-    private function getPalletType(): string
-    {
-        $firstItem = $this->items()->first();
-        if (! $firstItem || ! $firstItem->item_type) {
-            return 'N/A';
-        }
-
-        $distinctTypes = $this->items()->pluck('item_type')->unique();
-        if ($distinctTypes->count() > 1) {
-            return 'Mixed';
-        }
-
-        return $firstItem->item_type;
-    }
-
     private function getItemsSummary(): string
     {
         $count = $this->items()->sum('quantity');

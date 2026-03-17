@@ -71,7 +71,7 @@ class AiExtractionService
         Even if the items look similar, extract each one as a separate object in the JSON array.
         
         Return ONLY a valid JSON array of objects with these keys:
-        - service_type, pickup_address, delivery_address, pickup_date, pickup_time_from, pickup_time_till, item_type, quantity, length_cm, width_cm, height_cm, weight_kg, additional_notes.
+        - pallet_type, pickup_address, delivery_address, pickup_date, pickup_time_from, pickup_time_till, item_type, quantity, length_cm, width_cm, height_cm, weight_kg, additional_notes.
         
         CRITICAL: If an item is missing dimensions or weight, use null.
         CRITICAL: Your response must contain ONLY the JSON array. Start with [ and end with ]. No markdown, no intro, no outro.";

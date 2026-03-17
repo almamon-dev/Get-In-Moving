@@ -159,7 +159,7 @@ class SupplierApiController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('pickup_address', 'like', "%$search%")
                     ->orWhere('delivery_address', 'like', "%$search%")
-                    ->orWhere('service_type', 'like', "%$search%");
+                    ->orWhere('pallet_type', 'like', "%$search%");
             });
         }
 

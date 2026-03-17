@@ -192,7 +192,7 @@ class CustomerApiController extends Controller
         // Creating a blank request for the template view
         $quoteRequest = new QuoteRequest;
         $quoteRequest->id = '____';
-        $quoteRequest->service_type = '________________';
+        $quoteRequest->pallet_type = '________________';
         $quoteRequest->pickup_address = '________________';
         $quoteRequest->delivery_address = '________________';
         $quoteRequest->pickup_date = '________________';
@@ -376,7 +376,7 @@ class CustomerApiController extends Controller
                 'customer_id' => $quote->quoteRequest->user_id,
                 'supplier_id' => $quote->user_id,
                 'total_amount' => $quote->amount,
-                'service_type' => $quote->quoteRequest->service_type,
+                'pallet_type' => $quote->quoteRequest->getPalletType(),
                 'pickup_address' => $quote->quoteRequest->pickup_address,
                 'delivery_address' => $quote->quoteRequest->delivery_address,
                 'pickup_date' => $quote->quoteRequest->pickup_date,
@@ -459,7 +459,7 @@ class CustomerApiController extends Controller
                     // Create Parent only if it doesn't exist for this address group
                     $quoteRequest = QuoteRequest::create([
                         'user_id' => auth()->id(),
-                        'service_type' => $row['service_type'] ?? 'General',
+                        'pallet_type' => $row['pallet_type'] ?? 'General',
                         'pickup_address' => $row['pickup_address'] ?? 'N/A',
                         'delivery_address' => $row['delivery_address'] ?? 'N/A',
                         'pickup_date' => $row['pickup_date'] ?? null,
@@ -543,7 +543,7 @@ class CustomerApiController extends Controller
                 'customer_id' => $quote->quoteRequest->user_id,
                 'supplier_id' => $quote->user_id,
                 'total_amount' => $quote->amount,
-                'service_type' => $quote->quoteRequest->service_type,
+                'pallet_type' => $quote->quoteRequest->getPalletType(),
                 'pickup_address' => $quote->quoteRequest->pickup_address,
                 'delivery_address' => $quote->quoteRequest->delivery_address,
                 'pickup_date' => $quote->quoteRequest->pickup_date,

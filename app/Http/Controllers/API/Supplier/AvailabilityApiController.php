@@ -94,7 +94,7 @@ class AvailabilityApiController extends Controller
             'supplier_id' => auth()->id(),
             'type' => $request->type,
             'route_name' => $request->route_name,
-            'service_type' => $request->trailer_type ?? 'N/A', // Mapping to service_type
+            'pallet_type' => $request->trailer_type ?? 'N/A', // Mapping to pallet_type
             'trailer_type' => $request->trailer_type,
             'pickup_region' => $request->pickup_region,
             'delivery_region' => $request->delivery_region,
@@ -126,7 +126,7 @@ class AvailabilityApiController extends Controller
         }
 
         $request->validate([
-            'service_type' => 'sometimes|string',
+            'pallet_type' => 'sometimes|string',
             'pickup_region' => 'nullable|string',
             'delivery_region' => 'nullable|string',
             'start_date' => 'sometimes|date',

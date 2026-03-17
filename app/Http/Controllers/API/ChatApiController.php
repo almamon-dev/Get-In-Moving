@@ -34,7 +34,7 @@ class ChatApiController extends Controller
             'price' => '$'.number_format($quote->amount, 0),
             'location' => $quote->quoteRequest?->pickup_address,
             'estimated_delivery' => $quote->estimated_time,
-            'service_type' => $quote->quoteRequest?->service_type,
+            'pallet_type' => $quote->quoteRequest?->pallet_type,
         ];
 
         $revisedQuote = [];
@@ -43,7 +43,7 @@ class ChatApiController extends Controller
                 'price' => '$'.number_format($quote->revised_amount, 0),
                 'location' => $quote->quoteRequest?->pickup_address,
                 'estimated_delivery' => $quote->revised_estimated_time,
-                'service_type' => $quote->quoteRequest?->service_type,
+                'pallet_type' => $quote->quoteRequest?->pallet_type,
                 'status' => $quote->revision_status,
             ];
         }

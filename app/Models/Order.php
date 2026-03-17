@@ -15,7 +15,7 @@ class Order extends Model
         'customer_id',
         'supplier_id',
         'total_amount',
-        'service_type',
+        'pallet_type',
         'pickup_address',
         'delivery_address',
         'pickup_date',
@@ -59,5 +59,24 @@ class Order extends Model
     public function updates()
     {
         return $this->hasMany(OrderUpdate::class)->latest();
+    }
+
+    public function getPalletType(): string
+    {
+        if ($this->pallet_type) {
+            return $this->pallet_type;
+        }
+
+        $firstItem = $this->items()->first();
+        if (! $firstItem || ! $firstItem->item_type) {
+            return 'N/A';
+        }
+
+        $distinctTypes = $this->items()->pluck('item_type')->unique();
+        if ($distinctTypes->count() > 1) {
+            return 'Mixed';
+        }
+
+        return $firstItem->item_type;
     }
 }

@@ -36,7 +36,7 @@ class QuoteAcceptedNotification extends Notification
         return (new MailMessage)
             ->subject('Your Quote was Accepted!')
             ->greeting('Hello ' . $notifiable->name . '!')
-            ->line('Great news! A client has accepted your quote for: ' . $this->quote->quoteRequest->service_type)
+            ->line('Great news! A client has accepted your quote for: ' . $this->quote->quoteRequest->pallet_type)
             ->line('Amount: $' . number_format($this->quote->amount, 2))
             ->action('View Order Details', url('/supplier/orders'))
             ->line('Thank you for using our platform!');
@@ -53,7 +53,7 @@ class QuoteAcceptedNotification extends Notification
             'quote_id' => $this->quote->id,
             'quote_request_id' => $this->quote->quote_request_id,
             'amount' => $this->quote->amount,
-            'service_type' => $this->quote->quoteRequest->service_type,
+            'pallet_type' => $this->quote->quoteRequest->pallet_type,
             'message' => 'Your quote of $' . number_format($this->quote->amount, 2) . ' was accepted! A new order was created.',
         ];
     }

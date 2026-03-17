@@ -36,7 +36,7 @@ class NewQuoteSubmittedNotification extends Notification
         return (new MailMessage)
             ->subject('New Quote Received for Your Shiping Request')
             ->greeting('Hello '.$notifiable->name.'!')
-            ->line('A supplier has submitted a new quote for your request: '.$this->quote->quoteRequest->service_type)
+            ->line('A supplier has submitted a new quote for your request: '.$this->quote->quoteRequest->pallet_type)
             ->line('Amount: $'.number_format($this->quote->amount, 2))
             ->line('Estimated Time: '.$this->quote->estimated_time)
             ->action('View Quote Details', url('/customer/quote-requests/'.$this->quote->quote_request_id))
@@ -56,7 +56,7 @@ class NewQuoteSubmittedNotification extends Notification
             'supplier_id' => $this->quote->user_id,
             'supplier_name' => $this->quote->user->name,
             'amount' => $this->quote->amount,
-            'service_type' => $this->quote->quoteRequest->service_type,
+            'pallet_type' => $this->quote->quoteRequest->pallet_type,
             'message' => 'New quote received from '.$this->quote->user->name,
         ];
     }

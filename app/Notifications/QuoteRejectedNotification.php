@@ -39,7 +39,7 @@ class QuoteRejectedNotification extends Notification
         return (new MailMessage)
             ->subject('Update on your ' . $type)
             ->greeting('Hello ' . $notifiable->name . '!')
-            ->line('Your ' . $type . ' for ' . $this->quote->quoteRequest->service_type . ' has been rejected by the client.')
+            ->line('Your ' . $type . ' for ' . $this->quote->quoteRequest->pallet_type . ' has been rejected by the client.')
             ->action('View Quote Details', url('/supplier/quotes'))
             ->line('Thank you for using our platform!');
     }
@@ -55,7 +55,7 @@ class QuoteRejectedNotification extends Notification
         return [
             'quote_id' => $this->quote->id,
             'quote_request_id' => $this->quote->quote_request_id,
-            'message' => 'Your ' . $type . ' for ' . $this->quote->quoteRequest->service_type . ' was rejected.',
+            'message' => 'Your ' . $type . ' for ' . $this->quote->quoteRequest->pallet_type . ' was rejected.',
         ];
     }
 }

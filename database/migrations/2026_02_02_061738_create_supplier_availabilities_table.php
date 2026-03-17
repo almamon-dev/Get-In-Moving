@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('supplier_id')->constrained('users')->onDelete('cascade');
             $table->enum('type', ['standard', 'recurring'])->default('standard');
             $table->string('route_name')->nullable();
-            $table->string('service_type');
+            $table->string('pallet_type');
             $table->string('trailer_type')->nullable();
 
             // Route/Location

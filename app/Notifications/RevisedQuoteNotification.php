@@ -36,7 +36,7 @@ class RevisedQuoteNotification extends Notification
         return (new MailMessage)
             ->subject('Revised Offer Received for Your Request')
             ->greeting('Hello '.$notifiable->name.'!')
-            ->line('The supplier '.$this->quote->user->name.' has submitted a revised offer for your request: '.$this->quote->quoteRequest->service_type)
+            ->line('The supplier '.$this->quote->user->name.' has submitted a revised offer for your request: '.$this->quote->quoteRequest->pallet_type)
             ->line('New Proposed Amount: $'.number_format($this->quote->revised_amount, 0))
             ->line('New Estimated Delivery: '.$this->quote->revised_estimated_time)
             ->action('View and Respond to Offer', url('/customer/negotiations'))
@@ -56,7 +56,7 @@ class RevisedQuoteNotification extends Notification
             'supplier_id' => $this->quote->user_id,
             'supplier_name' => $this->quote->user->name,
             'amount' => $this->quote->revised_amount,
-            'service_type' => $this->quote->quoteRequest->service_type,
+            'pallet_type' => $this->quote->quoteRequest->pallet_type,
             'message' => 'Supplier '.$this->quote->user->name.' offered a new price: $'.number_format($this->quote->revised_amount, 0),
             'type' => 'revision',
         ];

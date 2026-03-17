@@ -13,7 +13,7 @@ class SupplierAvailability extends Model
         'supplier_id',
         'type',
         'route_name',
-        'service_type',
+        'pallet_type',
         'trailer_type',
         'pickup_region',
         'delivery_region',

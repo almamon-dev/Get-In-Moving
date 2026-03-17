@@ -83,7 +83,7 @@ class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow
     {
         $data = [
             'user_id' => $this->userId,
-            'service_type' => $row['service_type'] ?? null,
+            'pallet_type' => $row['pallet_type'] ?? null,
             'pickup_address' => $row['pickup_address'] ?? null,
             'delivery_address' => $row['delivery_address'] ?? null,
             'additional_notes' => $row['additional_notes'] ?? $row['notes'] ?? null,
@@ -117,7 +117,7 @@ class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow
         }
 
         $fields = [
-            'service_type', 'pickup_address', 'delivery_address', 'additional_notes',
+            'pallet_type', 'pickup_address', 'delivery_address', 'additional_notes',
         ];
 
         $updateData = [];

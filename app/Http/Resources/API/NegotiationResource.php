@@ -38,7 +38,7 @@ class NegotiationResource extends JsonResource
             'quote_id' => (int) ($this->data['quote_id'] ?? 0),
             'quote_request_id' => (int) ($this->data['quote_request_id'] ?? 0),
             'amount' => (float) ($this->data['amount'] ?? 0),
-            'service_type' => $this->data['service_type'] ?? null,
+            'pallet_type' => $this->data['pallet_type'] ?? null,
             'read_at' => $this->read_at,
             'type' => $this->data['type'] ?? 'new_quote', // 'new_quote' or 'revision'
         ];
