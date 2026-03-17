@@ -11,7 +11,15 @@ import { useEffect } from 'react';
 
 const CountdownTimer = ({ targetDate }) => {
     const calculateTimeLeft = () => {
-        const difference = +new Date(targetDate) - +new Date();
+        if (!targetDate) return null;
+        
+        // Ensure the date is interpreted as UTC if it's a timezone-less string from the server
+        let target = new Date(targetDate);
+        if (typeof targetDate === 'string' && !targetDate.includes('Z') && !targetDate.includes('+')) {
+            target = new Date(targetDate.replace(' ', 'T') + 'Z');
+        }
+
+        const difference = +target - +new Date();
         let timeLeft = {};
 
         if (difference > 0) {

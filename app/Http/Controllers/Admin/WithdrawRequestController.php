@@ -79,6 +79,14 @@ class WithdrawRequestController extends Controller
 
             $withdrawRequest->update($updateData);
 
+            // Notify Supplier
+            try {
+                $withdrawRequest->supplier->notify(new \App\Notifications\WithdrawalStatusNotification($withdrawRequest));
+            } catch (\Exception $e) {
+                // Log notification failure but don't break the process
+                \Illuminate\Support\Facades\Log::error('Withdrawal notification failed: ' . $e->getMessage());
+            }
+
             DB::commit();
 
             return redirect()->back()->with('success', 'Withdrawal request status updated to ' . $newStatus);

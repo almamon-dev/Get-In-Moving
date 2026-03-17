@@ -44,6 +44,7 @@ class ReleaseSupplierFunds extends Command
             }
 
             $order = $invoice->order;
+            /** @var \App\Models\User $supplier */
             $supplier = \App\Models\User::find($order->supplier_id);
 
             if (!$supplier) {
@@ -85,6 +86,13 @@ class ReleaseSupplierFunds extends Command
 
                 // 3. Mark Payment as Released
                 $payment->update(['is_released' => true]);
+
+                // 4. Notify Supplier
+                try {
+                    $supplier->notify(new \App\Notifications\FundsReleasedNotification($payment));
+                } catch (\Exception $e) {
+                    $this->warn("Failed to notify supplier for Payment ID {$payment->id}: " . $e->getMessage());
+                }
 
                 \Illuminate\Support\Facades\DB::commit();
                 $this->info("Released {$releaseAmount} to Supplier {$supplier->name} for Payment ID {$payment->id}");

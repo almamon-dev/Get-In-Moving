@@ -64,6 +64,16 @@ class SupplierFinanceApiController extends Controller
         ]);
 
         $user = $request->user();
+        
+        // Check if there's already a pending withdrawal request
+        $existingPending = WithdrawRequest::where('supplier_id', $user->id)
+            ->where('status', 'pending')
+            ->first();
+            
+        if ($existingPending) {
+            return $this->sendError('You already have a pending withdrawal request. Please wait for it to be processed.');
+        }
+
         $withdrawAmount = $request->amount ?? $user->balance;
 
         if ($withdrawAmount <= 0) {
