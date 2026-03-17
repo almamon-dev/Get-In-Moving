@@ -241,10 +241,11 @@ class SupplierApiController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-        if ($existing) {
+            if ($existing) {
             $existing->update([
                 'revised_amount' => $request->amount,
                 'revised_estimated_time' => $request->estimated_time,
+                'notes' => $request->notes,
                 'revision_status' => 'pending',
             ]);
 
@@ -258,7 +259,7 @@ class SupplierApiController extends Controller
                     'sender_id' => $user->id,
                     'receiver_id' => $customer->id,
                     'quote_id' => $existing->id,
-                    'message' => 'I have submitted a revised offer of $'.number_format($request->amount, 0).' with estimated delivery: '.$request->estimated_time,
+                    'message' => 'I have submitted a revised offer of $'.number_format($request->amount, 0).' with estimated delivery: '.$request->estimated_time . ($request->notes ? "\n\nNote: " . $request->notes : ""),
                 ]);
             }
 
@@ -270,6 +271,7 @@ class SupplierApiController extends Controller
             'user_id' => $user->id,
             'amount' => $request->amount,
             'estimated_time' => $request->estimated_time,
+            'notes' => $request->notes,
             'status' => 'pending',
         ]);
 

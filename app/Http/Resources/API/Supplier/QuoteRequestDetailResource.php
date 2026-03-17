@@ -46,6 +46,7 @@ class QuoteRequestDetailResource extends JsonResource
                 'status_label' => $statusLabel,
                 'submitted_price' => '$'.number_format($supplierQuote->amount, 0),
                 'estimated_time' => $supplierQuote->estimated_time ?? '2-3 days',
+                'notes' => $supplierQuote->notes,
             ] : [],
         ];
     }
