@@ -31,7 +31,6 @@ class QuoteDetailResource extends JsonResource
             'delivery_time_till' => $this->delivery_time_till,
             'pallet_type' => $this->getPalletType(),
             'estimated_price_range' => $this->getEstimatedPriceRange(),
-            'notes' => $this->additional_notes ?? '',
         ];
     }
 
