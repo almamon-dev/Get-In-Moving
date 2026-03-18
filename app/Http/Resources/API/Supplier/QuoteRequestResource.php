@@ -30,8 +30,8 @@ class QuoteRequestResource extends JsonResource
             'items_summary' => $this->getItemsSummary() . ', ' . number_format($this->items()->sum('weight'), 0) . ' kg',
             'pallet_type' => $this->getPalletType(),
             'time_ago' => 'receive ' . ($this->created_at?->diffForHumans() ?? 'recently'),
-            'supplier_note' => $this->quotes()->where('user_id', auth()->id())->first()?->notes ?? null,
-            'client_note' => $this->additional_notes,
+            'supplier_note' => $this->quotes()->where('user_id', auth()->id())->first()?->notes ?? '',
+            'client_note' => $this->additional_notes ?? '',
             'requested_date' => $this->requested_date ? $this->requested_date->format('j M Y') : 'N/A',
         ];
     }

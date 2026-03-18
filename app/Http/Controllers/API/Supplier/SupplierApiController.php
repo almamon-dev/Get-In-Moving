@@ -334,6 +334,7 @@ class SupplierApiController extends Controller
         $quote->update([
             'revised_amount' => $request->amount,
             'revised_estimated_time' => $request->estimated_time ?? $quote->estimated_time,
+            'notes' => $request->message,
             'revision_status' => 'pending',
         ]);
 

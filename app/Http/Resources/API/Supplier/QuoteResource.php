@@ -20,7 +20,7 @@ class QuoteResource extends JsonResource
             'quote_request_id' => (int) $this->quote_request_id,
             'amount' => (float) $this->amount,
             'estimated_time' => $this->estimated_time,
-            'notes' => $this->notes,
+            'notes' => $this->notes ?? '',
             'valid_until' => $this->valid_until,
             'status' => $this->status,
             'revised_amount' => $this->revised_amount ? (float) $this->revised_amount : null,
