@@ -56,17 +56,17 @@ class AuthApiController extends Controller
                 $userData['policy_number'] = $request->policy_number;
                 $userData['policy_expiry_date'] = $request->policy_expiry_date;
 
-                // Handle file uploads
+                // Handle file uploads using standard Helper
                 if ($request->hasFile('insurance_document')) {
-                    $insuranceDoc = $request->file('insurance_document');
-                    $insurancePath = $insuranceDoc->store('documents/insurance', 'public');
-                    $userData['insurance_document'] = $insurancePath;
+                    $userData['insurance_document'] = \App\Helpers\Helper::uploadFile('compliance/insurance', $request->file('insurance_document'));
+                    $userData['insurance_uploaded_at'] = now();
+                    $userData['insurance_status'] = 'pending';
                 }
 
                 if ($request->hasFile('license_document')) {
-                    $licenseDoc = $request->file('license_document');
-                    $licensePath = $licenseDoc->store('documents/licenses', 'public');
-                    $userData['license_document'] = $licensePath;
+                    $userData['license_document'] = \App\Helpers\Helper::uploadFile('compliance/license', $request->file('license_document'));
+                    $userData['license_uploaded_at'] = now();
+                    $userData['license_status'] = 'pending';
                 }
             }
 

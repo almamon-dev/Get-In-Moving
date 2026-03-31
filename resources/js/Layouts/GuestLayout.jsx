@@ -9,10 +9,6 @@ export default function GuestLayout({ children }) {
             <div className="w-full sm:max-w-[450px] bg-white dark:bg-gray-800 px-8 py-10 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] rounded-xl border border-gray-100 dark:border-gray-700">
                 {children}
             </div>
-            
-            <div className="mt-8 text-sm text-gray-500">
-                &copy; {new Date().getFullYear()} Hostinger Clone. All rights reserved.
-            </div>
         </div>
     );
 }

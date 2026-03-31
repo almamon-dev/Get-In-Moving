@@ -213,7 +213,7 @@ class CustomerApiController extends Controller
      */
     public function downloadTemplate()
     {
-        return Excel::download(new QuoteItemsTemplateExport, 'quote_items_template.xlsx', \Maatwebsite\Excel\Excel::XLSX);
+        return Excel::download(new QuoteItemsTemplateExport, '', \Maatwebsite\Excel\Excel::XLSX);
     }
 
     /**

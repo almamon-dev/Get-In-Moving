@@ -80,7 +80,6 @@ class SupplierController extends Controller
             'compliance_verified_at' => $request->is_compliance_verified ? now() : null,
         ]);
 
-        // Send notification if compliance approved
         if ($request->is_compliance_verified) {
             $supplier->notify(new ComplianceApprovedNotification);
         }

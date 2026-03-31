@@ -60,13 +60,6 @@ class Helper
         if (empty($filePath) || trim($filePath) === '') {
             return null;
         }
-        $fullPath = public_path($filePath);
-
-        // Only return URL if file actually exists
-        if (file_exists($fullPath)) {
-            return asset($filePath);
-        }
-
         return null;
     }
 }
