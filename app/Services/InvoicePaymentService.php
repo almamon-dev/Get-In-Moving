@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Invoice;
+use App\Notifications\PaymentReceivedNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Stripe\Checkout\Session;
@@ -104,6 +105,15 @@ class InvoicePaymentService
                     ]);
                 }
                 Log::info("Stripe Webhook: Invoice {$invoice->invoice_number} paid. Funds escrowed for 14 days.");
+
+                // 5. Notify Supplier (Email & Database)
+                if ($invoice->order && $invoice->order->supplier) {
+                    try {
+                        $invoice->order->supplier->notify(new \App\Notifications\PaymentReceivedNotification($invoice));
+                    } catch (\Exception $e) {
+                        Log::error("Failed to notify supplier of payment: " . $e->getMessage());
+                    }
+                }
             }
 
             DB::commit();

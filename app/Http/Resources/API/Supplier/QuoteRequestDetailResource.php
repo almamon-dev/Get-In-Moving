@@ -41,6 +41,7 @@ class QuoteRequestDetailResource extends JsonResource
                 'delivery_date' => ! empty($this->delivery_date) ? \Carbon\Carbon::parse($this->delivery_date)->format('j M Y') : '',
                 'requested_date' => $this->requested_date ? $this->requested_date->format('j M Y') : '',
                 'received_at_human' => 'Receive '.($this->created_at?->diffForHumans() ?? 'recently'),
+                'additional_notes' => $this->additional_notes,
             ],
             'quote_submitted' => $supplierQuote ? [
                 'status_label' => $statusLabel,

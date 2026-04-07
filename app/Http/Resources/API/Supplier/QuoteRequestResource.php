@@ -31,6 +31,7 @@ class QuoteRequestResource extends JsonResource
             'pallet_type' => $this->getPalletType(),
             'time_ago' => 'receive '.($this->created_at?->diffForHumans() ?? 'recently'),
             'supplier_note' => $this->quotes()->where('user_id', auth()->id())->first()?->notes ?? '',
+            'additional_notes' => $this->additional_notes,
             'requested_date' => $this->requested_date ? $this->requested_date->format('j M Y') : 'N/A',
         ];
     }

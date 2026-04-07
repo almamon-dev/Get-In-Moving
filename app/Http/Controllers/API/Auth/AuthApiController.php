@@ -110,7 +110,7 @@ class AuthApiController extends Controller
 
             DB::commit(); // Commit transaction if everything succeeds
 
-            $message = __('Register Successfully. Please check your email to verify. OTP: ').$otp;
+            $message = __('Register Successfully. Please check your email to verify.');
 
             return $this->sendResponse(new RegisterResource($user), $message);
 
@@ -188,7 +188,7 @@ class AuthApiController extends Controller
             $user = User::where('email', $request->email)->firstOrFail();
             $otp = $this->SendOtp($user, 'Resend OTP for Email Verification');
 
-            return $this->sendResponse(new RegisterResource($user), 'OTP resent successfully. OTP: '.$otp);
+            return $this->sendResponse(new RegisterResource($user), 'OTP resent successfully.');
         } catch (Exception $e) {
             Log::error('Resend OTP Error: '.$e->getMessage());
 
@@ -202,7 +202,7 @@ class AuthApiController extends Controller
             $user = User::where('email', $request->email)->firstOrFail();
             $otp = $this->SendOtp($user, 'Reset Your Password');
 
-            return $this->sendResponse(new RegisterResource($user), 'OTP sent for password reset. OTP: '.$otp);
+            return $this->sendResponse(new RegisterResource($user), 'OTP sent for password reset.');
         } catch (Exception $e) {
             Log::error('Forgot Password Error: '.$e->getMessage());
 
