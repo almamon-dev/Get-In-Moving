@@ -352,6 +352,10 @@ class CustomerApiController extends Controller
             return $this->sendError('Quote not found.', [], 404);
         }
 
+        if ($quote->quoteRequest->status !== 'active') {
+            return $this->sendError('This request is no longer active and already has an accepted quote.', [], 422);
+        }
+
         DB::beginTransaction();
         try {
             $quote->update(['status' => 'accepted']);
@@ -509,6 +513,10 @@ class CustomerApiController extends Controller
 
         if ($quote->quoteRequest->user_id !== auth()->id()) {
             return $this->sendError('Unauthorized.', [], 403);
+        }
+
+        if ($quote->quoteRequest->status !== 'active') {
+            return $this->sendError('This request is no longer active and already has an accepted quote.', [], 422);
         }
 
         if ($quote->revision_status !== 'pending') {
