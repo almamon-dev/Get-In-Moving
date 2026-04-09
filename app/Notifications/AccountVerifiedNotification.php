@@ -37,7 +37,6 @@ class AccountVerifiedNotification extends Notification
             ->greeting('Hello '.$notifiable->name.'!')
             ->line('Congratulations! Your account has been verified by our admin team.')
             ->line('You now have full access to all features and services.')
-            ->action('Visit Dashboard', url('/dashboard'))
             ->line('Thank you for being a valued '.$this->userType.'!')
             ->salutation('Best regards, '.config('app.name').' Team');
     }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Notifications\AccountVerifiedNotification;
 use App\Notifications\ComplianceApprovedNotification;
+use App\Helpers\Helper;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -44,6 +45,13 @@ class SupplierController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $suppliers->getCollection()->transform(function ($supplier) {
+            $supplier->insurance_document = Helper::generateURL($supplier->insurance_document);
+            $supplier->license_document = Helper::generateURL($supplier->license_document);
+            $supplier->profile_picture = Helper::generateURL($supplier->profile_picture);
+            return $supplier;
+        });
+
         return Inertia::render('Admin/Suppliers/Index', [
             'suppliers' => $suppliers,
             'filters' => $request->only(['search', 'verified', 'compliance']),
@@ -61,6 +69,10 @@ class SupplierController extends Controller
      */
     public function show(User $supplier)
     {
+        $supplier->insurance_document = Helper::generateURL($supplier->insurance_document);
+        $supplier->license_document = Helper::generateURL($supplier->license_document);
+        $supplier->profile_picture = Helper::generateURL($supplier->profile_picture);
+
         return Inertia::render('Admin/Suppliers/Show', [
             'supplier' => $supplier,
         ]);

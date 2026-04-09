@@ -220,15 +220,15 @@
             <table class="amount-table">
                 <tr>
                     <td>Supplier Amount:</td>
-                    <td style="text-align: right;">${{ number_format($invoice->supplier_amount, 2) }}</td>
+                    <td style="text-align: right;">€{{ number_format($invoice->supplier_amount, 2) }}</td>
                 </tr>
                 <tr>
                     <td>Platform Fee (5%):</td>
-                    <td style="text-align: right;">${{ number_format($invoice->platform_fee, 2) }}</td>
+                    <td style="text-align: right;">€{{ number_format($invoice->platform_fee, 2) }}</td>
                 </tr>
                 <tr class="total">
                     <td>Total Payable:</td>
-                    <td style="text-align: right;">${{ number_format($invoice->total_amount, 2) }}</td>
+                    <td style="text-align: right;">€{{ number_format($invoice->total_amount, 2) }}</td>
                 </tr>
             </table>
         </div>

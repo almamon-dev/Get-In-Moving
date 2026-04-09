@@ -56,10 +56,22 @@ class Helper
      */
     public static function generateURL(?string $filePath): ?string
     {
-        // Check if the path is empty or only whitespace
         if (empty($filePath) || trim($filePath) === '') {
             return null;
         }
-        return null;
+
+        // Remove any existing /storage/ or storage/ prefix from the path
+        $filePath = ltrim($filePath, '/');
+        if (str_starts_with($filePath, 'storage/')) {
+            $filePath = substr($filePath, 8);
+        }
+
+        // If it's already a full URL, return it
+        if (str_starts_with($filePath, 'http://') || str_starts_with($filePath, 'https://')) {
+            return $filePath;
+        }
+
+        // Return a full URL based on the relative path from public/
+        return asset($filePath);
     }
 }

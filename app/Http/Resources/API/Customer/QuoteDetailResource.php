@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\API\Customer;
 
+use App\Helpers\Helper;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -30,6 +31,8 @@ class QuoteDetailResource extends JsonResource
             'delivery_time_from' => $this->delivery_time_from,
             'delivery_time_till' => $this->delivery_time_till,
             'pallet_type' => $this->getPalletType(),
+            'additional_notes' => $this->additional_notes,
+            'attachment_url' => Helper::generateURL($this->attachment_path),
             'estimated_price_range' => $this->getEstimatedPriceRange(),
         ];
     }

@@ -134,10 +134,10 @@ export default function Edit({ auth, pricingPlan }) {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-2">
                                     <label className="text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">
-                                        Price (USD) <span className="text-red-500">*</span>
+                                        Price (EUR) <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a0a3af] font-medium">$</span>
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a0a3af] font-medium">€</span>
                                         <input
                                             type="number"
                                             step="0.01"

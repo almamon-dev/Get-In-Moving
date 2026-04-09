@@ -1,9 +1,9 @@
 import React from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { 
-    Home, ChevronLeft, Mail, Phone, Building2, Calendar, 
-    Check, X, Shield, AlertCircle, Trash2, FileText, Download 
+import {
+    Home, ChevronLeft, Mail, Phone, Building2, Calendar,
+    Check, X, Shield, AlertCircle, Trash2, FileText, Download
 } from 'lucide-react';
 
 export default function Show({ auth, supplier }) {
@@ -137,10 +137,10 @@ export default function Show({ auth, supplier }) {
                                                 <div>
                                                     <p className="text-[12px] text-[#727586] font-medium">Joined</p>
                                                     <p className="text-[14px] text-[#2f3344] font-bold">
-                                                        {new Date(supplier.created_at).toLocaleDateString('en-US', { 
-                                                            year: 'numeric', 
-                                                            month: 'long', 
-                                                            day: 'numeric' 
+                                                        {new Date(supplier.created_at).toLocaleDateString('en-US', {
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric'
                                                         })}
                                                     </p>
                                                 </div>
@@ -173,10 +173,10 @@ export default function Show({ auth, supplier }) {
                                     <div>
                                         <p className="text-[13px] text-[#727586] font-medium mb-2">Policy Expiry</p>
                                         <p className="text-[14px] text-[#2f3344] font-bold">
-                                            {new Date(supplier.policy_expiry_date).toLocaleDateString('en-US', { 
-                                                year: 'numeric', 
-                                                month: 'long', 
-                                                day: 'numeric' 
+                                            {new Date(supplier.policy_expiry_date).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric'
                                             })}
                                         </p>
                                     </div>
@@ -185,41 +185,63 @@ export default function Show({ auth, supplier }) {
                                 {/* Documents */}
                                 <div className="mt-6 pt-6 border-t border-[#e3e4e8]">
                                     <h3 className="text-[16px] font-bold text-[#2f3344] mb-4">Documents</h3>
+
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {supplier.insurance_document && (
+
+                                        {/* Insurance Document */}
+                                        {supplier?.insurance_document ? (
                                             <a
-                                                href={`/storage/${supplier.insurance_document}`}
+                                                href={supplier.insurance_document}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="flex items-center gap-3 p-4 bg-[#f8f9fa] rounded-[8px] hover:bg-[#e9ecef] transition-all"
+                                                className="flex items-center gap-3 p-4 bg-[#f8f9fa] rounded-[8px] hover:bg-[#e9ecef] transition-all duration-200"
                                             >
                                                 <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-[#673ab7]">
                                                     <FileText size={20} />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p className="text-[13px] font-bold text-[#2f3344]">Insurance Document</p>
-                                                    <p className="text-[12px] text-[#727586]">Click to view</p>
+                                                    <p className="text-[13px] font-bold text-[#2f3344]">
+                                                        Insurance Document
+                                                    </p>
+                                                    <p className="text-[12px] text-[#727586]">
+                                                        Click to view
+                                                    </p>
                                                 </div>
                                                 <Download size={18} className="text-[#727586]" />
                                             </a>
+                                        ) : (
+                                            <div className="p-4 bg-[#f8f9fa] rounded-[8px] text-[13px] text-[#727586]">
+                                                No Insurance Document
+                                            </div>
                                         )}
-                                        {supplier.license_document && (
+
+                                        {/* License Document */}
+                                        {supplier?.license_document ? (
                                             <a
-                                                href={`/storage/${supplier.license_document}`}
+                                                href={supplier.license_document}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="flex items-center gap-3 p-4 bg-[#f8f9fa] rounded-[8px] hover:bg-[#e9ecef] transition-all"
+                                                className="flex items-center gap-3 p-4 bg-[#f8f9fa] rounded-[8px] hover:bg-[#e9ecef] transition-all duration-200"
                                             >
                                                 <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-[#673ab7]">
                                                     <FileText size={20} />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p className="text-[13px] font-bold text-[#2f3344]">License Document</p>
-                                                    <p className="text-[12px] text-[#727586]">Click to view</p>
+                                                    <p className="text-[13px] font-bold text-[#2f3344]">
+                                                        License Document
+                                                    </p>
+                                                    <p className="text-[12px] text-[#727586]">
+                                                        Click to view
+                                                    </p>
                                                 </div>
                                                 <Download size={18} className="text-[#727586]" />
                                             </a>
+                                        ) : (
+                                            <div className="p-4 bg-[#f8f9fa] rounded-[8px] text-[13px] text-[#727586]">
+                                                No License Document
+                                            </div>
                                         )}
+
                                     </div>
                                 </div>
                             </div>
@@ -313,11 +335,10 @@ export default function Show({ auth, supplier }) {
                             <div className="p-7 space-y-3">
                                 <button
                                     onClick={toggleCompliance}
-                                    className={`w-full h-[48px] rounded-[8px] font-bold text-[14px] transition-all flex items-center justify-center gap-2 ${
-                                        supplier.is_compliance_verified
-                                            ? 'bg-orange-50 text-orange-600 hover:bg-orange-100'
-                                            : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                                    }`}
+                                    className={`w-full h-[48px] rounded-[8px] font-bold text-[14px] transition-all flex items-center justify-center gap-2 ${supplier.is_compliance_verified
+                                        ? 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+                                        : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                        }`}
                                 >
                                     {supplier.is_compliance_verified ? (
                                         <>
@@ -333,11 +354,10 @@ export default function Show({ auth, supplier }) {
                                 </button>
                                 <button
                                     onClick={toggleVerification}
-                                    className={`w-full h-[48px] rounded-[8px] font-bold text-[14px] transition-all flex items-center justify-center gap-2 ${
-                                        supplier.is_verified
-                                            ? 'bg-orange-50 text-orange-600 hover:bg-orange-100'
-                                            : 'bg-green-50 text-green-600 hover:bg-green-100'
-                                    }`}
+                                    className={`w-full h-[48px] rounded-[8px] font-bold text-[14px] transition-all flex items-center justify-center gap-2 ${supplier.is_verified
+                                        ? 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+                                        : 'bg-green-50 text-green-600 hover:bg-green-100'
+                                        }`}
                                 >
                                     {supplier.is_verified ? (
                                         <>

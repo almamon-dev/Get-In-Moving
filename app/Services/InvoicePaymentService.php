@@ -25,7 +25,7 @@ class InvoicePaymentService
             'payment_method_types' => ['card'],
             'line_items' => [[
                 'price_data' => [
-                    'currency' => 'usd',
+                    'currency' => 'eur',
                     'product_data' => [
                         'name' => 'Invoice '.$invoice->invoice_number,
                         'description' => 'Payment for Order '.$invoice->order->order_number,

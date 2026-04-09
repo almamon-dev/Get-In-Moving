@@ -48,8 +48,8 @@ class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow
             ($row['delivery_date'] ?? '')
         );
 
-        if ($currentGroupKey !== $this->lastGroupKey) {
-            // New request detected or first row
+        if ($currentGroupKey !== $this->lastGroupKey && $this->userId) {
+            // New request detected or first row - only reset if in Bulk Mode (userId present)
             $this->quoteRequestId = null;
             $this->lastGroupKey = $currentGroupKey;
         }

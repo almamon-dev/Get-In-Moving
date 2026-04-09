@@ -5,6 +5,8 @@ namespace App\Http\Resources\API\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+use App\Helpers\Helper;
+
 /**
  * @mixin \App\Models\QuoteRequest
  */
@@ -32,6 +34,7 @@ class QuoteRequestResource extends JsonResource
             'time_ago' => 'receive '.($this->created_at?->diffForHumans() ?? 'recently'),
             'supplier_note' => $this->quotes()->where('user_id', auth()->id())->first()?->notes ?? '',
             'additional_notes' => $this->additional_notes,
+            'attachment_url' => Helper::generateURL($this->attachment_path),
             'requested_date' => $this->requested_date ? $this->requested_date->format('j M Y') : 'N/A',
         ];
     }

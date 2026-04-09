@@ -43,10 +43,10 @@ class WithdrawalStatusNotification extends Notification
             ->greeting('Hello '.$notifiable->name.'!');
 
         if ($status === 'completed' || $status === 'approved') {
-            $message->line("Your withdrawal request for \${$amount} has been approved and processed.")
+            $message->line("Your withdrawal request for €{$amount} has been approved and processed.")
                 ->line("The funds should appear in your selected account: {$this->withdrawRequest->payment_method}.");
         } else {
-            $message->line("Your withdrawal request for \${$amount} has been rejected.")
+            $message->line("Your withdrawal request for €{$amount} has been rejected.")
                 ->line('Reason/Note: '.($this->withdrawRequest->admin_note ?? 'No specific reason provided.'))
                 ->line('The amount has been refunded to your account balance.');
         }
@@ -66,7 +66,7 @@ class WithdrawalStatusNotification extends Notification
             'withdraw_request_id' => $this->withdrawRequest->id,
             'amount' => $this->withdrawRequest->amount,
             'status' => $this->withdrawRequest->status,
-            'message' => "Your withdrawal request for \${$this->withdrawRequest->amount} was ".$this->withdrawRequest->status.'.',
+            'message' => "Your withdrawal request for €{$this->withdrawRequest->amount} was ".$this->withdrawRequest->status.'.',
             'type' => 'withdrawal_status_update',
         ];
     }

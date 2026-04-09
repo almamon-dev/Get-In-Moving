@@ -3,7 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import { 
     Home, Users, Truck, ShoppingCart, 
     Lock, AlertCircle, ArrowRight, Clock,
-    TrendingUp, Activity, DollarSign, Calendar,
+    TrendingUp, Activity, Euro, Calendar,
     ArrowUpRight, ArrowDownRight, UserCircle
 } from 'lucide-react';
 import { 
@@ -15,7 +15,7 @@ export default function Dashboard({ auth, stats, recent_disputes, revenue_data, 
     const statCards = [
         { 
             label: 'Total Revenue', 
-            value: `$${parseFloat(stats.total_revenue).toLocaleString()}`, 
+            value: `€${parseFloat(stats.total_revenue).toLocaleString()}`, 
             icon: <TrendingUp size={24} />, 
             color: 'text-emerald-600', 
             bg: 'bg-emerald-500/10' 
@@ -36,7 +36,7 @@ export default function Dashboard({ auth, stats, recent_disputes, revenue_data, 
         },
         { 
             label: 'Held in Escrow', 
-            value: `$${parseFloat(stats.held_amount).toLocaleString()}`, 
+            value: `€${parseFloat(stats.held_amount).toLocaleString()}`, 
             icon: <Lock size={24} />, 
             color: 'text-rose-600', 
             bg: 'bg-rose-500/10',
@@ -136,11 +136,11 @@ export default function Dashboard({ auth, stats, recent_disputes, revenue_data, 
                                         axisLine={false} 
                                         tickLine={false} 
                                         tick={{fontSize: 12, fill: '#adb5bd'}}
-                                        tickFormatter={(value) => `$${value}`}
+                                        tickFormatter={(value) => `€${value}`}
                                     />
                                     <Tooltip 
                                         contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
-                                        formatter={(value) => [`$${value}`, 'Revenue']}
+                                        formatter={(value) => [`€${value}`, 'Revenue']}
                                     />
                                     <Area 
                                         type="monotone" 
@@ -233,7 +233,7 @@ export default function Dashboard({ auth, stats, recent_disputes, revenue_data, 
                                             </td>
                                             <td className="px-7 py-4 text-right">
                                                 <p className={`text-[14px] font-bold ${transaction.type === 'earning' ? 'text-emerald-600' : 'text-[#2f3344]'}`}>
-                                                    {transaction.type === 'earning' ? '+' : '-'}${parseFloat(transaction.amount).toLocaleString()}
+                                                    {transaction.type === 'earning' ? '+' : '-'}€{parseFloat(transaction.amount).toLocaleString()}
                                                 </p>
                                             </td>
                                         </tr>

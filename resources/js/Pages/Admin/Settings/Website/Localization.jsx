@@ -9,7 +9,7 @@ export default function Localization() {
         default_language: 'English (US)',
         date_format: 'DD/MM/YYYY',
         time_format: '12-hour (AM/PM)',
-        currency: 'USD ($)',
+        currency: 'EUR (€)',
         currency_position: 'Left',
         thousand_separator: ',',
         decimal_separator: '.',

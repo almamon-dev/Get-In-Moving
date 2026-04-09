@@ -3,7 +3,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { 
     Plus, Edit, Trash2, Power, PowerOff, Check, 
-    Users, Truck, DollarSign, Calendar, Award
+    Users, Truck, Euro, Calendar, Award
 } from 'lucide-react';
 
 export default function Index({ auth, supplierPlans, customerPlans }) {
@@ -68,7 +68,7 @@ export default function Index({ auth, supplierPlans, customerPlans }) {
                 <div className="mb-4">
                     <div className="flex items-baseline gap-1">
                         <span className="text-[32px] font-bold text-[#2f3344]">
-                            ${plan.price}
+                            €{plan.price}
                         </span>
                         <span className="text-[14px] text-[#727586]">
                             /{getBillingPeriodLabel(plan.billing_period).toLowerCase()}
@@ -171,7 +171,7 @@ export default function Index({ auth, supplierPlans, customerPlans }) {
                             </div>
                         ) : (
                             <div className="bg-white rounded-lg border border-[#e5e7eb] p-12 text-center">
-                                <DollarSign size={40} className="mx-auto text-[#d1d5db] mb-3" />
+                                <Euro size={40} className="mx-auto text-[#d1d5db] mb-3" />
                                 <h3 className="text-[16px] font-semibold text-[#2f3344] mb-2">No Supplier Plans</h3>
                                 <p className="text-[13px] text-[#727586] mb-4">Create your first supplier pricing plan</p>
                                 <Link
@@ -204,7 +204,7 @@ export default function Index({ auth, supplierPlans, customerPlans }) {
                             </div>
                         ) : (
                             <div className="bg-white rounded-lg border border-[#e5e7eb] p-12 text-center">
-                                <DollarSign size={40} className="mx-auto text-[#d1d5db] mb-3" />
+                                <Euro size={40} className="mx-auto text-[#d1d5db] mb-3" />
                                 <h3 className="text-[16px] font-semibold text-[#2f3344] mb-2">No Customer Plans</h3>
                                 <p className="text-[13px] text-[#727586] mb-4">Create your first customer pricing plan</p>
                                 <Link

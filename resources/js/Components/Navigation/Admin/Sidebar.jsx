@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, usePage } from "@inertiajs/react";
-import { 
-    Home, Globe, LayoutGrid, Waves, Mail, 
+import {
+    Home, Globe, LayoutGrid, Waves, Mail,
     Cloud, CreditCard, Store, ChevronRight, ChevronsLeft,
     Settings, ShieldCheck, DollarSign, Cog, Users, FolderTree,
     Smartphone, Monitor, CircleDollarSign, Hexagon, LogOut, User,
@@ -15,7 +15,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
 
     const [openMenus, setOpenMenus] = useState(() => {
         // Initialize open menus based on current path
-     
+
         if (currentPath.startsWith('/admin/billing')) {
             return { billing: true };
         }
@@ -25,88 +25,88 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
     const menuGroups = [
         {
             items: [
-                { 
-                    label: "Customers", 
-                    path: route('admin.customers.index'), 
-                    icon: <UserCircle />, 
-                    route: "admin.customers.index" 
+                {
+                    label: "Customers",
+                    path: route('admin.customers.index'),
+                    icon: <UserCircle />,
+                    route: "admin.customers.index"
                 },
-                { 
-                    label: "Suppliers", 
-                    path: route('admin.suppliers.index'), 
-                    icon: <Truck />, 
-                    route: "admin.suppliers.index" 
+                {
+                    label: "Suppliers",
+                    path: route('admin.suppliers.index'),
+                    icon: <Truck />,
+                    route: "admin.suppliers.index"
                 },
-                { 
-                    label: "Raised Issues", 
-                    path: route('admin.issues.index'), 
-                    icon: <AlertCircle />, 
-                    route: "admin.issues.index" 
+                {
+                    label: "Raised Issues",
+                    path: route('admin.issues.index'),
+                    icon: <AlertCircle />,
+                    route: "admin.issues.index"
                 },
-                { 
-                    label: "Pricing Plans", 
-                    path: route('admin.pricing-plans.index'), 
-                    icon: <CircleDollarSign />, 
-                    route: "admin.pricing-plans.index" 
+                {
+                    label: "Pricing Plans",
+                    path: route('admin.pricing-plans.index'),
+                    icon: <CircleDollarSign />,
+                    route: "admin.pricing-plans.index"
                 },
-                { 
-                    label: "Withdrawals", 
-                    path: route('admin.withdrawals.index'), 
-                    icon: <DollarSign />, 
-                    route: "admin.withdrawals.index" 
+                {
+                    label: "Withdrawals",
+                    path: route('admin.withdrawals.index'),
+                    icon: <DollarSign />,
+                    route: "admin.withdrawals.index"
                 },
-                { 
-                    label: "Transactions", 
-                    path: route('admin.transactions.index'), 
-                    icon: <CircleDollarSign />, 
-                    route: "admin.transactions.index" 
+                {
+                    label: "Transactions",
+                    path: route('admin.transactions.index'),
+                    icon: <CircleDollarSign />,
+                    route: "admin.transactions.index"
                 },
             ]
         },
-       
+
         {
             title: "Settings",
             items: [
-                { 
-                    label: "General Settings", 
-                    icon: <Settings />, 
+                {
+                    label: "General Settings",
+                    icon: <Settings />,
                     key: "general",
                     children: [
                         { label: "Profile", path: route('admin.settings.general.profile') },
                         { label: "Security", path: route('admin.settings.general.security') },
-                       
+
                     ]
                 },
-                { 
-                    label: "Website Settings", 
-                    icon: <Globe />, 
+                {
+                    label: "Website Settings",
+                    icon: <Globe />,
                     key: "website",
                     children: [
                         { label: "System Settings", path: route('admin.settings.website.system') },
                         { label: "Company Settings", path: route('admin.settings.website.company') },
-                       
+
                     ]
                 },
-                { 
-                    label: "System Settings", 
-                    icon: <Monitor />, 
+                {
+                    label: "System Settings",
+                    icon: <Monitor />,
                     key: "system",
                     children: [
                         { label: "Email", path: route('admin.settings.system.email') },
-                      
-                      
+
+
                     ]
                 },
-                { 
-                    label: "Financial Settings", 
-                    icon: <CircleDollarSign />, 
+                {
+                    label: "Financial Settings",
+                    icon: <CircleDollarSign />,
                     key: "financial",
                     children: [
                         { label: "Payment Gateway", path: route('admin.settings.financial.gateway') },
-                      
+
                     ]
                 },
-               
+
                 { label: "Logout", path: "/logout", icon: <LogOut />, method: "post" },
             ]
         }
@@ -129,14 +129,14 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
         const active = checkActive(item);
         const isOpen = openMenus[item.key];
         const isLogout = item.label === "Logout";
-        
+
         const content = (
             <>
                 {/* Icon */}
                 <div className={`${isCollapsed ? 'mb-1' : 'mr-3'} transition-transform duration-200 group-hover:scale-110 ${active || isOpen ? 'text-[#0a66c2]' : 'text-slate-400 group-hover:text-[#0a66c2]'}`}>
-                    {React.cloneElement(item.icon, { 
-                        size: isCollapsed ? 24 : 18, 
-                        strokeWidth: active || isOpen ? 2 : 1.5 
+                    {React.cloneElement(item.icon, {
+                        size: isCollapsed ? 24 : 18,
+                        strokeWidth: active || isOpen ? 2 : 1.5
                     })}
                 </div>
 
@@ -150,8 +150,8 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
 
                 {/* Chevron for expandable or just as a visual guide */}
                 {!isCollapsed && !isLogout && (
-                    <ChevronRight 
-                        size={14} 
+                    <ChevronRight
+                        size={14}
                         className={`transition-all duration-200 text-slate-300 group-hover:text-slate-500 ${isOpen ? 'rotate-90' : ''} ${item.children ? '' : 'opacity-60'}`}
                     />
                 )}
@@ -171,11 +171,11 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     <button
                         onClick={() => setOpenMenus(prev => ({ ...prev, [item.key]: !prev[item.key] }))}
                         className={`w-full flex transition-all duration-200 group relative rounded-lg
-                            ${isCollapsed 
-                                ? 'flex-col items-center justify-center py-4 px-1' 
+                            ${isCollapsed
+                                ? 'flex-col items-center justify-center py-4 px-1'
                                 : 'flex-row items-center py-2.5 px-4'}
                             ${active || isOpen
-                                ? 'bg-[#0a66c2]/5 text-[#0a66c2]' 
+                                ? 'bg-[#0a66c2]/5 text-[#0a66c2]'
                                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
                     >
                         {content}
@@ -213,11 +213,11 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     method="post"
                     as="button"
                     className={`w-full flex transition-all duration-200 group relative rounded-lg
-                        ${isCollapsed 
-                            ? 'flex-col items-center justify-center py-4 px-1' 
+                        ${isCollapsed
+                            ? 'flex-col items-center justify-center py-4 px-1'
                             : 'flex-row items-center py-2.5 px-4'}
-                        ${active 
-                            ? 'bg-[#0a66c2]/5 text-[#0a66c2]' 
+                        ${active
+                            ? 'bg-[#0a66c2]/5 text-[#0a66c2]'
                             : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
                 >
                     {content}
@@ -230,11 +230,11 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                 key={item.label}
                 href={item.path}
                 className={`w-full flex transition-all duration-200 group relative rounded-lg
-                    ${isCollapsed 
-                        ? 'flex-col items-center justify-center py-4 px-1' 
+                    ${isCollapsed
+                        ? 'flex-col items-center justify-center py-4 px-1'
                         : 'flex-row items-center py-2.5 px-4'}
-                    ${active 
-                        ? 'bg-[#0a66c2]/5 text-[#0a66c2]' 
+                    ${active
+                        ? 'bg-[#0a66c2]/5 text-[#0a66c2]'
                         : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
             >
                 {content}
@@ -245,7 +245,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
     return (
         <div className="flex flex-col h-full bg-white relative">
             {/* Collapse Toggle Button */}
-            <button 
+            <button
                 onClick={toggleCollapse}
                 className="absolute -right-3.5 top-5 z-50 w-7 h-7 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-[#0a66c2] shadow-sm transition-transform duration-300"
                 style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}

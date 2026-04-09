@@ -36,7 +36,6 @@ class ComplianceApprovedNotification extends Notification
             ->line('Great news! Your compliance documents have been reviewed and approved.')
             ->line('Your insurance and licensing information has been verified by our team.')
             ->line('You can now access all supplier features and start providing services.')
-            ->action('Visit Dashboard', url('/dashboard'))
             ->line('Thank you for completing the compliance process!')
             ->salutation('Best regards, '.config('app.name').' Team');
     }

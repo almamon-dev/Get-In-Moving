@@ -4,7 +4,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { 
     Home, Search, ChevronLeft, ChevronRight, 
     TrendingUp, Clock, Activity,
-    DollarSign, ArrowUpRight, ShieldCheck,
+    Euro, ArrowUpRight, ShieldCheck,
     CreditCard, Calendar, User, Info, Timer 
 } from 'lucide-react';
 import { useEffect } from 'react';
@@ -127,7 +127,7 @@ export default function Index({ auth, payments, stats, filters = {} }) {
                         </div>
                         <div>
                             <p className="text-[13px] font-bold text-[#727586] uppercase tracking-wider mb-1">Total Payment Volume</p>
-                            <h3 className="text-3xl font-bold text-[#2f3344]">${parseFloat(stats.total_volume).toLocaleString()}</h3>
+                            <h3 className="text-3xl font-bold text-[#2f3344]">€{parseFloat(stats.total_volume).toLocaleString()}</h3>
                             <p className="text-[12px] text-emerald-500 font-medium mt-2">All-time gross payments</p>
                         </div>
                     </div>
@@ -140,7 +140,7 @@ export default function Index({ auth, payments, stats, filters = {} }) {
                         </div>
                         <div>
                             <p className="text-[13px] font-bold text-[#727586] uppercase tracking-wider mb-1">Released to Suppliers</p>
-                            <h3 className="text-3xl font-bold text-[#2f3344]">${parseFloat(stats.released_amount).toLocaleString()}</h3>
+                            <h3 className="text-3xl font-bold text-[#2f3344]">€{parseFloat(stats.released_amount).toLocaleString()}</h3>
                             <p className="text-[12px] text-emerald-500 font-medium mt-2">Successfully disbursed</p>
                         </div>
                     </div>
@@ -154,7 +154,7 @@ export default function Index({ auth, payments, stats, filters = {} }) {
                         <div className="flex items-end justify-between">
                             <div>
                                 <p className="text-[13px] font-bold text-[#727586] uppercase tracking-wider mb-1">Held in Escrow</p>
-                                <h3 className="text-3xl font-bold text-[#2f3344]">${parseFloat(stats.escrow_amount).toLocaleString()}</h3>
+                                <h3 className="text-3xl font-bold text-[#2f3344]">€{parseFloat(stats.escrow_amount).toLocaleString()}</h3>
                                 <div className="text-[13px] font-medium text-amber-600 mt-2 flex items-center gap-1">
                                     <span>{stats.pending_clearance_count} payments waiting for release</span>
                                 </div>
@@ -273,7 +273,7 @@ export default function Index({ auth, payments, stats, filters = {} }) {
                                                 </td>
                                                 <td className="px-6 py-5 align-top text-right">
                                                     <span className="text-[16px] font-bold text-[#2f3344]">
-                                                        ${parseFloat(payment.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                        €{parseFloat(payment.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                                     </span>
                                                     <p className="text-[11px] text-[#727586] uppercase tracking-wider">{payment.currency}</p>
                                                 </td>

@@ -91,8 +91,8 @@ class CustomerApiController extends Controller
                 $extension = $file->getClientOriginalExtension();
                 Log::info('File upload detected in createQuoteRequest.', ['extension' => $extension, 'name' => $file->getClientOriginalName()]);
 
-                $path = $file->store('quote_attachments', 'public');
-                $quoteRequest->update(['attachment_path' => '/storage/'.$path]);
+                $path = \App\Helpers\Helper::uploadFile('quote_attachments', $file);
+                $quoteRequest->update(['attachment_path' => '/'.$path]);
 
                 if (in_array(strtolower($extension), ['csv', 'xlsx', 'xls'])) {
                     Log::info('Starting Excel import for QuoteRequest: '.$quoteRequest->id);
@@ -134,12 +134,12 @@ class CustomerApiController extends Controller
             $file = $request->file('file');
             Log::info('Starting Bulk importQuoteRequest for user: '.auth()->id(), ['filename' => $file->getClientOriginalName()]);
 
-            // Store the file and generate a link for reference in all created items
-            $path = $file->store('quote_attachments', 'public');
-            $attachmentPath = '/storage/'.$path;
+            // Store the file using Helper
+            $path = \App\Helpers\Helper::uploadFile('quote_attachments', $file);
+            $attachmentPath = '/'.$path;
 
             // Execute the Import logic (Passing null for quoteRequestId triggers new parent creation per row)
-            Excel::import(new QuoteRequestItemsImport(null, auth()->id(), $attachmentPath), $file);
+            Excel::import(new QuoteRequestItemsImport(null, auth()->id(), $attachmentPath), public_path($path));
             // mamon
             DB::commit();
 
@@ -451,11 +451,11 @@ class CustomerApiController extends Controller
         DB::beginTransaction();
         try {
             $file = $request->file('file');
-            $path = $file->store('quote_attachments', 'public');
-            $attachmentPath = '/storage/'.$path;
+            $path = \App\Helpers\Helper::uploadFile('quote_attachments', $file);
+            $attachmentPath = '/'.$path;
 
             // Extract data using AI
-            $extractedRows = $this->aiService->extractFromPdf($file->getRealPath(), $file->getClientOriginalName());
+            $extractedRows = $this->aiService->extractFromPdf(public_path($path), $file->getClientOriginalName());
 
             $createdRequests = [];
 
@@ -867,9 +867,8 @@ class CustomerApiController extends Controller
         // Handle profile picture upload
         if ($request->hasFile('profile_picture')) {
             $file = $request->file('profile_picture');
-            $filename = time().'_'.$file->getClientOriginalName();
-            $path = $file->storeAs('profile_pictures', $filename, 'public');
-            $data['profile_picture'] = '/storage/'.$path;
+            $path = \App\Helpers\Helper::uploadFile('profile_pictures', $file);
+            $data['profile_picture'] = '/'.$path;
         }
 
         $user->update($data);

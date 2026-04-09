@@ -4,7 +4,6 @@ namespace App\Http\Resources\API\Supplier;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 class SupplierProfileResource extends JsonResource
 {
@@ -38,7 +37,7 @@ class SupplierProfileResource extends JsonResource
                     'uploaded_at' => $this->license_uploaded_at instanceof \Carbon\Carbon ? $this->license_uploaded_at->format('j M Y') : ($this->license_uploaded_at ? date('j M Y', strtotime($this->license_uploaded_at)) : null),
                     'expiry_at' => $this->license_expiry_date instanceof \Carbon\Carbon ? $this->license_expiry_date->format('j M Y') : ($this->license_expiry_date ? date('j M Y', strtotime($this->license_expiry_date)) : null),
                 ],
-                'is_verified' => (bool)$this->is_compliance_verified,
+                'is_verified' => (bool) $this->is_compliance_verified,
             ],
             'deletion_requested' => $this->deletion_requested_at !== null,
             'status' => $this->status,

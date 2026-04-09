@@ -5,6 +5,8 @@ namespace App\Http\Resources\API\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+use App\Helpers\Helper;
+
 class QuoteRequestResource extends JsonResource
 {
     /**
@@ -24,6 +26,7 @@ class QuoteRequestResource extends JsonResource
             'delivery_date' => $this->delivery_date ? \Carbon\Carbon::parse($this->delivery_date)->format('j M Y') : '',
             'created_at' => $this->created_at,
             'additional_notes' => $this->additional_notes,
+            'attachment_url' => Helper::generateURL($this->attachment_path),
             'supplier_note' => $this->quotes()->first()?->notes ?? '',
             'quotes_count' => $this->quotes_count ?? $this->quotes()->count(),
         ];
