@@ -39,7 +39,7 @@ class OrderResource extends JsonResource
 
             'payment' => [
                 'total' => (float) $this->total_amount,
-                'formatted' => '$'.number_format($this->total_amount, 2),
+                'formatted' => '€'.number_format($this->total_amount, 2),
                 'is_paid' => $this->invoice?->status === 'paid',
             ],
 

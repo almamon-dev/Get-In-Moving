@@ -19,7 +19,7 @@ class InvoiceResource extends JsonResource
             'invoice_number' => $this->invoice_number,
             'order_number' => $this->order?->order_number,
             'supplier_name' => $this->order?->supplier?->name ?? 'Swift Transport Co.',
-            'amount' => '$' . number_format($this->total_amount, 0),
+            'amount' => '€' . number_format($this->total_amount, 0),
             'due_date' => $this->due_date ? \Carbon\Carbon::parse($this->due_date)->format('j M Y') : 'N/A',
             'status' => ucfirst($this->status),
             'raw_status' => $this->status, // for frontend logic

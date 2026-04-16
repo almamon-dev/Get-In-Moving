@@ -53,7 +53,7 @@ class SupplierAvailabilityResource extends JsonResource
             'time_end' => $this->end_time ?? 'N/A',
             'min_weight' => $this->min_weight ?? 0,
             'max_weight' => $this->max_weight ?? 0,
-            'price' => '$'.number_format($this->price, 2),
+            'price' => '€'.number_format($this->price, 2),
 
             // UI Status
             'status' => $status_label,

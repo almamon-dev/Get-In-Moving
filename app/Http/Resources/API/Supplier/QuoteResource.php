@@ -24,7 +24,7 @@ class QuoteResource extends JsonResource
             'valid_until' => $this->valid_until,
             'status' => $this->status,
             'revised_amount' => $this->revised_amount ? (float) $this->revised_amount : null,
-            'revised_amount_formatted' => $this->revised_amount ? '$' . number_format($this->revised_amount, 0) : null,
+            'revised_amount_formatted' => $this->revised_amount ? '€' . number_format($this->revised_amount, 0) : null,
             'revised_estimated_time' => $this->revised_estimated_time,
             'revision_status' => $this->revision_status,
             'chat_id' => $this->id, // Using Quote ID as Chat ID

@@ -53,9 +53,9 @@ class InvoiceDetailResource extends JsonResource
             ],
 
             'amount_breakdown' => [
-                'supplier_amount' => '$'.number_format($this->supplier_amount, 0),
-                'platform_fee' => '$'.number_format($this->platform_fee, 0),
-                'total_payable' => '$'.number_format($this->total_amount, 0),
+                'supplier_amount' => '€'.number_format($this->supplier_amount, 0),
+                'platform_fee' => '€'.number_format($this->platform_fee, 0),
+                'total_payable' => '€'.number_format($this->total_amount, 0),
             ],
 
             'payment_details' => [

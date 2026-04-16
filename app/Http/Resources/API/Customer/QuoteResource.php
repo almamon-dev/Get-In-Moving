@@ -16,7 +16,7 @@ class QuoteResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'amount' => '$'.number_format($this->amount, 0),
+            'amount' => '€'.number_format($this->amount, 0),
             'supplier_name' => $this->supplier?->company_name ?? $this->supplier?->name ?? 'Supplier',
             'rating' => round(\App\Models\Review::where('supplier_id', $this->user_id)->avg('rating') ?? 5.0, 1),
             'completed_orders' => (\App\Models\Order::where('supplier_id', $this->user_id)->where('status', 'completed')->count() ?? 0) . " completed orders",

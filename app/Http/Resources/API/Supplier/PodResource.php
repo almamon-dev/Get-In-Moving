@@ -30,7 +30,7 @@ class PodResource extends JsonResource
             'date' => $this->pickup_date ? Carbon::parse($this->pickup_date)->format('d M Y') : 'N/A',
             'status' => $pod['lbl'],
             'status_clr' => $pod['clr'],
-            'price' => '$'.number_format($this->total_amount, 2),
+            'price' => '€'.number_format($this->total_amount, 2),
             'action' => $pod['act'],
             'action_type' => $pod['type'],
             'file_url' => \App\Helpers\Helper::generateURL($this->proof_of_delivery),

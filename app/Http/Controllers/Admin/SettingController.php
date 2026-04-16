@@ -170,7 +170,7 @@ class SettingController extends Controller
 
             foreach ($data as $key => $value) {
                 // If value has spaces or special chars, wrap in quotes
-                $safeValue = (strpos($value, ' ') !== false || strpos($value, '$') !== false) ? "\"$value\"" : $value;
+                $safeValue = (strpos($value, ' ') !== false || strpos($value, '€') !== false) ? "\"$value\"" : $value;
                 
                 if (preg_match("/^{$key}=/m", $content)) {
                     $content = preg_replace("/^{$key}=.*/m", "{$key}={$safeValue}", $content);

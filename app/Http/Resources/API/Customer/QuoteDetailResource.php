@@ -71,9 +71,9 @@ class QuoteDetailResource extends JsonResource
             return 'N/A';
         }
         if ($min == $max) {
-            return '$'.number_format($min, 0);
+            return '€'.number_format($min, 0);
         }
 
-        return '$'.number_format($min, 0).'-$'.number_format($max, 0);
+        return '€'.number_format($min, 0).'-€'.number_format($max, 0);
     }
 }

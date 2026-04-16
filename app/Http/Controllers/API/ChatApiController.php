@@ -32,7 +32,7 @@ class ChatApiController extends Controller
             ->get();
 
         $originalQuote = [
-            'price' => '$'.number_format($quote->amount, 0),
+            'price' => '€'.number_format($quote->amount, 0),
             'location' => $quote->quoteRequest?->pickup_address,
             'estimated_delivery' => $quote->estimated_time,
             'pallet_type' => $quote->quoteRequest?->pallet_type,
@@ -42,7 +42,7 @@ class ChatApiController extends Controller
         $revisedQuote = [];
         if ($quote->revision_status === 'pending') {
             $revisedQuote = [
-                'price' => '$'.number_format($quote->revised_amount, 0),
+                'price' => '€'.number_format($quote->revised_amount, 0),
                 'location' => $quote->quoteRequest?->pickup_address,
                 'estimated_delivery' => $quote->revised_estimated_time,
                 'pallet_type' => $quote->quoteRequest?->pallet_type,

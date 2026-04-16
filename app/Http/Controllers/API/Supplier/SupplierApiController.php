@@ -833,9 +833,9 @@ class SupplierApiController extends Controller
 
         return $this->sendResponse([
             'stats' => [
-                'total_earning' => '$'.number_format($totalEarning, 0),
-                'pending' => '$'.number_format($pending, 0),
-                'total_withdraw' => '$'.number_format($totalWithdraw, 0),
+                'total_earning' => '€'.number_format($totalEarning, 0),
+                'pending' => '€'.number_format($pending, 0),
+                'total_withdraw' => '€'.number_format($totalWithdraw, 0),
             ],
             'history' => PaymentHistoryResource::collection($invoices),
             'pagination' => [

@@ -752,8 +752,8 @@ class CustomerApiController extends Controller
         });
 
         $stats = [
-            'total_spent' => '$'.number_format((clone $statsQuery)->where('status', 'paid')->sum('total_amount')),
-            'total_outstanding' => '$'.number_format((clone $statsQuery)->whereIn('status', ['due', 'overdue'])->sum('total_amount')),
+            'total_spent' => '€'.number_format((clone $statsQuery)->where('status', 'paid')->sum('total_amount')),
+            'total_outstanding' => '€'.number_format((clone $statsQuery)->whereIn('status', ['due', 'overdue'])->sum('total_amount')),
             'total_invoices' => (clone $statsQuery)->count(),
             'invoices_due' => (clone $statsQuery)->where('status', 'due')->count(),
             'invoices_paid' => (clone $statsQuery)->where('status', 'paid')->count(),
