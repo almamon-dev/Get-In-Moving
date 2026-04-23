@@ -24,6 +24,7 @@ class AccountVerifiedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
+        \Log::info('AccountVerifiedNotification sending to: ' . $notifiable->email);
         return ['mail', 'database'];
     }
 
@@ -34,11 +35,11 @@ class AccountVerifiedNotification extends Notification
     {
         return (new MailMessage)
             ->subject('Account Verified - '.config('app.name'))
-            ->greeting('Hello '.$notifiable->name.'!')
-            ->line('Congratulations! Your account has been verified by our admin team.')
-            ->line('You now have full access to all features and services.')
-            ->line('Thank you for being a valued '.$this->userType.'!')
-            ->salutation('Best regards, '.config('app.name').' Team');
+            ->view('emails.account_verified', [
+                'greeting' => 'Account Verified',
+                'notifiable' => $notifiable,
+                'userType' => $this->userType
+            ]);
     }
 
     /**

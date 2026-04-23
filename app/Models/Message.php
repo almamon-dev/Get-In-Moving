@@ -15,6 +15,12 @@ class Message extends Model
         'quote_id',
         'message',
         'is_read',
+        'read_at',
+    ];
+
+    protected $casts = [
+        'read_at' => 'datetime',
+        'is_read' => 'boolean',
     ];
 
     public function sender()

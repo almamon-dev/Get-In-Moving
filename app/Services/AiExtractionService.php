@@ -43,6 +43,11 @@ class AiExtractionService
             $filename = pathinfo($filename, PATHINFO_FILENAME).'.pdf';
         }
 
+        if (!file_exists($filePath)) {
+            Log::error("PDF file not found for AI extraction: {$filePath}");
+            throw new \Exception("File not found: " . basename($filePath));
+        }
+
         $response = Http::withToken($this->apiKey)
             ->attach('file', file_get_contents($filePath), $filename)
             ->post('https://api.openai.com/v1/files', [
@@ -76,71 +81,149 @@ class AiExtractionService
         CRITICAL: If an item is missing dimensions or weight, use null.
         CRITICAL: Your response must contain ONLY the JSON array. Start with [ and end with ]. No markdown, no intro, no outro.";
 
-        $response = Http::withToken($this->apiKey)
-            ->post('https://api.openai.com/v1/chat/completions', [
-                'model' => 'gpt-4o',
-                'messages' => [
-                    ['role' => 'system', 'content' => $systemPrompt],
-                    ['role' => 'user', 'content' => [
-                        ['type' => 'text', 'text' => 'Please extract shipping details from this document.'],
-                        ['type' => 'file_search', 'file_id' => $fileId],
-                    ]],
-                ],
-                'temperature' => 0,
-            ]);
-
         return $this->processViaAssistant($fileId, $systemPrompt);
     }
 
     protected function processViaAssistant($fileId, $systemPrompt)
     {
-        // 1. Create Assistant
-        $assistant = Http::withToken($this->apiKey)
-            ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
-            ->post('https://api.openai.com/v1/assistants', [
-                'model' => 'gpt-4o',
-                'instructions' => $systemPrompt,
-                'tools' => [['type' => 'file_search']],
-            ])->json();
+        $assistantId = null;
+        $threadId = null;
 
-        // 2. Create Thread with File
-        $thread = Http::withToken($this->apiKey)
-            ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
-            ->post('https://api.openai.com/v1/threads', [
-                'messages' => [[
-                    'role' => 'user',
-                    'content' => 'Extract data from this file.',
-                    'attachments' => [['file_id' => $fileId, 'tools' => [['type' => 'file_search']]]],
-                ]],
-            ])->json();
+        try {
+            // 1. Create Assistant
+            $assistant = Http::withToken($this->apiKey)
+                ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
+                ->post('https://api.openai.com/v1/assistants', [
+                    'model' => 'gpt-4o',
+                    'instructions' => $systemPrompt,
+                    'tools' => [['type' => 'file_search']],
+                ])->json();
 
-        // 3. Create Run
-        $run = Http::withToken($this->apiKey)
-            ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
-            ->post("https://api.openai.com/v1/threads/{$thread['id']}/runs", [
-                'assistant_id' => $assistant['id'],
-            ])->json();
+            $assistantId = $assistant['id'] ?? null;
+            if (!$assistantId) {
+                Log::error('Failed to create OpenAI Assistant: ', (array) $assistant);
+                throw new \Exception('Failed to create OpenAI Assistant.');
+            }
 
-        // 4. Poll for completion
-        $status = 'queued';
-        while ($status === 'queued' || $status === 'in_progress') {
-            sleep(2);
+            // 2. Create Thread with File
+            $thread = Http::withToken($this->apiKey)
+                ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
+                ->post('https://api.openai.com/v1/threads', [
+                    'messages' => [[
+                        'role' => 'user',
+                        'content' => 'Extract data from this file.',
+                        'attachments' => [['file_id' => $fileId, 'tools' => [['type' => 'file_search']]]],
+                    ]],
+                ])->json();
+
+            $threadId = $thread['id'] ?? null;
+            if (!$threadId) {
+                Log::error('Failed to create OpenAI Thread: ', (array) $thread);
+                throw new \Exception('Failed to create OpenAI Thread.');
+            }
+
+            // 3. Create Run
             $run = Http::withToken($this->apiKey)
                 ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
-                ->get("https://api.openai.com/v1/threads/{$thread['id']}/runs/{$run['id']}")
+                ->post("https://api.openai.com/v1/threads/{$threadId}/runs", [
+                    'assistant_id' => $assistantId,
+                ])->json();
+
+            $runId = $run['id'] ?? null;
+            if (!$runId) {
+                Log::error('Failed to start OpenAI Run: ', (array) $run);
+                throw new \Exception('Failed to start OpenAI Run.');
+            }
+
+            // 4. Poll for completion
+            $status = 'queued';
+            $maxAttempts = 30; // 60 seconds max
+            $attempts = 0;
+
+            while (in_array($status, ['queued', 'in_progress', 'cancelling']) && $attempts < $maxAttempts) {
+                sleep(2);
+                $runResponse = Http::withToken($this->apiKey)
+                    ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
+                    ->get("https://api.openai.com/v1/threads/{$threadId}/runs/{$runId}");
+                
+                $run = $runResponse->json();
+                
+                if ($runResponse->failed()) {
+                    Log::error("OpenAI Polling Error ({$runResponse->status()}): " . $runResponse->body());
+                    $status = 'failed';
+                    break;
+                }
+
+                $status = $run['status'] ?? 'failed';
+                Log::info("OpenAI Run {$runId} status: {$status} (Attempt {$attempts})");
+                $attempts++;
+            }
+
+            if ($status !== 'completed') {
+                $errorMessage = "AI extraction failed (Run status: {$status}).";
+                if (isset($run['last_error'])) {
+                    $errorDetail = $run['last_error']['message'] ?? json_encode($run['last_error']);
+                    $errorMessage .= " Error: {$errorDetail}";
+                }
+                Log::error($errorMessage, (array) $run);
+                throw new \Exception($errorMessage);
+            }
+
+            // 5. Get Messages
+            $messages = Http::withToken($this->apiKey)
+                ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
+                ->get("https://api.openai.com/v1/threads/{$threadId}/messages")
                 ->json();
-            $status = $run['status'];
+
+            $content = '';
+            if (isset($messages['data']) && is_array($messages['data'])) {
+                foreach ($messages['data'] as $message) {
+                    if (($message['role'] ?? '') === 'assistant') {
+                        foreach ($message['content'] ?? [] as $contentBlock) {
+                            if (isset($contentBlock['text']['value'])) {
+                                $content = $contentBlock['text']['value'];
+                                break 2;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (empty($content)) {
+                Log::error('No text content found in OpenAI assistant messages.', (array) $messages);
+                throw new \Exception('AI assistant failed to provide a response.');
+            }
+
+            Log::info('OpenAI Raw Content: ' . $content);
+
+            // Robust JSON extraction
+            $jsonStart = strpos($content, '[');
+            $jsonEnd = strrpos($content, ']');
+
+            if ($jsonStart !== false && $jsonEnd !== false) {
+                $jsonStr = substr($content, $jsonStart, $jsonEnd - $jsonStart + 1);
+                $data = json_decode($jsonStr, true);
+            } else {
+                Log::error('Failed to find JSON array in OpenAI response content.');
+                $data = null;
+            }
+
+            return $data;
+
+        } finally {
+            // Cleanup: Delete Assistant (optional, maybe keep it?)
+            // For now, let's at least delete the assistant to avoid cluttering OpenAI account
+            if ($assistantId) {
+                Http::withToken($this->apiKey)
+                    ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
+                    ->delete("https://api.openai.com/v1/assistants/{$assistantId}");
+            }
+            // Thread deletion is also good practice
+            if ($threadId) {
+                 Http::withToken($this->apiKey)
+                    ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
+                    ->delete("https://api.openai.com/v1/threads/{$threadId}");
+            }
         }
-
-        // 5. Get Messages
-        $messages = Http::withToken($this->apiKey)
-            ->withHeaders(['OpenAI-Beta' => 'assistants=v2'])
-            ->get("https://api.openai.com/v1/threads/{$thread['id']}/messages")
-            ->json();
-
-        $content = $messages['data'][0]['content'][0]['text']['value'];
-        $data = json_decode(preg_replace('/^```json\s*|```$/', '', trim($content)), true);
-
-        return $data;
     }
 }

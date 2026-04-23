@@ -63,6 +63,8 @@ class NegotiationApiController extends Controller
                 'company_name' => $otherParty->company_name ?? null,
                 'profile_picture' => $otherParty->profile_picture ?? 'https://ui-avatars.com/api/?name='.urlencode($otherParty->name).'&color=7F9CF5&background=EBF4FF',
                 'message_snippet' => $latestMessage?->message ?? 'No messages yet',
+                'is_read' => $latestMessage ? (bool)$latestMessage->is_read : true,
+                'created_at' => $latestMessage ? $latestMessage->created_at->toDateTimeString() : $quote->created_at->toDateTimeString(),
                 'time_ago' => $lastActivityTime->diffForHumans(),
                 'pallet_type' => $quote->quoteRequest->pallet_type,
                 'amount' => $quote->amount,

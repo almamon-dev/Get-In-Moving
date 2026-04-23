@@ -21,7 +21,10 @@ class MessageResource extends JsonResource
             'quote_id' => $this->quote_id,
             'message' => $this->message,
             'is_me' => $this->sender_id === auth()->id(),
+            'is_read' => (bool)$this->is_read,
+            'read_at' => $this->read_at ? $this->read_at->toDateTimeString() : null,
             'created_at_human' => $this->created_at?->diffForHumans(),
+            'created_at' => $this->created_at?->toDateTimeString(),
             'time' => $this->created_at?->format('H:i'),
             'date' => $this->created_at?->format('j F'),
         ];

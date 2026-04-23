@@ -47,7 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/negotiations/read-all', [\App\Http\Controllers\API\NegotiationApiController::class, 'markAllAsRead']);
 
     // Chat/Messaging
-    Route::get('/chat/{quoteId}', [\App\Http\Controllers\API\ChatApiController::class, 'getMessages']);
+    Route::get('/chat/{id}', [\App\Http\Controllers\API\ChatApiController::class, 'getMessages']);
     Route::post('/chat/send', [\App\Http\Controllers\API\ChatApiController::class, 'sendMessage']);
 
     // Customer Endpoints

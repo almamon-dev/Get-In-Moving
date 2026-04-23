@@ -25,6 +25,7 @@ class RevisedQuoteNotification extends Notification
      */
     public function via(object $notifiable): array
     {
+        \Log::info('RevisedQuoteNotification sending to: ' . $notifiable->email);
         return ['mail', 'database'];
     }
 
@@ -34,13 +35,15 @@ class RevisedQuoteNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Revised Offer Received for Your Request')
-            ->greeting('Hello '.$notifiable->name.'!')
-            ->line('The supplier '.$this->quote->user->name.' has submitted a revised offer for your request: '.$this->quote->quoteRequest->pallet_type)
-            ->line('New Proposed Amount: $'.number_format($this->quote->revised_amount, 0))
-            ->line('New Estimated Delivery: '.$this->quote->revised_estimated_time)
-            ->action('View and Respond to Offer', url('/customer/negotiations'))
-            ->line('Thank you for using our platform!');
+            ->subject('Revised Offer Received')
+            ->view('emails.revised_quote', [
+                'greeting' => 'Revised Offer Received',
+                'notifiable' => $notifiable,
+                'supplierName' => $this->quote->user->name,
+                'palletType' => $this->quote->quoteRequest->pallet_type,
+                'amount' => number_format($this->quote->revised_amount, 0),
+                'estimatedTime' => $this->quote->revised_estimated_time
+            ]);
     }
 
     /**
@@ -57,7 +60,7 @@ class RevisedQuoteNotification extends Notification
             'supplier_name' => $this->quote->user->name,
             'amount' => $this->quote->revised_amount,
             'pallet_type' => $this->quote->quoteRequest->pallet_type,
-            'message' => 'Supplier '.$this->quote->user->name.' offered a new price: $'.number_format($this->quote->revised_amount, 0),
+            'message' => 'Supplier '.$this->quote->user->name.' offered a new price: €'.number_format($this->quote->revised_amount, 0),
             'type' => 'revision',
         ];
     }

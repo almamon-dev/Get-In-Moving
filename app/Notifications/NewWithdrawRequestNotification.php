@@ -24,6 +24,7 @@ class NewWithdrawRequestNotification extends Notification
      */
     public function via(object $notifiable): array
     {
+        \Log::info('NewWithdrawRequestNotification sending to: ' . $notifiable->email);
         return ['database'];
     }
 

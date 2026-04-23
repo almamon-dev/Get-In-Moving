@@ -457,6 +457,11 @@ class CustomerApiController extends Controller
             // Extract data using AI
             $extractedRows = $this->aiService->extractFromPdf(public_path($path), $file->getClientOriginalName());
 
+            if (!is_array($extractedRows) || empty($extractedRows)) {
+                Log::warning('AI extraction returned no data or invalid format.', ['result' => $extractedRows]);
+                return $this->sendError('Failed to extract data from PDF. Please ensure the PDF is clear and contains shipping details.', [], 422);
+            }
+
             $createdRequests = [];
 
             foreach ($extractedRows as $row) {
@@ -498,9 +503,14 @@ class CustomerApiController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error in uploadPdf: '.$e->getMessage());
+            $message = $e->getMessage();
+            Log::error('Error in uploadPdf: '.$message);
 
-            return $this->sendError('Failed to process PDF.', ['error' => $e->getMessage()], 500);
+            if (str_contains(strtolower($message), 'quota') || str_contains(strtolower($message), 'billing')) {
+                return $this->sendError('AI search quota exceeded. Please check your OpenAI billing or plan limits.', [], 422);
+            }
+
+            return $this->sendError('Failed to process PDF.', ['error' => $message], 500);
         }
     }
 

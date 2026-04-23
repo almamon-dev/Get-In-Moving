@@ -25,6 +25,7 @@ class PaymentReceivedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
+        \Log::info('PaymentReceivedNotification sending to: ' . $notifiable->email);
         return ['mail', 'database'];
     }
 
@@ -37,13 +38,14 @@ class PaymentReceivedNotification extends Notification
         $amount = number_format($this->invoice->supplier_amount, 2);
 
         return (new MailMessage)
-            ->subject('Payment Received for Order #'.$orderNumber)
-            ->greeting('Hello '.$notifiable->name.'!')
-            ->line('The customer has successfully made the payment for Order #'.$orderNumber.'.')
-            ->line('Amount: $'.$amount)
-            ->line('Your earnings have been added to your pending balance and will be available once the order is delivered and completed.')
-            ->action('View Order Details', url('/supplier/orders/'.$this->invoice->order_id))
-            ->line('Thank you for your service!');
+            ->subject('Payment Received')
+            ->view('emails.payment_received', [
+                'greeting' => 'Payment Received - #'.$orderNumber,
+                'notifiable' => $notifiable,
+                'orderId' => $this->invoice->order_id,
+                'orderNumber' => $orderNumber,
+                'amount' => $amount
+            ]);
     }
 
     /**
@@ -58,7 +60,7 @@ class PaymentReceivedNotification extends Notification
             'order_id' => $this->invoice->order_id,
             'amount' => $this->invoice->supplier_amount,
             'order_number' => $this->invoice->order->order_number,
-            'message' => 'Payment of $'.number_format($this->invoice->supplier_amount, 2).' received for Order #'.$this->invoice->order->order_number.'. The order is now in progress.',
+            'message' => 'Payment of €'.number_format($this->invoice->supplier_amount, 2).' received for Order #'.$this->invoice->order->order_number.'. The order is now in progress.',
         ];
     }
 }

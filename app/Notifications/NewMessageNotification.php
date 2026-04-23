@@ -24,6 +24,7 @@ class NewMessageNotification extends Notification
      */
     public function via(object $notifiable): array
     {
+        \Log::info('NewMessageNotification sending to: ' . $notifiable->email);
         return ['database']; // Only database, no email for chat messages
     }
 

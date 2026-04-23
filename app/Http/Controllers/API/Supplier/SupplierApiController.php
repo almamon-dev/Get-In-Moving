@@ -232,7 +232,7 @@ class SupplierApiController extends Controller
         }
 
         if ($quoteRequest->status !== 'active') {
-            return $this->sendError('This request is no longer active.', [], 422);
+            return $this->sendError('This request is no longer active and already has an accepted quote.', [], 422);
         }
 
         $user = $request->user();
@@ -264,7 +264,7 @@ class SupplierApiController extends Controller
                     'sender_id' => $user->id,
                     'receiver_id' => $customer->id,
                     'quote_id' => $existing->id,
-                    'message' => 'I have submitted a revised offer of $'.number_format($request->amount, 0).' with estimated delivery: '.$request->estimated_time.($request->notes ? "\n\nNote: ".$request->notes : ''),
+                    'message' => 'I have submitted a revised offer of €'.number_format($request->amount, 0).' with estimated delivery: '.$request->estimated_time.($request->notes ? "\n\nNote: ".$request->notes : ''),
                 ]);
             }
 
@@ -331,6 +331,10 @@ class SupplierApiController extends Controller
             return $this->sendError('Quote not found or you do not have permission to revise this quote.', [], 404);
         }
 
+        if ($quote->quoteRequest->status !== 'active') {
+            return $this->sendError('This request is no longer active and already has an accepted quote.', [], 422);
+        }
+
         $quote->update([
             'revised_amount' => $request->amount,
             'revised_estimated_time' => $request->estimated_time ?? $quote->estimated_time,
@@ -348,7 +352,7 @@ class SupplierApiController extends Controller
             }
 
             // Add the "Optional Sms/Message" to chat history if provided
-            $chatMessage = 'I have submitted a revised offer of $'.number_format($request->amount, 0);
+            $chatMessage = 'I have submitted a revised offer of €'.number_format($request->amount, 0);
             if ($request->message) {
                 $chatMessage .= "\n\nNote: ".$request->message;
             }

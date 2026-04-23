@@ -22,6 +22,7 @@ class ComplianceApprovedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
+        \Log::info('ComplianceApprovedNotification sending to: ' . $notifiable->email);
         return ['mail', 'database'];
     }
 
@@ -32,12 +33,10 @@ class ComplianceApprovedNotification extends Notification
     {
         return (new MailMessage)
             ->subject('Compliance Approved - '.config('app.name'))
-            ->greeting('Hello '.$notifiable->name.'!')
-            ->line('Great news! Your compliance documents have been reviewed and approved.')
-            ->line('Your insurance and licensing information has been verified by our team.')
-            ->line('You can now access all supplier features and start providing services.')
-            ->line('Thank you for completing the compliance process!')
-            ->salutation('Best regards, '.config('app.name').' Team');
+            ->view('emails.compliance_approved', [
+                'greeting' => 'Compliance Approved',
+                'notifiable' => $notifiable
+            ]);
     }
 
     /**

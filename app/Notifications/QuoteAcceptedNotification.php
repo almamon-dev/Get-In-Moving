@@ -25,6 +25,7 @@ class QuoteAcceptedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
+        \Log::info('QuoteAcceptedNotification sending to: ' . $notifiable->email);
         return ['mail', 'database'];
     }
 
@@ -34,12 +35,13 @@ class QuoteAcceptedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Your Quote was Accepted!')
-            ->greeting('Hello ' . $notifiable->name . '!')
-            ->line('Great news! A client has accepted your quote for: ' . $this->quote->quoteRequest->pallet_type)
-            ->line('Amount: $' . number_format($this->quote->amount, 2))
-            ->action('View Order Details', url('/supplier/orders'))
-            ->line('Thank you for using our platform!');
+            ->subject('Quote Accepted!')
+            ->view('emails.quote_accepted', [
+                'greeting' => 'Quote Accepted!',
+                'notifiable' => $notifiable,
+                'palletType' => $this->quote->quoteRequest->pallet_type,
+                'amount' => number_format($this->quote->amount, 2)
+            ]);
     }
 
     /**
@@ -54,7 +56,7 @@ class QuoteAcceptedNotification extends Notification
             'quote_request_id' => $this->quote->quote_request_id,
             'amount' => $this->quote->amount,
             'pallet_type' => $this->quote->quoteRequest->pallet_type,
-            'message' => 'Your quote of $' . number_format($this->quote->amount, 2) . ' was accepted! A new order was created.',
+            'message' => 'Your quote of €'.number_format($this->quote->amount, 2).' was accepted! A new order was created.',
         ];
     }
 }

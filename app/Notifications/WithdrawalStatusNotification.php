@@ -25,6 +25,7 @@ class WithdrawalStatusNotification extends Notification
      */
     public function via(object $notifiable): array
     {
+        \Log::info('WithdrawalStatusNotification sending to: ' . $notifiable->email);
         return ['mail', 'database'];
     }
 
@@ -35,24 +36,18 @@ class WithdrawalStatusNotification extends Notification
     {
         $status = $this->withdrawRequest->status;
         $amount = number_format($this->withdrawRequest->amount, 2);
-
         $subject = 'Withdrawal Request '.ucfirst($status);
 
-        $message = (new MailMessage)
+        return (new MailMessage)
             ->subject($subject)
-            ->greeting('Hello '.$notifiable->name.'!');
-
-        if ($status === 'completed' || $status === 'approved') {
-            $message->line("Your withdrawal request for €{$amount} has been approved and processed.")
-                ->line("The funds should appear in your selected account: {$this->withdrawRequest->payment_method}.");
-        } else {
-            $message->line("Your withdrawal request for €{$amount} has been rejected.")
-                ->line('Reason/Note: '.($this->withdrawRequest->admin_note ?? 'No specific reason provided.'))
-                ->line('The amount has been refunded to your account balance.');
-        }
-
-        return $message->action('View Finance Dashboard', url('/supplier/finance/dashboard'))
-            ->line('Thank you for using our platform!');
+            ->view('emails.withdrawal_status', [
+                'greeting' => $subject,
+                'notifiable' => $notifiable,
+                'status' => $status,
+                'amount' => $amount,
+                'paymentMethod' => $this->withdrawRequest->payment_method,
+                'adminNote' => $this->withdrawRequest->admin_note ?? 'No specific reason provided.'
+            ]);
     }
 
     /**

@@ -27,6 +27,7 @@ class QuoteRejectedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
+        \Log::info('QuoteRejectedNotification sending to: ' . $notifiable->email);
         return ['mail', 'database'];
     }
 
@@ -38,10 +39,12 @@ class QuoteRejectedNotification extends Notification
         $type = $this->isRevision ? 'revised quote' : 'quote';
         return (new MailMessage)
             ->subject('Update on your ' . $type)
-            ->greeting('Hello ' . $notifiable->name . '!')
-            ->line('Your ' . $type . ' for ' . $this->quote->quoteRequest->pallet_type . ' has been rejected by the client.')
-            ->action('View Quote Details', url('/supplier/quotes'))
-            ->line('Thank you for using our platform!');
+            ->view('emails.quote_rejected', [
+                'greeting' => 'Update on your ' . $type,
+                'notifiable' => $notifiable,
+                'type' => $type,
+                'palletType' => $this->quote->quoteRequest->pallet_type
+            ]);
     }
 
     /**

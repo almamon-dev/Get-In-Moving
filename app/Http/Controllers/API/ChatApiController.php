@@ -17,46 +17,70 @@ class ChatApiController extends Controller
     /**
      * Get messages for a specific quote negotiation.
      */
-    public function getMessages($quoteId)
+    public function getMessages($id)
     {
-        $user = auth()->user();
-        $quote = Quote::with('quoteRequest')->findOrFail($quoteId);
+        try {
+            $user = auth()->user();
+            $quote = Quote::with('quoteRequest')->findOrFail($id);
 
-        // Security check: only the quote owner (supplier) or the request owner (customer) can see messages
-        if ($quote->user_id !== $user->id && $quote->quoteRequest->user_id !== $user->id) {
-            return $this->sendError('Unauthorized access to this chat.', [], 403);
-        }
+            // Security check: only the quote owner (supplier) or the request owner (customer) can see messages
+            $isSupplier = $quote->user_id === $user->id;
+            $isCustomer = $quote->quoteRequest && $quote->quoteRequest->user_id === $user->id;
 
-        $messages = Message::where('quote_id', $quoteId)
-            ->oldest()
-            ->get();
+            if (! $isSupplier && ! $isCustomer) {
+                return $this->sendError('Unauthorized access to this chat.', [], 403);
+            }
 
-        $originalQuote = [
-            'price' => '€'.number_format($quote->amount, 0),
-            'location' => $quote->quoteRequest?->pickup_address,
-            'estimated_delivery' => $quote->estimated_time,
-            'pallet_type' => $quote->quoteRequest?->pallet_type,
-            'notes' => $quote->notes,
-        ];
+            // Mark incoming messages as read first
+            Message::where('quote_id', $id)
+                ->where('receiver_id', $user->id)
+                ->where('is_read', false)
+                ->update([
+                    'is_read' => true,
+                    'read_at' => now(),
+                ]);
 
-        $revisedQuote = [];
-        if ($quote->revision_status === 'pending') {
-            $revisedQuote = [
-                'price' => '€'.number_format($quote->revised_amount, 0),
+            // Fetch all messages in chronological order
+            $messages = Message::where('quote_id', $id)
+                ->oldest()
+                ->get();
+
+            $originalQuote = [
+                'price' => '€'.number_format($quote->amount, 0),
                 'location' => $quote->quoteRequest?->pickup_address,
-                'estimated_delivery' => $quote->revised_estimated_time,
+                'estimated_delivery' => $quote->estimated_time,
                 'pallet_type' => $quote->quoteRequest?->pallet_type,
                 'notes' => $quote->notes,
-                'status' => $quote->revision_status,
             ];
-        }
 
-        return $this->sendResponse([
-            'original_quote' => $originalQuote,
-            'revised_quote' => $revisedQuote,
-            'my_messages' => MessageResource::collection($messages->where('sender_id', $user->id)->values()),
-            'receiver_messages' => MessageResource::collection($messages->where('sender_id', '!=', $user->id)->values()),
-        ], 'Messages and quote details retrieved successfully.');
+            $revisedQuote = [];
+            if ($quote->revision_status === 'pending') {
+                $revisedQuote = [
+                    'price' => '€'.number_format($quote->revised_amount, 0),
+                    'location' => $quote->quoteRequest?->pickup_address,
+                    'estimated_delivery' => $quote->revised_estimated_time,
+                    'pallet_type' => $quote->quoteRequest?->pallet_type,
+                    'notes' => $quote->notes,
+                    'status' => $quote->revision_status,
+                ];
+            }
+
+            return $this->sendResponse([
+                'original_quote' => $originalQuote,
+                'revised_quote' => $revisedQuote,
+                'my_messages' => MessageResource::collection($messages->where('sender_id', $user->id)->values())->resolve(),
+                'receiver_messages' => MessageResource::collection($messages->where('sender_id', '!=', $user->id)->values())->resolve(),
+                'all_messages' => MessageResource::collection($messages)->resolve(),
+            ], 'Messages and quote details retrieved successfully.');
+        } catch (\Exception $e) {
+            Log::error('Chat GetMessages Error: '.$e->getMessage(), [
+                'id' => $id,
+                'user_id' => auth()->id(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return $this->sendError('Failed to retrieve messages: '.$e->getMessage(), [], 500);
+        }
     }
 
     /**
@@ -89,9 +113,6 @@ class ChatApiController extends Controller
             'quote_id' => $quote->id,
             'message' => $request->message,
         ]);
-
-        // Broadcast real-time message
-        broadcast(new \App\Events\MessageSent($message))->toOthers();
 
         // Notify the receiver about the new message
         $receiver = \App\Models\User::find($receiverId);

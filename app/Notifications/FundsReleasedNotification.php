@@ -28,6 +28,7 @@ class FundsReleasedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
+        \Log::info('FundsReleasedNotification sending to: ' . $notifiable->email);
         return ['mail', 'database'];
     }
 
@@ -38,15 +39,16 @@ class FundsReleasedNotification extends Notification
     {
         $invoice = $this->payment->invoice;
         $order = $invoice->order;
-        $amount = $invoice->supplier_amount;
+        $amount = number_format($invoice->supplier_amount, 2);
 
         return (new MailMessage)
             ->subject('Escrow Funds Released')
-            ->greeting('Hello ' . $notifiable->name . '!')
-            ->line('Good news! The escrowed funds for Order #' . $order->order_number . ' have been released to your available balance.')
-            ->line('Amount Released: $' . number_format($amount, 2))
-            ->action('View Finance', url('/supplier/finance/dashboard'))
-            ->line('The funds are now available for withdrawal.');
+            ->view('emails.funds_released', [
+                'greeting' => 'Escrow Funds Released',
+                'notifiable' => $notifiable,
+                'orderNumber' => $order->order_number,
+                'amount' => $amount
+            ]);
     }
 
     /**
@@ -65,7 +67,7 @@ class FundsReleasedNotification extends Notification
             'order_id' => $order->id,
             'order_number' => $order->order_number,
             'amount' => $amount,
-            'message' => 'Funds of $' . number_format($amount, 2) . ' for Order #' . $order->order_number . ' have been released to your balance.',
+            'message' => 'Funds of €' . number_format($amount, 2) . ' for Order #' . $order->order_number . ' have been released to your balance.',
             'type' => 'fund_release'
         ];
     }

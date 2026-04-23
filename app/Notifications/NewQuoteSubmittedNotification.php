@@ -25,6 +25,7 @@ class NewQuoteSubmittedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
+        \Log::info('NewQuoteSubmittedNotification sending to: ' . $notifiable->email);
         return ['mail', 'database'];
     }
 
@@ -34,13 +35,15 @@ class NewQuoteSubmittedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('New Quote Received for Your Shiping Request')
-            ->greeting('Hello '.$notifiable->name.'!')
-            ->line('A supplier has submitted a new quote for your request: '.$this->quote->quoteRequest->pallet_type)
-            ->line('Amount: $'.number_format($this->quote->amount, 2))
-            ->line('Estimated Time: '.$this->quote->estimated_time)
-            ->action('View Quote Details', url('/customer/quote-requests/'.$this->quote->quote_request_id))
-            ->line('Thank you for using our platform!');
+            ->subject('New Quote Received')
+            ->view('emails.new_quote', [
+                'greeting' => 'New Quote Received',
+                'notifiable' => $notifiable,
+                'palletType' => $this->quote->quoteRequest->pallet_type,
+                'amount' => number_format($this->quote->amount, 2),
+                'estimatedTime' => $this->quote->estimated_time,
+                'quoteRequestId' => $this->quote->quote_request_id
+            ]);
     }
 
     /**
