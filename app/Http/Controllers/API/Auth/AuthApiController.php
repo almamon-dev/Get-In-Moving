@@ -75,7 +75,9 @@ class AuthApiController extends Controller
 
             // Create Subscription
             $expiresAt = now();
-            if ($plan->billing_period === 'trial') {
+            $isTrial = $plan->billing_period === 'trial';
+
+            if ($isTrial) {
                 $expiresAt = now()->addDays((int) $plan->trial_days);
             } elseif ($plan->billing_period === 'monthly') {
                 $expiresAt = now()->addMonth();
@@ -85,14 +87,16 @@ class AuthApiController extends Controller
                 $expiresAt = now()->addYear();
             }
 
-            \App\Models\UserSubscription::create([
+            $subscription = \App\Models\UserSubscription::create([
                 'user_id' => $user->id,
                 'pricing_plan_id' => $plan->id,
                 'started_at' => now(),
                 'expires_at' => $expiresAt,
-                'status' => 'active',
-                'is_trial' => $plan->billing_period === 'trial',
+                'status' => $isTrial ? 'active' : 'pending_payment',
+                'is_trial' => $isTrial,
             ]);
+
+            // If not trial, it will stay as pending_payment until verification
 
             // Send OTP safely
             try {
@@ -112,7 +116,11 @@ class AuthApiController extends Controller
 
             $message = __('Register Successfully. Please check your email to verify.');
 
-            return $this->sendResponse(new RegisterResource($user), $message);
+            return $this->sendResponse([
+                'user' => new RegisterResource($user),
+                'requires_verification' => true,
+                'next_action' => 'verify_email',
+            ], $message);
 
         } catch (Exception $e) {
             DB::rollBack();
@@ -172,9 +180,26 @@ class AuthApiController extends Controller
                 'verified_at' => now(),
             ]);
 
+            // Handle Subscription Checkout Link after verification
+            $checkoutUrl = null;
+            $subscription = $user->subscription;
+            if ($subscription && $subscription->status === 'pending_payment') {
+                try {
+                    $paymentService = new \App\Services\SubscriptionPaymentService;
+                    $session = $paymentService->createCheckoutSession($subscription);
+                    $checkoutUrl = $session->url;
+                } catch (Exception $stripeError) {
+                    Log::error('Stripe Session Error after verification: '.$stripeError->getMessage());
+                }
+            }
+
             $token = $user->createToken('YourAppName')->plainTextToken;
 
-            return $this->sendResponse(new LoginResource($user), 'Email verified successfully', $token);
+            return $this->sendResponse([
+                'user' => new LoginResource($user),
+                'checkout_url' => $checkoutUrl,
+                'requires_payment' => $checkoutUrl !== null,
+            ], 'Email verified successfully', $token);
         } catch (Exception $e) {
             Log::error('Email Verification Error: '.$e->getMessage());
 

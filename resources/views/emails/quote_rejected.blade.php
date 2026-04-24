@@ -12,8 +12,8 @@
     </div>
 
     <div class="button-container">
-        <a href="{{ config('app.frontend_url') }}/supplier/quotes" class="button">
-            View My Quotes
+        <a href="{{ config('app.frontend_url') }}/supplier-dashboard/negotiate" class="button">
+            View negotiate
         </a>
     </div>
 

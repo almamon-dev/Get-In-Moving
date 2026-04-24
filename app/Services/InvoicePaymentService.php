@@ -35,10 +35,11 @@ class InvoicePaymentService
                 'quantity' => 1,
             ]],
             'mode' => 'payment',
-            'success_url' => config('services.stripe.success_url'),
-            'cancel_url' => config('services.stripe.cancel_url'),
+            'success_url' => config('services.stripe.success_url') . '?type=quote',
+            'cancel_url' => config('services.stripe.cancel_url') . '?type=quote',
             'metadata' => [
                 'invoice_id' => $invoice->id,
+                'type' => 'invoice_payment'
             ],
         ]);
     }
@@ -49,10 +50,15 @@ class InvoicePaymentService
     public function handleCheckoutSessionCompleted($session)
     {
         $invoiceId = $session->metadata->invoice_id ?? null;
+        $subscriptionId = $session->metadata->subscription_id ?? null;
 
-        if (! $invoiceId) {
-            Log::error('Stripe Webhook: No invoice_id found in session metadata.');
+        if (!$invoiceId && !$subscriptionId) {
+            Log::error('Stripe Webhook: No invoice_id or subscription_id found in session metadata.');
+            return;
+        }
 
+        if ($subscriptionId) {
+            $this->handleSubscriptionPayment($session, $subscriptionId);
             return;
         }
 
@@ -61,20 +67,21 @@ class InvoicePaymentService
             $invoice = Invoice::with('order')->find($invoiceId);
 
             if ($invoice && $invoice->status !== 'paid') {
-                // 1. Create Payment Record (Escrow)
+                // ... (existing invoice logic)
                 $payment = \App\Models\Payment::create([
                     'invoice_id' => $invoice->id,
+                    'user_id' => $invoice->user_id ?? ($invoice->order ? $invoice->order->customer_id : null),
                     'transaction_id' => $session->payment_intent,
                     'session_id' => $session->id,
                     'amount' => $session->amount_total / 100,
                     'currency' => $session->currency,
                     'status' => 'succeeded',
                     'payment_method' => $session->payment_method_types[0] ?? 'card',
+                    'payment_type' => 'order',
                     'metadata' => (array) $session->metadata,
                     'available_at' => now()->addMinutes((int) env('FUND_HOLD_MINUTES', 5)),
                 ]);
 
-                // 2. Create Pending Transaction Record (Visible but not in balance)
                 \App\Models\SupplierTransaction::create([
                     'supplier_id' => $invoice->order->supplier_id,
                     'order_id' => $invoice->order->id,
@@ -85,28 +92,24 @@ class InvoicePaymentService
                     'description' => "Earnings held in escrow for Order #{$invoice->order->order_number} (Available: {$payment->available_at->format('d M Y, h:i A')})",
                 ]);
 
-                // 3. Update Invoice
                 $invoice->update([
                     'status' => 'paid',
                     'paid_at' => now(),
                 ]);
 
-                // 4. Update Order Status
                 if ($invoice->order) {
                     $invoice->order->update([
                         'status' => 'in_progress',
                     ]);
 
-                    // Add to timeline
                     $invoice->order->updates()->create([
                         'status' => 'in_progress',
                         'title' => 'Payment Successful & Order Started',
                         'description' => "Payment for this order has been successfully processed. The order is now in progress.",
                     ]);
                 }
-                Log::info("Stripe Webhook: Invoice {$invoice->invoice_number} paid. Funds escrowed for 14 days.");
+                Log::info("Stripe Webhook: Invoice {$invoice->invoice_number} paid.");
 
-                // 5. Notify Supplier (Email & Database)
                 if ($invoice->order && $invoice->order->supplier) {
                     try {
                         $invoice->order->supplier->notify(new \App\Notifications\PaymentReceivedNotification($invoice));
@@ -121,6 +124,62 @@ class InvoicePaymentService
             DB::rollBack();
             Log::error('Stripe Webhook Error: '.$e->getMessage());
             throw $e;
+        }
+    }
+
+    protected function handleSubscriptionPayment($session, $subscriptionId)
+    {
+        $subscription = \App\Models\UserSubscription::with('pricingPlan')->find($subscriptionId);
+        if ($subscription && $subscription->status !== 'active') {
+            DB::beginTransaction();
+            try {
+                $subscription->update([
+                    'status' => 'active',
+                    'started_at' => now(),
+                    'expires_at' => now()->addMonths($subscription->pricingPlan->billing_period == 'monthly' ? 1 : 12), // Added basic expiry logic
+                ]);
+
+                // Create an Invoice for the subscription (as requested by user)
+                $invoice = \App\Models\Invoice::create([
+                    'user_id' => $subscription->user_id,
+                    'subscription_id' => $subscription->id,
+                    'invoice_number' => 'SUB-' . strtoupper(uniqid()),
+                    'supplier_amount' => 0,
+                    'platform_fee' => $session->amount_total / 100,
+                    'total_amount' => $session->amount_total / 100,
+                    'status' => 'paid',
+                    'due_date' => now(),
+                    'paid_at' => now(),
+                    'invoice_type' => 'subscription',
+                ]);
+
+                // Record the payment
+                \App\Models\Payment::create([
+                    'invoice_id' => $invoice->id,
+                    'user_id' => $subscription->user_id,
+                    'subscription_id' => $subscription->id,
+                    'transaction_id' => $session->payment_intent,
+                    'session_id' => $session->id,
+                    'amount' => $session->amount_total / 100,
+                    'currency' => $session->currency,
+                    'status' => 'succeeded',
+                    'payment_method' => $session->payment_method_types[0] ?? 'card',
+                    'payment_type' => 'subscription',
+                    'is_released' => true, // Subscription payments are immediate profit
+                    'available_at' => now(),
+                    'metadata' => array_merge((array) $session->metadata, [
+                        'plan_name' => $subscription->pricingPlan->name,
+                        'type' => 'subscription_payment'
+                    ]),
+                ]);
+
+                DB::commit();
+                Log::info("Stripe Webhook: Subscription {$subscriptionId} activated and recorded in invoices/payments for user {$subscription->user_id}");
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error("Stripe Webhook: Error processing subscription payment: " . $e->getMessage());
+                throw $e;
+            }
         }
     }
 }

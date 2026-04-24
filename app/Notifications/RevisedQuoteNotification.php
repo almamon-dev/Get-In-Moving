@@ -42,7 +42,8 @@ class RevisedQuoteNotification extends Notification
                 'supplierName' => $this->quote->user->name,
                 'palletType' => $this->quote->quoteRequest->pallet_type,
                 'amount' => number_format($this->quote->revised_amount, 0),
-                'estimatedTime' => $this->quote->revised_estimated_time
+                'estimatedTime' => $this->quote->revised_estimated_time,
+                'quoteId' => $this->quote->id
             ]);
     }
 

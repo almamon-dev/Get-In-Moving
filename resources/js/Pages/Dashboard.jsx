@@ -1,52 +1,55 @@
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, Link } from '@inertiajs/react';
-import { 
-    Home, Users, Truck, ShoppingCart, 
+import { Head, Link, router } from '@inertiajs/react';
+import {
+    Home, Users, Truck, ShoppingCart,
     Lock, AlertCircle, ArrowRight, Clock,
     TrendingUp, Activity, Euro, Calendar,
     ArrowUpRight, ArrowDownRight, UserCircle
 } from 'lucide-react';
-import { 
+import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area,
-    PieChart, Pie, Cell, Legend 
+    PieChart, Pie, Cell, Legend
 } from 'recharts';
 
-export default function Dashboard({ auth, stats, recent_disputes, revenue_data, user_distribution, recent_transactions }) {
+export default function Dashboard({ auth, stats, recent_disputes, revenue_data, user_distribution, recent_transactions, filters = {} }) {
+    const handleFilterChange = (key, value) => {
+        router.get(route('dashboard'), { ...filters, [key]: value }, { preserveState: true, preserveScroll: true });
+    };
     const statCards = [
-        { 
-            label: 'Total Revenue', 
-            value: `€${parseFloat(stats.total_revenue).toLocaleString()}`, 
-            icon: <TrendingUp size={24} />, 
-            color: 'text-emerald-600', 
-            bg: 'bg-emerald-500/10' 
+        {
+            label: 'Total Revenue',
+            value: `€${parseFloat(stats.total_revenue || 0).toLocaleString()}`,
+            icon: <TrendingUp size={24} />,
+            color: 'text-emerald-600',
+            bg: 'bg-emerald-500/10',
+            subtext: 'Platform Profit'
         },
-        { 
-            label: 'Total Customers', 
-            value: stats.total_customers, 
-            icon: <Users size={24} />, 
-            color: 'text-blue-600', 
-            bg: 'bg-blue-500/10' 
+        {
+            label: 'Total Customers',
+            value: stats.total_customers || 0,
+            icon: <Users size={24} />,
+            color: 'text-indigo-600',
+            bg: 'bg-indigo-500/10'
         },
-        { 
-            label: 'Total Suppliers', 
-            value: stats.total_suppliers, 
-            icon: <Truck size={24} />, 
-            color: 'text-purple-600', 
-            bg: 'bg-purple-500/10' 
+        {
+            label: 'Total Suppliers',
+            value: stats.total_suppliers || 0,
+            icon: <Truck size={24} />,
+            color: 'text-blue-600',
+            bg: 'bg-blue-500/10'
         },
-        { 
-            label: 'Held in Escrow', 
-            value: `€${parseFloat(stats.held_amount).toLocaleString()}`, 
-            icon: <Lock size={24} />, 
-            color: 'text-rose-600', 
-            bg: 'bg-rose-500/10',
-            subtext: `${stats.pending_payouts_count} payouts pending`
+        {
+            label: 'Total Orders',
+            value: stats.total_orders || 0,
+            icon: <ShoppingCart size={24} />,
+            color: 'text-violet-600',
+            bg: 'bg-violet-500/10'
         },
-        { 
-            label: 'Raised Issues', 
-            value: stats.disputed_orders_count, 
-            icon: <AlertCircle size={24} />, 
-            color: 'text-amber-600', 
+        {
+            label: 'Raised Issues',
+            value: stats.disputed_orders_count || 0,
+            icon: <AlertCircle size={24} />,
+            color: 'text-amber-600',
             bg: 'bg-amber-500/10',
             subtext: 'Rejected PODs'
         },
@@ -93,7 +96,7 @@ export default function Dashboard({ auth, stats, recent_disputes, revenue_data, 
                                 <p className="text-[13px] font-bold text-[#727586] uppercase tracking-wider mb-1">{card.label}</p>
                                 <h3 className="text-2xl font-bold text-[#2f3344] tracking-tight">{card.value}</h3>
                                 {card.subtext && (
-                                    <p className="text-[12px] text-slate-400 font-medium mt-2 flex items-center gap-1 italic">
+                                    <p className="text-[12px] text-slate-400 font-medium mt-2 flex items-center gap-2 italic">
                                         <Clock size={12} /> {card.subtext}
                                     </p>
                                 )}
@@ -111,8 +114,18 @@ export default function Dashboard({ auth, stats, recent_disputes, revenue_data, 
                                 <h3 className="text-[16px] font-bold text-[#2f3344]">Revenue Growth</h3>
                                 <p className="text-[13px] text-slate-500">Monthly breakdown of system earnings</p>
                             </div>
-                            <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-                                <TrendingUp size={20} />
+                            <div className="flex items-center gap-3">
+                                <select 
+                                    value={filters.period}
+                                    onChange={(e) => handleFilterChange('period', e.target.value)}
+                                    className="text-[12px] font-bold text-[#727586] bg-[#f8f9fa] border-none rounded-lg pl-3 pr-10 py-2 outline-none focus:ring-1 focus:ring-[#673ab7]/20 transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23727586%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:14px] bg-[position:right_12px_center] bg-no-repeat"
+                                >
+                                    <option value="H1">Jan - Jun ({filters.year})</option>
+                                    <option value="H2">Jul - Dec ({filters.year})</option>
+                                </select>
+                                <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                                    <TrendingUp size={20} />
+                                </div>
                             </div>
                         </div>
                         <div className="h-[300px] w-full">
@@ -120,35 +133,37 @@ export default function Dashboard({ auth, stats, recent_disputes, revenue_data, 
                                 <AreaChart data={revenue_data}>
                                     <defs>
                                         <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#673ab7" stopOpacity={0.1}/>
-                                            <stop offset="95%" stopColor="#673ab7" stopOpacity={0}/>
+                                            <stop offset="5%" stopColor="#673ab7" stopOpacity={0.1} />
+                                            <stop offset="95%" stopColor="#673ab7" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f2f4" />
-                                    <XAxis 
-                                        dataKey="month" 
-                                        axisLine={false} 
-                                        tickLine={false} 
-                                        tick={{fontSize: 12, fill: '#adb5bd'}}
+                                    <XAxis
+                                        dataKey="month"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 12, fill: '#adb5bd' }}
                                         dy={10}
                                     />
-                                    <YAxis 
-                                        axisLine={false} 
-                                        tickLine={false} 
-                                        tick={{fontSize: 12, fill: '#adb5bd'}}
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 12, fill: '#adb5bd' }}
                                         tickFormatter={(value) => `€${value}`}
+                                        domain={[0, 'auto']}
+                                        nice={true}
                                     />
-                                    <Tooltip 
-                                        contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                                         formatter={(value) => [`€${value}`, 'Revenue']}
                                     />
-                                    <Area 
-                                        type="monotone" 
-                                        dataKey="total" 
-                                        stroke="#673ab7" 
+                                    <Area
+                                        type="monotone"
+                                        dataKey="total"
+                                        stroke="#673ab7"
                                         strokeWidth={3}
-                                        fillOpacity={1} 
-                                        fill="url(#colorTotal)" 
+                                        fillOpacity={1}
+                                        fill="url(#colorTotal)"
                                     />
                                 </AreaChart>
                             </ResponsiveContainer>
@@ -180,7 +195,7 @@ export default function Dashboard({ auth, stats, recent_disputes, revenue_data, 
                                         ))}
                                     </Pie>
                                     <Tooltip />
-                                    <Legend verticalAlign="bottom" height={36}/>
+                                    <Legend verticalAlign="bottom" height={36} />
                                 </PieChart>
                             </ResponsiveContainer>
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
@@ -210,34 +225,44 @@ export default function Dashboard({ auth, stats, recent_disputes, revenue_data, 
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-[#e3e4e8] bg-[#fdfdfd]">
-                                        <th className="text-left px-7 py-4 text-[12px] font-bold text-[#727586] uppercase tracking-wider whitespace-nowrap">Supplier</th>
+                                        <th className="text-left px-7 py-4 text-[12px] font-bold text-[#727586] uppercase tracking-wider whitespace-nowrap">User</th>
                                         <th className="text-left px-5 py-4 text-[12px] font-bold text-[#727586] uppercase tracking-wider">Type</th>
                                         <th className="text-right px-7 py-4 text-[12px] font-bold text-[#727586] uppercase tracking-wider whitespace-nowrap">Amount</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#f1f2f4]">
-                                    {recent_transactions.map((transaction) => (
-                                        <tr key={transaction.id} className="hover:bg-[#fafbfc] transition-colors group">
-                                            <td className="px-7 py-4">
-                                                <p className="text-[13px] font-bold text-[#2f3344]">{transaction.supplier?.name}</p>
-                                                <p className="text-[11px] text-slate-400 mt-0.5">{new Date(transaction.created_at).toLocaleDateString()}</p>
-                                            </td>
-                                            <td className="px-5 py-4">
-                                                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                                    transaction.type === 'earning' ? 'bg-emerald-50 text-emerald-600' : 
-                                                    transaction.type === 'withdrawal' ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-600'
-                                                }`}>
-                                                    {transaction.type === 'earning' ? <ArrowDownRight size={10} /> : <ArrowUpRight size={10} />}
-                                                    {transaction.type}
-                                                </span>
-                                            </td>
-                                            <td className="px-7 py-4 text-right">
-                                                <p className={`text-[14px] font-bold ${transaction.type === 'earning' ? 'text-emerald-600' : 'text-[#2f3344]'}`}>
-                                                    {transaction.type === 'earning' ? '+' : '-'}€{parseFloat(transaction.amount).toLocaleString()}
-                                                </p>
+                                    {recent_transactions.length > 0 ? (
+                                        recent_transactions.map((transaction) => (
+                                            <tr key={transaction.id} className="hover:bg-[#fafbfc] transition-colors group">
+                                                <td className="px-7 py-4">
+                                                    <p className="text-[13px] font-bold text-[#2f3344]">{transaction.user?.name || 'Customer'}</p>
+                                                    <p className="text-[11px] text-slate-400 mt-0.5">{new Date(transaction.created_at).toLocaleDateString()}</p>
+                                                </td>
+                                                <td className="px-5 py-4">
+                                                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${transaction.payment_type === 'order' ? 'bg-emerald-50 text-emerald-600' :
+                                                        transaction.payment_type === 'subscription' ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-600'
+                                                        }`}>
+                                                        {transaction.payment_type === 'order' ? <ShoppingCart size={10} /> : <TrendingUp size={10} />}
+                                                        {transaction.payment_type}
+                                                    </span>
+                                                </td>
+                                                <td className="px-7 py-4 text-right">
+                                                    <p className={`text-[14px] font-bold ${transaction.payment_type === 'order' ? 'text-emerald-600' : 'text-blue-600'}`}>
+                                                        +€{parseFloat(transaction.amount).toLocaleString()}
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="3" className="px-7 py-12 text-center">
+                                                <div className="flex flex-col items-center gap-2 text-slate-400">
+
+                                                    <p className="text-[13px]">No recent transactions found.</p>
+                                                </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -256,7 +281,7 @@ export default function Dashboard({ auth, stats, recent_disputes, revenue_data, 
                                 All <ArrowRight size={14} />
                             </Link>
                         </div>
-                        
+
                         <div className="p-0">
                             {recent_disputes.length > 0 ? (
                                 <div className="divide-y divide-[#f1f2f4]">

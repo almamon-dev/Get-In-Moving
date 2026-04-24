@@ -41,7 +41,7 @@ class NewWithdrawRequestNotification extends Notification
             'supplier_name' => $this->withdrawRequest->supplier->name,
             'amount' => $this->withdrawRequest->amount,
             'account_name' => $this->withdrawRequest->account_name,
-            'message' => 'New withdrawal request of $' . number_format($this->withdrawRequest->amount, 2) . ' from ' . $this->withdrawRequest->supplier->name,
+            'message' => 'New withdrawal request of €' . number_format($this->withdrawRequest->amount, 2) . ' from ' . $this->withdrawRequest->supplier->name,
             'type' => 'withdrawal_request',
             'action_url' => '/admin/finance/withdraw-requests'
         ];

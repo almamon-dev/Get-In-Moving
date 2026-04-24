@@ -42,7 +42,6 @@ return [
         'success_url' => env('STRIPE_SUCCESS_URL'),
         'cancel_url' => env('STRIPE_CANCEL_URL'),
     ],
-
     'openai' => [
         'key' => env('OPENAI_API_KEY'),
     ],

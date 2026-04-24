@@ -36,10 +36,15 @@ Route::prefix('auth')->group(function () {
 
 // Stripe Webhook
 Route::post('/webhooks/stripe', [\App\Http\Controllers\API\StripeWebhookController::class, 'handle']);
-
 // Protected Routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthApiController::class, 'logoutApi']);
+
+    // Subscriptions
+    Route::prefix('subscription')->group(function () {
+        Route::get('/status', [\App\Http\Controllers\API\Subscription\SubscriptionApiController::class, 'checkStatus']);
+        Route::post('/checkout-link', [\App\Http\Controllers\API\Subscription\SubscriptionApiController::class, 'getCheckoutLink']);
+    });
 
     // Negotiations & Chat
     Route::get('/negotiations', [\App\Http\Controllers\API\NegotiationApiController::class, 'index']);

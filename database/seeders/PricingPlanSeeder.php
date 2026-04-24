@@ -17,9 +17,9 @@ class PricingPlanSeeder extends Seeder
             [
                 'name' => 'Free Trial',
                 'user_type' => 'supplier',
-                'price' => 0.00,
+                'price' => 1.00,
                 'billing_period' => 'trial',
-                'trial_days' => 30,
+                'trial_days' => 7,
                 'is_active' => true,
                 'is_popular' => false,
                 'order' => 1,
@@ -34,7 +34,7 @@ class PricingPlanSeeder extends Seeder
             [
                 'name' => 'Monthly',
                 'user_type' => 'supplier',
-                'price' => 159.00,
+                'price' => 1.00,
                 'billing_period' => 'monthly',
                 'trial_days' => 0,
                 'is_active' => true,
@@ -52,7 +52,7 @@ class PricingPlanSeeder extends Seeder
             [
                 'name' => 'Annual',
                 'user_type' => 'supplier',
-                'price' => 499.00,
+                'price' => 1.00,
                 'billing_period' => 'annual',
                 'trial_days' => 0,
                 'is_active' => true,
@@ -65,7 +65,7 @@ class PricingPlanSeeder extends Seeder
                     'Communicate with clients through the platform',
                     'Access job history, earnings, and payments',
                     'Priority support',
-                    '2 months free (save $318)',
+                    '2 months free (save €318)',
                 ],
             ],
         ];
@@ -75,7 +75,7 @@ class PricingPlanSeeder extends Seeder
             [
                 'name' => 'Monthly',
                 'user_type' => 'customer',
-                'price' => 69.00,
+                'price' => 1.00,
                 'billing_period' => 'monthly',
                 'trial_days' => 0,
                 'is_active' => true,
@@ -92,7 +92,7 @@ class PricingPlanSeeder extends Seeder
             [
                 'name' => 'Quarterly',
                 'user_type' => 'customer',
-                'price' => 159.00,
+                'price' => 1.00,
                 'billing_period' => 'quarterly',
                 'trial_days' => 0,
                 'is_active' => true,
@@ -110,7 +110,7 @@ class PricingPlanSeeder extends Seeder
             [
                 'name' => 'Annual',
                 'user_type' => 'customer',
-                'price' => 499.00,
+                'price' => 1.00,
                 'billing_period' => 'annual',
                 'trial_days' => 0,
                 'is_active' => true,
@@ -123,7 +123,7 @@ class PricingPlanSeeder extends Seeder
                     'Access invoices, billing history, and proof of delivery (POD)',
                     'Email notifications for order updates',
                     'Priority support',
-                    '6 months free (save $414)',
+                    '6 months free (save €414)',
                 ],
             ],
         ];

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { 
-    Home, MoreVertical, Truck, 
+import {
+    Home, MoreVertical, Truck,
     Search, X, Check, AlertCircle, Trash2,
-    ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, Shield 
+    ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, Shield
 } from 'lucide-react';
 
 export default function Index({ auth, suppliers, filters = {}, stats }) {
@@ -29,14 +29,16 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
 
     const handleStatusChange = (newStatus) => {
         setVerified(newStatus);
+        setCompliance('all'); // Reset compliance when status changes
         const statusVal = newStatus === 'all' ? '' : (newStatus === 'verified' ? '1' : '0');
-        updateFilters({ verified: statusVal, page: 1 });
+        updateFilters({ verified: statusVal, compliance: '', page: 1 });
     };
 
     const handleComplianceChange = (newCompliance) => {
         setCompliance(newCompliance);
+        setVerified('all'); // Reset verified when compliance changes
         const complianceVal = newCompliance === 'all' ? '' : (newCompliance === 'approved' ? '1' : '0');
-        updateFilters({ compliance: complianceVal, page: 1 });
+        updateFilters({ compliance: complianceVal, verified: '', page: 1 });
     };
 
     const handlePerPageChange = (e) => {
@@ -116,7 +118,7 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                                     <Shield size={30} />
                                 </div>
                             </div>
-                            <button 
+                            <button
                                 onClick={() => setShowPromo(false)}
                                 className="w-8 h-8 flex items-center justify-center bg-white rounded-lg border border-[#e3e4e8] text-[#727586] hover:bg-slate-50 transition-all"
                             >
@@ -154,9 +156,8 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                         <div className="flex gap-10">
                             <button
                                 onClick={() => handleStatusChange('all')}
-                                className={`pt-5 pb-4 text-[14px] font-bold transition-all relative ${
-                                    verified === 'all' ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
-                                }`}
+                                className={`pt-5 pb-4 text-[14px] font-bold transition-all relative ${verified === 'all' ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
+                                    }`}
                             >
                                 All suppliers
                                 {verified === 'all' && (
@@ -165,9 +166,8 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                             </button>
                             <button
                                 onClick={() => handleStatusChange('verified')}
-                                className={`pt-5 pb-4 text-[14px] font-bold transition-all relative ${
-                                    verified === 'verified' ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
-                                }`}
+                                className={`pt-5 pb-4 text-[14px] font-bold transition-all relative ${verified === 'verified' ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
+                                    }`}
                             >
                                 Verified
                                 {verified === 'verified' && (
@@ -176,9 +176,8 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                             </button>
                             <button
                                 onClick={() => handleComplianceChange('approved')}
-                                className={`pt-5 pb-4 text-[14px] font-bold transition-all relative ${
-                                    compliance === 'approved' ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
-                                }`}
+                                className={`pt-5 pb-4 text-[14px] font-bold transition-all relative ${compliance === 'approved' ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
+                                    }`}
                             >
                                 Compliance Approved
                                 {compliance === 'approved' && (
@@ -187,9 +186,8 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                             </button>
                             <button
                                 onClick={() => handleComplianceChange('pending')}
-                                className={`pt-5 pb-4 text-[14px] font-bold transition-all relative ${
-                                    compliance === 'pending' ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
-                                }`}
+                                className={`pt-5 pb-4 text-[14px] font-bold transition-all relative ${compliance === 'pending' ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
+                                    }`}
                             >
                                 Pending Review
                                 {compliance === 'pending' && (
@@ -221,20 +219,19 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                             <thead>
                                 <tr className="border-b border-[#e3e4e8]">
                                     <th className="pl-7 pr-4 py-4 w-10">
-                                        <div 
+                                        <div
                                             onClick={toggleSelectAll}
-                                            className={`w-5 h-5 border-[2px] rounded cursor-pointer transition-all flex items-center justify-center ${
-                                                selectedIds.length === suppliers.data.length && suppliers.data.length > 0
-                                                ? 'bg-[#673ab7] border-[#673ab7]'
-                                                : 'border-[#c3c4ca] hover:border-[#673ab7]'
-                                            }`}
+                                            className={`w-5 h-5 border-[2px] rounded cursor-pointer transition-all flex items-center justify-center ${selectedIds.length === suppliers.data.length && suppliers.data.length > 0
+                                                    ? 'bg-[#673ab7] border-[#673ab7]'
+                                                    : 'border-[#c3c4ca] hover:border-[#673ab7]'
+                                                }`}
                                         >
                                             {selectedIds.length === suppliers.data.length && suppliers.data.length > 0 && <Check size={14} className="text-white" />}
                                         </div>
                                     </th>
                                     <th className="text-left px-5 py-4 text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">
                                         <div className="flex items-center gap-1.5 cursor-pointer hover:text-black group">
-                                            Supplier 
+                                            Supplier
                                             <ArrowUpDown size={14} className="text-[#a0a3af] group-hover:text-[#673ab7]" />
                                         </div>
                                     </th>
@@ -259,18 +256,17 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                             <tbody className="divide-y divide-[#f1f2f4]">
                                 {suppliers.data.length > 0 ? (
                                     suppliers.data.map((supplier) => (
-                                        <tr 
-                                            key={supplier.id} 
+                                        <tr
+                                            key={supplier.id}
                                             className={`hover:bg-[#fafbfc] transition-colors group ${selectedIds.includes(supplier.id) ? 'bg-[#f4f0ff]/50' : ''}`}
                                         >
                                             <td className="pl-7 pr-4 py-5">
-                                                <div 
+                                                <div
                                                     onClick={() => toggleSelect(supplier.id)}
-                                                    className={`w-5 h-5 border-[2px] rounded cursor-pointer transition-all flex items-center justify-center ${
-                                                        selectedIds.includes(supplier.id)
-                                                        ? 'bg-[#673ab7] border-[#673ab7]'
-                                                        : 'border-[#c3c4ca] hover:border-[#673ab7]'
-                                                    }`}
+                                                    className={`w-5 h-5 border-[2px] rounded cursor-pointer transition-all flex items-center justify-center ${selectedIds.includes(supplier.id)
+                                                            ? 'bg-[#673ab7] border-[#673ab7]'
+                                                            : 'border-[#c3c4ca] hover:border-[#673ab7]'
+                                                        }`}
                                                 >
                                                     {selectedIds.includes(supplier.id) && <Check size={14} className="text-white" />}
                                                 </div>
@@ -373,15 +369,14 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                                                     </Link>
                                                     <button
                                                         onClick={() => toggleCompliance(supplier)}
-                                                        className={`h-[36px] inline-flex items-center px-3 rounded-[6px] font-bold text-[13px] transition-all ${
-                                                            supplier.is_compliance_verified
+                                                        className={`h-[36px] inline-flex items-center px-3 rounded-[6px] font-bold text-[13px] transition-all ${supplier.is_compliance_verified
                                                                 ? 'bg-orange-50 text-orange-600 hover:bg-orange-100'
                                                                 : 'bg-green-50 text-green-600 hover:bg-green-100'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {supplier.is_compliance_verified ? 'Revoke' : 'Approve'}
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleDelete(supplier.id)}
                                                         className="w-8 h-8 flex items-center justify-center text-[#727586] hover:bg-red-50 hover:text-red-600 rounded-lg transition-all"
                                                     >
@@ -400,8 +395,8 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                                                 </div>
                                                 <p className="text-[16px] font-bold text-[#2f3344]">No suppliers found</p>
                                                 <p className="text-[14px]">Try adjusting your search or filters.</p>
-                                                <button 
-                                                    onClick={() => {setSearch(''); handleStatusChange('all'); handleComplianceChange('all');}}
+                                                <button
+                                                    onClick={() => { setSearch(''); handleStatusChange('all'); handleComplianceChange('all'); }}
                                                     className="mt-2 text-[#673ab7] font-bold text-[14px] hover:underline"
                                                 >
                                                     Clear filters
@@ -419,7 +414,7 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                         <div className="flex items-center gap-3">
                             <span className="text-[13px] text-[#727586]">Items per page:</span>
                             <div className="relative">
-                                <select 
+                                <select
                                     value={filters.per_page || 10}
                                     onChange={handlePerPageChange}
                                     className="h-[38px] pl-4 pr-10 bg-white border border-[#e3e4e8] rounded-[6px] text-[13px] text-[#2f3344] font-medium appearance-none cursor-pointer focus:border-[#673ab7] outline-none"
@@ -440,14 +435,14 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                                 {suppliers.from || 0} - {suppliers.to || 0} of {suppliers.total || 0}
                             </span>
                             <div className="flex gap-2">
-                                <button 
+                                <button
                                     onClick={() => handlePageChange(suppliers.prev_page_url)}
                                     disabled={!suppliers.prev_page_url}
                                     className="w-[34px] h-[34px] flex items-center justify-center rounded-full text-[#673ab7] hover:bg-[#673ab7]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                                 >
                                     <ChevronLeft size={20} />
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => handlePageChange(suppliers.next_page_url)}
                                     disabled={!suppliers.next_page_url}
                                     className="w-[34px] h-[34px] flex items-center justify-center rounded-full text-[#673ab7] hover:bg-[#673ab7]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
@@ -465,14 +460,14 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                         <div className="bg-[#2f3344] text-white p-4 rounded-[12px] shadow-2xl flex items-center justify-between">
                             <div className="flex items-center gap-4 border-r border-slate-600 pr-5">
                                 <span className="text-[14px] font-bold">{selectedIds.length} suppliers selected</span>
-                                <button 
+                                <button
                                     onClick={() => setSelectedIds([])}
                                     className="text-slate-400 hover:text-white transition-colors"
                                 >
                                     <X size={18} />
                                 </button>
                             </div>
-                            
+
                             <div className="flex items-center gap-6 px-4 flex-1">
                                 <button className="text-[14px] font-bold text-green-400 hover:text-green-300 transition-colors flex items-center gap-2">
                                     <Shield size={16} /> Approve All
@@ -482,7 +477,7 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                                 </button>
                             </div>
 
-                            <button 
+                            <button
                                 onClick={() => setSelectedIds([])}
                                 className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-[13px] font-bold transition-all"
                             >

@@ -13,12 +13,15 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('invoice_id')->constrained()->onDelete('cascade');
+            $table->foreignId('invoice_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('subscription_id')->nullable()->constrained('user_subscriptions')->onDelete('cascade');
             $table->string('transaction_id')->unique()->nullable(); // Stripe Payment Intent ID or similar
             $table->string('session_id')->nullable(); // Stripe Session ID
             $table->decimal('amount', 12, 2);
             $table->string('currency', 10)->default('usd');
             $table->string('status'); // e.g., succeeded, pending, failed
+            $table->string('payment_type')->default('order');
             $table->timestamp('available_at')->nullable();
             $table->boolean('is_released')->default(false);
             $table->string('payment_method')->nullable();

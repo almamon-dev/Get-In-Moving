@@ -14,7 +14,7 @@
     </div>
 
     <div class="button-container">
-        <a href="{{ config('app.frontend_url') }}/customer/negotiations" class="button">
+        <a href="{{ config('app.frontend_url') }}/client-dashboard/negotiate" class="button">
             View and Respond to Offer
         </a>
     </div>

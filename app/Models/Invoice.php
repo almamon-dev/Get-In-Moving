@@ -11,6 +11,8 @@ class Invoice extends Model
 
     protected $fillable = [
         'order_id',
+        'user_id',
+        'subscription_id',
         'invoice_number',
         'supplier_amount',
         'platform_fee',
@@ -18,6 +20,7 @@ class Invoice extends Model
         'status',
         'due_date',
         'paid_at',
+        'invoice_type',
     ];
 
     protected $casts = [
@@ -28,5 +31,20 @@ class Invoice extends Model
     public function order()
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function subscription()
+    {
+        return $this->belongsTo(UserSubscription::class, 'subscription_id');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
     }
 }

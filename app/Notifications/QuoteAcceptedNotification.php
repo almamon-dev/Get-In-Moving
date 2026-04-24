@@ -40,7 +40,8 @@ class QuoteAcceptedNotification extends Notification
                 'greeting' => 'Quote Accepted!',
                 'notifiable' => $notifiable,
                 'palletType' => $this->quote->quoteRequest->pallet_type,
-                'amount' => number_format($this->quote->amount, 2)
+                'amount' => number_format($this->quote->amount, 2),
+                'orderId' => $this->quote->order->id ?? null
             ]);
     }
 

@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { 
-    Home, Search, ChevronLeft, ChevronRight, 
+import {
+    Home, Search, ChevronLeft, ChevronRight,
     TrendingUp, Clock, Activity,
     Euro, ArrowUpRight, ShieldCheck,
-    CreditCard, Calendar, User, Info, Timer 
+    CreditCard, Calendar, User, Info, Timer
 } from 'lucide-react';
 import { useEffect } from 'react';
 
 const CountdownTimer = ({ targetDate }) => {
     const calculateTimeLeft = () => {
         if (!targetDate) return null;
-        
+
         // Ensure the date is interpreted as UTC if it's a timezone-less string from the server
         let target = new Date(targetDate);
         if (typeof targetDate === 'string' && !targetDate.includes('Z') && !targetDate.includes('+')) {
@@ -85,13 +85,13 @@ export default function Index({ auth, payments, stats, filters = {} }) {
 
     const getStatusDetails = (status) => {
         switch (status) {
-            case 'succeeded': 
+            case 'succeeded':
                 return { icon: <ShieldCheck size={14} />, color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'Paid' };
-            case 'pending': 
+            case 'pending':
                 return { icon: <Clock size={14} />, color: 'text-amber-500', bg: 'bg-amber-500/10', label: 'Pending' };
-            case 'failed': 
+            case 'failed':
                 return { icon: <Activity size={14} />, color: 'text-rose-500', bg: 'bg-rose-500/10', label: 'Failed' };
-            default: 
+            default:
                 return { icon: <Info size={14} />, color: 'text-slate-500', bg: 'bg-slate-500/10', label: status };
         }
     };
@@ -118,7 +118,7 @@ export default function Index({ auth, payments, stats, filters = {} }) {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="bg-white rounded-[12px] p-6 border border-[#e3e4e8] shadow-sm flex flex-col justify-between">
                         <div className="flex items-start justify-between mb-4">
                             <div className="w-12 h-12 rounded-full bg-[#673ab7]/10 flex items-center justify-center text-[#673ab7]">
@@ -127,7 +127,7 @@ export default function Index({ auth, payments, stats, filters = {} }) {
                         </div>
                         <div>
                             <p className="text-[13px] font-bold text-[#727586] uppercase tracking-wider mb-1">Total Payment Volume</p>
-                            <h3 className="text-3xl font-bold text-[#2f3344]">€{parseFloat(stats.total_volume).toLocaleString()}</h3>
+                            <h3 className="text-3xl font-bold text-[#2f3344]">€{parseFloat(stats.total_volume || 0).toLocaleString()}</h3>
                             <p className="text-[12px] text-emerald-500 font-medium mt-2">All-time gross payments</p>
                         </div>
                     </div>
@@ -139,26 +139,37 @@ export default function Index({ auth, payments, stats, filters = {} }) {
                             </div>
                         </div>
                         <div>
-                            <p className="text-[13px] font-bold text-[#727586] uppercase tracking-wider mb-1">Released to Suppliers</p>
-                            <h3 className="text-3xl font-bold text-[#2f3344]">€{parseFloat(stats.released_amount).toLocaleString()}</h3>
+                            <p className="text-[13px] font-bold text-[#727586] uppercase tracking-wider mb-1">Total Supplier Earnings</p>
+                            <h3 className="text-3xl font-bold text-[#2f3344]">€{parseFloat(stats.released_amount || 0).toLocaleString()}</h3>
                             <p className="text-[12px] text-emerald-500 font-medium mt-2">Successfully disbursed</p>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-[12px] p-6 border border-[#e3e4e8] shadow-sm flex flex-col justify-between md:col-span-2">
+                    <div className="bg-white rounded-[12px] p-6 border border-[#e3e4e8] shadow-sm flex flex-col justify-between">
+                        <div className="flex items-start justify-between mb-4">
+                            <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-600">
+                                <Euro size={24} />
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-[13px] font-bold text-[#727586] uppercase tracking-wider mb-1">Total Withdrawn</p>
+                            <h3 className="text-3xl font-bold text-[#2f3344]">€{parseFloat(stats.total_withdrawn || 0).toLocaleString()}</h3>
+                            <p className="text-[12px] text-blue-500 font-medium mt-2">Completed payouts</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-[12px] p-6 border border-[#e3e4e8] shadow-sm flex flex-col justify-between">
                         <div className="flex items-start justify-between mb-4">
                             <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600">
                                 <Clock size={24} />
                             </div>
                         </div>
-                        <div className="flex items-end justify-between">
-                            <div>
-                                <p className="text-[13px] font-bold text-[#727586] uppercase tracking-wider mb-1">Held in Escrow</p>
-                                <h3 className="text-3xl font-bold text-[#2f3344]">€{parseFloat(stats.escrow_amount).toLocaleString()}</h3>
-                                <div className="text-[13px] font-medium text-amber-600 mt-2 flex items-center gap-1">
-                                    <span>{stats.pending_clearance_count} payments waiting for release</span>
-                                </div>
-                            </div>
+                        <div>
+                            <p className="text-[13px] font-bold text-[#727586] uppercase tracking-wider mb-1">Pending Clearance</p>
+                            <h3 className="text-3xl font-bold text-[#2f3344]">€{parseFloat(stats.escrow_amount || 0).toLocaleString()}</h3>
+                            <p className="text-[12px] text-amber-600 font-medium mt-2 flex items-center gap-1">
+                                <span>{stats.pending_clearance_count || 0} payments held</span>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -172,11 +183,10 @@ export default function Index({ auth, payments, stats, filters = {} }) {
                                 <button
                                     key={status}
                                     onClick={() => handleStatusChange(status)}
-                                    className={`px-4 py-2 text-[13px] font-bold rounded-md transition-all capitalize ${
-                                        statusFilter === status 
-                                            ? 'bg-white text-[#673ab7] shadow-sm' 
-                                            : 'text-[#727586] hover:text-[#2f3344]'
-                                    }`}
+                                    className={`px-4 py-2 text-[13px] font-bold rounded-md transition-all capitalize ${statusFilter === status
+                                        ? 'bg-white text-[#673ab7] shadow-sm'
+                                        : 'text-[#727586] hover:text-[#2f3344]'
+                                        }`}
                                 >
                                     {status}
                                 </button>
@@ -212,10 +222,10 @@ export default function Index({ auth, payments, stats, filters = {} }) {
                                     payments.data.map((payment) => {
                                         const statusInfo = getStatusDetails(payment.status);
                                         const order = payment.invoice?.order;
-                                        
+
                                         return (
                                             <tr key={payment.id} className="hover:bg-[#fafbfc] transition-colors group">
-                                                <td className="px-6 py-5 align-top">
+                                                <td className="px-6 py-3 align-top">
                                                     <div className="flex flex-col">
                                                         <span className="text-[13px] font-bold text-[#2f3344]">
                                                             {new Date(payment.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -225,7 +235,7 @@ export default function Index({ auth, payments, stats, filters = {} }) {
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-5 align-top">
+                                                <td className="px-6 py-3 align-top">
                                                     <div className="flex flex-col gap-1">
                                                         <span className="text-[13px] font-bold text-[#2f3344] flex items-center gap-1.5">
                                                             <CreditCard size={14} className="text-[#a0a3af]" />
@@ -238,26 +248,41 @@ export default function Index({ auth, payments, stats, filters = {} }) {
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-5 align-top">
-                                                    <div className="flex flex-col gap-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-[#727586]">C</div>
-                                                            <span className="text-[12px] text-[#424453] font-medium">{order?.customer?.name || "Client"}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-5 h-5 rounded-full bg-[#673ab7]/10 flex items-center justify-center text-[10px] font-bold text-[#673ab7]">S</div>
-                                                            <span className="text-[12px] text-[#424453] font-medium">{order?.supplier?.company_name || order?.supplier?.name || "Supplier"}</span>
-                                                        </div>
+                                                <td className="px-6 py-3 align-top">
+                                                    <div className="flex flex-col gap-1.5">
+                                                        {payment.payment_type === 'subscription' ? (
+                                                            <>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">U</div>
+                                                                    <span className="text-[12px] text-[#424453] font-medium">{payment.user?.name || "User"}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-[10px] font-bold text-emerald-600">P</div>
+                                                                    <span className="text-[12px] text-[#424453] font-medium">Platform</span>
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-[#727586]">C</div>
+                                                                    <span className="text-[12px] text-[#424453] font-medium">{order?.customer?.name || "Client"}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-5 h-5 rounded-full bg-[#673ab7]/10 flex items-center justify-center text-[10px] font-bold text-[#673ab7]">S</div>
+                                                                    <span className="text-[12px] text-[#424453] font-medium">{order?.supplier?.company_name || order?.supplier?.name || "Supplier"}</span>
+                                                                </div>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-5 align-top">
+                                                <td className="px-6 py-3 align-top">
                                                     <div className="flex flex-col gap-2">
                                                         <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] w-fit ${statusInfo.bg}`}>
                                                             <span className={`${statusInfo.color}`}>{statusInfo.icon}</span>
                                                             <span className={`text-[11px] font-bold uppercase ${statusInfo.color}`}>{statusInfo.label}</span>
                                                         </div>
-                                                        
-                                                        {payment.status === 'succeeded' && (
+
+                                                        {payment.status === 'succeeded' && payment.payment_type !== 'subscription' && (
                                                             <div className="flex items-center gap-1.5">
                                                                 {payment.is_released ? (
                                                                     <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">RELEASED</span>
@@ -271,7 +296,7 @@ export default function Index({ auth, payments, stats, filters = {} }) {
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-5 align-top text-right">
+                                                <td className="px-6 py-3 align-top text-right">
                                                     <span className="text-[16px] font-bold text-[#2f3344]">
                                                         €{parseFloat(payment.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                                     </span>
@@ -304,14 +329,14 @@ export default function Index({ auth, payments, stats, filters = {} }) {
                                 Showing <strong className="text-[#2f3344]">{payments.from}</strong> to <strong className="text-[#2f3344]">{payments.to}</strong> of <strong className="text-[#2f3344]">{payments.total}</strong> results
                             </span>
                             <div className="flex gap-2">
-                                <button 
+                                <button
                                     onClick={() => handlePageChange(payments.prev_page_url)}
                                     disabled={!payments.prev_page_url}
                                     className="w-[34px] h-[34px] flex items-center justify-center rounded-lg border border-[#e3e4e8] bg-white text-[#2f3344] hover:border-[#673ab7] hover:text-[#673ab7] disabled:opacity-50 disabled:bg-slate-50 disabled:cursor-not-allowed transition-all shadow-sm"
                                 >
                                     <ChevronLeft size={18} />
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => handlePageChange(payments.next_page_url)}
                                     disabled={!payments.next_page_url}
                                     className="w-[34px] h-[34px] flex items-center justify-center rounded-lg border border-[#e3e4e8] bg-white text-[#2f3344] hover:border-[#673ab7] hover:text-[#673ab7] disabled:opacity-50 disabled:bg-slate-50 disabled:cursor-not-allowed transition-all shadow-sm"

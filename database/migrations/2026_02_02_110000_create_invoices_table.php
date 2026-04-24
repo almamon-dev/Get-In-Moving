@@ -13,12 +13,15 @@ return new class extends Migration
     {
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id')->constrained()->onDelete('cascade');
+            $table->foreignId('order_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('subscription_id')->nullable()->constrained('user_subscriptions')->onDelete('cascade');
             $table->string('invoice_number')->unique();
             $table->decimal('supplier_amount', 12, 2);
             $table->decimal('platform_fee', 12, 2);
             $table->decimal('total_amount', 12, 2);
             $table->enum('status', ['due', 'paid', 'overdue', 'cancelled'])->default('due');
+            $table->string('invoice_type')->default('order');
             $table->date('due_date');
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();

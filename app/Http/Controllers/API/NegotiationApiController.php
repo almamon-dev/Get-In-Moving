@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
+use App\Helpers\Helper;
 use Illuminate\Http\Request;
 
 class NegotiationApiController extends Controller
@@ -61,7 +62,7 @@ class NegotiationApiController extends Controller
                 'sender_id' => $otherParty->id,
                 'sender_name' => $otherParty->name,
                 'company_name' => $otherParty->company_name ?? null,
-                'profile_picture' => $otherParty->profile_picture ?? 'https://ui-avatars.com/api/?name='.urlencode($otherParty->name).'&color=7F9CF5&background=EBF4FF',
+                'profile_picture' => $otherParty->profile_picture ? Helper::generateURL($otherParty->profile_picture) : 'https://ui-avatars.com/api/?name='.urlencode($otherParty->name).'&color=7F9CF5&background=EBF4FF',
                 'message_snippet' => $latestMessage?->message ?? 'No messages yet',
                 'is_read' => $latestMessage ? (bool)$latestMessage->is_read : true,
                 'created_at' => $latestMessage ? $latestMessage->created_at->toDateTimeString() : $quote->created_at->toDateTimeString(),
@@ -75,7 +76,7 @@ class NegotiationApiController extends Controller
                     ->whereNull('read_at')
                     ->count(),
             ];
-        })->sortByDesc('last_activity_timestamp')->values();
+        })->sortByDesc('created_at')->values();
 
         return $this->sendResponse($negotiations, 'Negotiations retrieved successfully.');
     }
