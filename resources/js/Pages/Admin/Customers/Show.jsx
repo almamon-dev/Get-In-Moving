@@ -186,6 +186,47 @@ export default function Show({ auth, customer }) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Subscription Details */}
+                        {customer.subscription && (
+                            <div className="bg-white rounded-[12px] border border-[#e3e4e8] shadow-sm overflow-hidden">
+                                <div className="px-7 py-5 border-b border-[#e3e4e8] flex justify-between items-center">
+                                    <h2 className="text-[18px] font-bold text-[#2f3344]">Subscription Details</h2>
+                                </div>
+                                <div className="p-7">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <p className="text-[13px] text-[#727586] font-medium mb-2">Plan Name</p>
+                                            <p className="text-[14px] text-[#2f3344] font-bold">{customer.subscription.pricing_plan?.name || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[13px] text-[#727586] font-medium mb-2">Status</p>
+                                            <span className={`px-3 py-1 rounded-full text-[12px] font-bold inline-block ${
+                                                customer.subscription.status === 'active' 
+                                                    ? 'bg-green-50 text-green-600' 
+                                                    : customer.subscription.status === 'pending_payment'
+                                                        ? 'bg-orange-50 text-orange-600'
+                                                        : 'bg-red-50 text-red-600'
+                                            }`}>
+                                                <span className="capitalize">{customer.subscription.status.replace('_', ' ')}</span>
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <p className="text-[13px] text-[#727586] font-medium mb-2">Started At</p>
+                                            <p className="text-[14px] text-[#2f3344] font-bold">
+                                                {customer.subscription.started_at ? new Date(customer.subscription.started_at).toLocaleDateString() : 'N/A'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[13px] text-[#727586] font-medium mb-2">Expires At</p>
+                                            <p className="text-[14px] text-[#2f3344] font-bold">
+                                                {customer.subscription.expires_at ? new Date(customer.subscription.expires_at).toLocaleDateString() : 'N/A'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Column - Actions */}

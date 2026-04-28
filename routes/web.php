@@ -114,6 +114,12 @@ Route::middleware('auth')->group(function () {
                 })->name('ban-ip');
             });
         });
+
+        // Notifications
+        Route::post('notifications/read-all', function () {
+            auth()->user()->unreadNotifications->markAsRead();
+            return back();
+        })->name('notifications.read-all');
     });
 });
 

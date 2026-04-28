@@ -16,9 +16,4 @@
         Your earnings have been added to your pending balance and will be available once the order is delivered and completed.
     </div>
 
-    <div class="button-container">
-        <a href="{{ config('app.frontend_url') }}/supplier/orders/{{ $orderId }}" class="button">
-            View Order Details
-        </a>
-    </div>
 @endsection

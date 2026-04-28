@@ -69,6 +69,8 @@ class SupplierController extends Controller
      */
     public function show(User $supplier)
     {
+        $supplier->load('subscription.pricingPlan');
+        
         $supplier->insurance_document = Helper::generateURL($supplier->insurance_document);
         $supplier->license_document = Helper::generateURL($supplier->license_document);
         $supplier->profile_picture = Helper::generateURL($supplier->profile_picture);

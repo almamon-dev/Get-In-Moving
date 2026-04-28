@@ -457,8 +457,9 @@ class CustomerApiController extends Controller
             // Extract data using AI
             $extractedRows = $this->aiService->extractFromPdf(public_path($path), $file->getClientOriginalName());
 
-            if (!is_array($extractedRows) || empty($extractedRows)) {
+            if (! is_array($extractedRows) || empty($extractedRows)) {
                 Log::warning('AI extraction returned no data or invalid format.', ['result' => $extractedRows]);
+
                 return $this->sendError('Failed to extract data from PDF. Please ensure the PDF is clear and contains shipping details.', [], 422);
             }
 

@@ -16,16 +16,9 @@
             <div class="text" style="margin-bottom: 0; color: #cc0000;"><strong>Reason:</strong> {{ $adminNote }}</div>
         @endif
     </div>
-
     @if($status === 'rejected')
         <div class="text">
             The amount has been refunded to your account balance.
         </div>
     @endif
-
-    <div class="button-container">
-        <a href="{{ config('app.frontend_url') }}/supplier/finance/dashboard" class="button">
-            View Finance Dashboard
-        </a>
-    </div>
 @endsection

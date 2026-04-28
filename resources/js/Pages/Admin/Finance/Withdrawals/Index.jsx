@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { 
+import {
     Home, Search, X, Check, AlertCircle, Trash2,
     ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, Banknote,
     Clock, CheckCircle, Eye, MessageSquare, XCircle
@@ -10,6 +10,8 @@ import { toast } from 'react-toastify';
 
 export default function Index({ auth, withdrawRequests, filters = {} }) {
     const [statusFilter, setStatusFilter] = useState(filters.status || 'all');
+    const [searchQuery, setSearchQuery] = useState(filters.search || '');
+    const [dateFilter, setDateFilter] = useState(filters.date || '');
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [adminNote, setAdminNote] = useState('');
@@ -29,9 +31,28 @@ export default function Index({ auth, withdrawRequests, filters = {} }) {
         });
     };
 
+    React.useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (searchQuery !== (filters.search || '') || dateFilter !== (filters.date || '')) {
+                router.get(route('admin.withdrawals.index'), {
+                    status: statusFilter,
+                    search: searchQuery,
+                    date: dateFilter
+                }, { preserveState: true, replace: true });
+            }
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [searchQuery, dateFilter]);
+
     const handleStatusChange = (newStatus) => {
         setStatusFilter(newStatus);
-        router.get(route('admin.withdrawals.index'), { status: newStatus }, { preserveState: true });
+        router.get(route('admin.withdrawals.index'), { status: newStatus, search: searchQuery, date: dateFilter }, { preserveState: true });
+    };
+
+    const clearFilters = () => {
+        setSearchQuery('');
+        setDateFilter('');
+        router.get(route('admin.withdrawals.index'), { status: statusFilter }, { preserveState: true });
     };
 
     const handlePageChange = (url) => {
@@ -98,7 +119,7 @@ export default function Index({ auth, withdrawRequests, filters = {} }) {
                                     <Banknote size={40} />
                                 </div>
                             </div>
-                            <button 
+                            <button
                                 onClick={() => setShowPromo(false)}
                                 className="w-8 h-8 flex items-center justify-center bg-white rounded-lg border border-[#e3e4e8] text-[#727586] hover:bg-slate-50 transition-all"
                             >
@@ -112,15 +133,15 @@ export default function Index({ auth, withdrawRequests, filters = {} }) {
                 {/* Main Content Card */}
                 <div className="bg-white rounded-[12px] border border-[#e3e4e8] shadow-sm overflow-hidden">
                     {/* Filter Tabs */}
-                    <div className="px-6 border-b border-[#e3e4e8]">
-                        <div className="flex gap-10">
+                    {/* Filter Tabs */}
+                    <div className="px-6 border-b border-[#e3e4e8] flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex gap-10 overflow-x-auto">
                             {['all', 'pending', 'approved', 'completed', 'rejected'].map((status) => (
                                 <button
                                     key={status}
                                     onClick={() => handleStatusChange(status)}
-                                    className={`pt-5 pb-4 text-[14px] font-bold transition-all relative capitalize ${
-                                        statusFilter === status ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
-                                    }`}
+                                    className={`pt-5 pb-4 text-[14px] font-bold transition-all relative capitalize whitespace-nowrap ${statusFilter === status ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
+                                        }`}
                                 >
                                     {status}
                                     {statusFilter === status && (
@@ -128,6 +149,36 @@ export default function Index({ auth, withdrawRequests, filters = {} }) {
                                     )}
                                 </button>
                             ))}
+                        </div>
+
+                        <div className="flex items-center gap-3 pb-4 md:pb-0 pt-2 md:pt-0">
+                            <div className="relative">
+                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#727586]" />
+                                <input
+                                    type="text"
+                                    placeholder="Search name or email..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-9 pr-4 py-2 border border-[#e3e4e8] rounded-lg text-[13px] text-[#2f3344] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] w-full md:w-[220px]"
+                                />
+                            </div>
+                            <div className="relative">
+                                <input
+                                    type="date"
+                                    value={dateFilter}
+                                    onChange={(e) => setDateFilter(e.target.value)}
+                                    className="px-4 py-2 border border-[#e3e4e8] rounded-lg text-[13px] text-[#727586] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7]"
+                                />
+                            </div>
+                            {(searchQuery || dateFilter) && (
+                                <button
+                                    onClick={clearFilters}
+                                    className="p-2 text-[#727586] hover:text-[#ff4d4f] transition-colors bg-[#f8f9fa] hover:bg-red-50 rounded-lg"
+                                    title="Clear filters"
+                                >
+                                    <X size={16} />
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -175,7 +226,7 @@ export default function Index({ auth, withdrawRequests, filters = {} }) {
                                             </td>
                                             <td className="px-5 py-5">
                                                 <span className="text-[14px] font-bold text-[#2f3344]">
-                                                    ${parseFloat(request.amount).toLocaleString()}
+                                                    €{parseFloat(request.amount).toLocaleString()}
                                                 </span>
                                             </td>
                                             <td className="px-5 py-5">
@@ -193,7 +244,7 @@ export default function Index({ auth, withdrawRequests, filters = {} }) {
                                                 </span>
                                             </td>
                                             <td className="pr-7 py-5 text-right">
-                                                <button 
+                                                <button
                                                     onClick={() => {
                                                         setSelectedRequest(request);
                                                         setIsModalOpen(true);
@@ -228,14 +279,14 @@ export default function Index({ auth, withdrawRequests, filters = {} }) {
                             {withdrawRequests.from || 0} - {withdrawRequests.to || 0} of {withdrawRequests.total || 0}
                         </span>
                         <div className="flex gap-2">
-                            <button 
+                            <button
                                 onClick={() => handlePageChange(withdrawRequests.prev_page_url)}
                                 disabled={!withdrawRequests.prev_page_url}
                                 className="w-[34px] h-[34px] flex items-center justify-center rounded-full text-[#673ab7] hover:bg-[#673ab7]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
                                 <ChevronLeft size={20} />
                             </button>
-                            <button 
+                            <button
                                 onClick={() => handlePageChange(withdrawRequests.next_page_url)}
                                 disabled={!withdrawRequests.next_page_url}
                                 className="w-[34px] h-[34px] flex items-center justify-center rounded-full text-[#673ab7] hover:bg-[#673ab7]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
@@ -266,11 +317,13 @@ export default function Index({ auth, withdrawRequests, filters = {} }) {
                             <div className="grid grid-cols-2 gap-6 bg-[#f4f0ff] p-5 rounded-xl border border-[#e9e3ff]">
                                 <div className="space-y-1">
                                     <p className="text-[11px] font-bold text-[#673ab7] uppercase tracking-wider">Amount</p>
-                                    <p className="text-xl font-bold text-[#673ab7]">${parseFloat(selectedRequest.amount).toLocaleString()}</p>
+                                    <p className="text-xl font-bold text-[#673ab7]">€{parseFloat(selectedRequest.amount).toLocaleString()}</p>
                                 </div>
                                 <div className="space-y-1 text-right">
                                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Status</p>
-                                    <StatusBadge status={selectedRequest.status} />
+                                    <div className="flex justify-end">
+                                        <StatusBadge status={selectedRequest.status} />
+                                    </div>
                                 </div>
                             </div>
 
@@ -288,7 +341,7 @@ export default function Index({ auth, withdrawRequests, filters = {} }) {
                                         <MessageSquare size={14} className="text-slate-400" />
                                         Admin Note
                                     </label>
-                                    <textarea 
+                                    <textarea
                                         rows="3"
                                         placeholder="Add transaction ID or reason..."
                                         value={adminNote}
@@ -300,13 +353,13 @@ export default function Index({ auth, withdrawRequests, filters = {} }) {
 
                             {selectedRequest.status === 'pending' && (
                                 <div className="flex gap-4 pt-4">
-                                    <button 
+                                    <button
                                         onClick={() => handleStatusUpdate(selectedRequest.id, 'completed')}
                                         className="flex-1 bg-[#673ab7] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#5a32a3] shadow-lg shadow-[#673ab7]/20 transition-all"
                                     >
                                         Approve & Complete
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => handleStatusUpdate(selectedRequest.id, 'rejected')}
                                         className="flex-1 bg-white border border-rose-200 text-rose-500 py-3 rounded-xl font-bold text-sm hover:bg-rose-50 transition-all"
                                     >

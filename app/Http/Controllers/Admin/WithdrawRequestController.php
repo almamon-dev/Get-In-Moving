@@ -17,6 +17,8 @@ class WithdrawRequestController extends Controller
     public function index(Request $request)
     {
         $status = $request->input('status', 'all');
+        $search = $request->input('search');
+        $date = $request->input('date');
         
         $query = WithdrawRequest::with('supplier')
             ->latest();
@@ -24,13 +26,29 @@ class WithdrawRequestController extends Controller
         if ($status !== 'all') {
             $query->where('status', $status);
         }
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('account_name', 'like', "%{$search}%")
+                  ->orWhereHas('supplier', function($sq) use ($search) {
+                      $sq->where('name', 'like', "%{$search}%")
+                         ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($date) {
+            $query->whereDate('created_at', $date);
+        }
         
         $requests = $query->paginate(15)->withQueryString();
         
         return Inertia::render('Admin/Finance/Withdrawals/Index', [
             'withdrawRequests' => $requests,
             'filters' => [
-                'status' => $status
+                'status' => $status,
+                'search' => $search,
+                'date' => $date,
             ]
         ]);
     }

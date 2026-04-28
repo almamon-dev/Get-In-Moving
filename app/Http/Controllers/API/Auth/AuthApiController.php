@@ -95,9 +95,6 @@ class AuthApiController extends Controller
                 'status' => $isTrial ? 'active' : 'pending_payment',
                 'is_trial' => $isTrial,
             ]);
-
-            // If not trial, it will stay as pending_payment until verification
-
             // Send OTP safely
             try {
                 $otp = $this->sendOtp($user, 'Verify Your Email Address');
@@ -142,9 +139,27 @@ class AuthApiController extends Controller
             if (! $user->email_verified_at) {
                 return $this->sendError('Email Not Verified', [], 403);
             }
+
+            // Handle Subscription Checkout Link after login if pending payment
+            $checkoutUrl = null;
+            $subscription = $user->subscription;
+            if ($subscription && $subscription->status === 'pending_payment') {
+                try {
+                    $paymentService = new \App\Services\SubscriptionPaymentService;
+                    $session = $paymentService->createCheckoutSession($subscription);
+                    $checkoutUrl = $session->url;
+                } catch (Exception $stripeError) {
+                    Log::error('Stripe Session Error after login: '.$stripeError->getMessage());
+                }
+            }
+
             $token = $user->createToken('YourAppName')->plainTextToken;
 
-            return $this->sendResponse(new LoginResource($user), 'Login successful', $token);
+            return $this->sendResponse([
+                'user' => new LoginResource($user),
+                'checkout_url' => $checkoutUrl,
+                'requires_payment' => $checkoutUrl !== null,
+            ], 'Login successful', $token);
         } catch (Exception $e) {
             Log::error('Login Error: '.$e->getMessage());
 
@@ -176,8 +191,6 @@ class AuthApiController extends Controller
             $otp->update(['is_verified' => true, 'verified_at' => now()]);
             $user->update([
                 'email_verified_at' => now(),
-                'is_verified' => true,
-                'verified_at' => now(),
             ]);
 
             // Handle Subscription Checkout Link after verification

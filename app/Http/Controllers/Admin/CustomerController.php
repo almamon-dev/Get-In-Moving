@@ -54,6 +54,8 @@ class CustomerController extends Controller
      */
     public function show(User $customer)
     {
+        $customer->load('subscription.pricingPlan');
+        
         return Inertia::render('Admin/Customers/Show', [
             'customer' => $customer,
         ]);

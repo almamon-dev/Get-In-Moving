@@ -15,7 +15,23 @@ class IsCustomer
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user() && $request->user()->user_type === 'customer') {
+        $user = $request->user();
+        if ($user && $user->user_type === 'customer') {
+            if (!$user->is_verified) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your account is pending admin verification.',
+                ], 403);
+            }
+            
+            if (!$user->subscription || $user->subscription->status !== 'active' || $user->subscription->expires_at < now()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have an active subscription.',
+                    'requires_subscription' => true
+                ], 403);
+            }
+
             return $next($request);
         }
 

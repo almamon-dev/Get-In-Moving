@@ -4,23 +4,37 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-
-use App\Models\Setting;
 use Inertia\Inertia;
 
 class FinancialSettingController extends Controller
 {
+    protected function getEnv($key, $default = null)
+    {
+        $path = base_path('.env');
+        if (file_exists($path)) {
+            $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            foreach ($lines as $line) {
+                if (strpos(trim($line), '#') === 0) continue;
+                $parts = explode('=', $line, 2);
+                if (count($parts) === 2 && trim($parts[0]) === $key) {
+                    return trim(trim($parts[1]), '"\'');
+                }
+            }
+        }
+        return $default;
+    }
+
     public function index()
     {
         $settings = [
-            'stripe_key' => config('services.stripe.key'),
-            'stripe_secret' => config('services.stripe.secret'),
-            'stripe_webhook_secret' => config('services.stripe.webhook_secret'),
-            'fund_hold_minutes' => env('FUND_HOLD_MINUTES', 5),
+            'stripe_key' => $this->getEnv('STRIPE_KEY', config('services.stripe.key')),
+            'stripe_secret' => $this->getEnv('STRIPE_SECRET', config('services.stripe.secret')),
+            'stripe_webhook_secret' => $this->getEnv('STRIPE_WEBHOOK_SECRET', config('services.stripe.webhook_secret')),
+            'fund_hold_minutes' => $this->getEnv('FUND_HOLD_MINUTES', 5),
         ];
 
         return Inertia::render('Admin/Settings/Financial/Gateway', [
-            'settings' => $settings
+            'settings' => $settings,
         ]);
     }
 
@@ -45,6 +59,8 @@ class FinancialSettingController extends Controller
                 $this->setEnv($envMapping[$key], $value);
             }
         }
+        // Clear config cache so changes take effect immediately
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
 
         return back()->with('success', 'Financial settings updated successfully.');
     }
@@ -59,10 +75,10 @@ class FinancialSettingController extends Controller
             // If the key exists, replace it, otherwise append it
             if (strpos($content, "{$key}=") !== false) {
                 // Handle values with spaces or special characters by quoting them
-                $escapedValue = '"' . addslashes($value) . '"';
+                $escapedValue = '"'.addslashes($value).'"';
                 $content = preg_replace("/^{$key}=.*/m", "{$key}={$escapedValue}", $content);
             } else {
-                $content .= "\n{$key}=\"" . addslashes($value) . "\"\n";
+                $content .= "\n{$key}=\"".addslashes($value)."\"\n";
             }
 
             file_put_contents($path, $content);

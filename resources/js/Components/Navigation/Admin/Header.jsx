@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { router, usePage, Link } from "@inertiajs/react";
-import { 
-    Search, Bell, Menu, Settings, Maximize, 
-    Mail, Globe, Monitor, Plus, LogOut, 
-    ChevronDown, CreditCard, Home 
+import {
+    Search, Bell, Menu, Settings, Maximize,
+    Mail, Globe, Monitor, Plus, LogOut,
+    ChevronDown, CreditCard, Home
 } from "lucide-react";
 
 const Header = ({ onMenuClick }) => {
@@ -15,6 +15,13 @@ const Header = ({ onMenuClick }) => {
 
     const handleLogout = () => {
         router.post(route("logout"));
+    };
+
+    const markAllAsRead = () => {
+        router.post(route("admin.notifications.read-all"), {}, {
+            preserveScroll: true,
+            onSuccess: () => setNotifOpen(false)
+        });
     };
 
     // Close dropdown on outside click
@@ -33,7 +40,7 @@ const Header = ({ onMenuClick }) => {
 
     return (
         <header className="h-[70px] bg-white/80 backdrop-blur-md sticky top-0 z-[50] flex items-center px-4 md:px-8 border-b border-slate-100 shadow-sm transition-all duration-300">
-            
+
             {/* LEFT: Toggle & Mobile Logo */}
             <div className="flex items-center gap-4">
                 <button
@@ -49,21 +56,21 @@ const Header = ({ onMenuClick }) => {
 
             {/* RIGHT: Actions & Profile */}
             <div className="flex items-center gap-2 md:gap-4 ml-auto">
-                
+
                 {/* Utility Icons */}
                 <div className="flex items-center gap-1 border-r border-slate-100 pr-2 mr-2">
-                    <Link 
-                        href="/" 
-                        className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-[#0a66c2] rounded-xl transition-all" 
+                    <Link
+                        href="/"
+                        className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-[#0a66c2] rounded-xl transition-all"
                         title="Frontend"
                     >
                         <Home size={20} strokeWidth={1.5} />
                     </Link>
-                    
+
                     <div className="relative" ref={notificationRef}>
-                        <button 
+                        <button
                             onClick={() => setNotifOpen(!notifOpen)}
-                            className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-50 rounded-xl relative" 
+                            className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-50 rounded-xl relative"
                             title="Notifications"
                         >
                             <Bell size={20} strokeWidth={1.5} />
@@ -80,7 +87,7 @@ const Header = ({ onMenuClick }) => {
                                 <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                                     <h3 className="text-sm font-bold text-slate-900">Notifications</h3>
                                     {auth?.user?.unread_notifications_count > 0 && (
-                                        <button className="text-[11px] text-[#0a66c2] font-semibold hover:underline">Mark all as read</button>
+                                        <button onClick={markAllAsRead} className="text-[11px] text-[#0a66c2] font-semibold hover:underline">Mark all as read</button>
                                     )}
                                 </div>
                                 <div className="max-h-[300px] overflow-y-auto">
@@ -111,9 +118,6 @@ const Header = ({ onMenuClick }) => {
                                         </div>
                                     )}
                                 </div>
-                                <div className="p-3 bg-slate-50/30 border-t border-slate-100 text-center">
-                                    <Link className="text-[12px] text-[#0a66c2] font-bold hover:underline">View All Notifications</Link>
-                                </div>
                             </div>
                         )}
                     </div>
@@ -121,7 +125,7 @@ const Header = ({ onMenuClick }) => {
 
                 {/* User Profile Dropdown */}
                 <div className="relative" ref={dropdownRef}>
-                    <button 
+                    <button
                         onClick={() => setOpen(!open)}
                         className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100"
                     >
@@ -174,7 +178,7 @@ const Header = ({ onMenuClick }) => {
 };
 
 const DropdownLink = ({ icon: Icon, label, href }) => (
-    <Link 
+    <Link
         href={href}
         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all font-semibold group"
     >

@@ -25,6 +25,12 @@ class LoginResource extends JsonResource
                 'is_compliance_verified' => $this->is_compliance_verified ?? false,
                 'compliance_verified_at' => $this->compliance_verified_at,
             ]),
+            'subscription' => [
+                'status' => $this->subscription?->status,
+                'is_trial' => $this->subscription?->is_trial,
+                'expires_at' => $this->subscription?->expires_at?->toDateTimeString(),
+                'has_active_subscription' => $this->subscription && $this->subscription->status === 'active' && $this->subscription->expires_at > now(),
+            ],
             'created_at' => $this->created_at?->toDateTimeString(),
             'updated_at' => $this->updated_at?->toDateTimeString(),
         ];
