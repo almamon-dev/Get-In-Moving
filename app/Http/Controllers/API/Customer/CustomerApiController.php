@@ -379,7 +379,7 @@ class CustomerApiController extends Controller
                 'quote_id' => $quote->id,
                 'customer_id' => $quote->quoteRequest->user_id,
                 'supplier_id' => $quote->user_id,
-                'total_amount' => $quote->amount,
+                'total_amount' => $quote->amount + ($quote->amount * ((env('SYSTEM_CHARGE', 10) / 2) / 100)),
                 'pallet_type' => $quote->quoteRequest->getPalletType(),
                 'pickup_address' => $quote->quoteRequest->pickup_address,
                 'delivery_address' => $quote->quoteRequest->delivery_address,
@@ -409,13 +409,19 @@ class CustomerApiController extends Controller
                 ]);
             }
 
+            // Calculate charges (Split SYSTEM_CHARGE 50/50 between customer and supplier)
+            // Note: Client half is deducted during withdrawal as per user request.
+            $systemChargePercent = (float) env('SYSTEM_CHARGE', 10);
+            $halfChargePercent = $systemChargePercent / 2;
+            $customerAddon = $quote->amount * ($halfChargePercent / 100);
+
             // Create Invoice
             Invoice::create([
                 'order_id' => $order->id,
                 'invoice_number' => 'INV-'.(Invoice::count() + 202545),
                 'supplier_amount' => $quote->amount,
-                'platform_fee' => 0,
-                'total_amount' => $quote->amount,
+                'platform_fee' => $customerAddon,
+                'total_amount' => $quote->amount + $customerAddon,
                 'status' => 'due',
                 'due_date' => now()->addDays(30),
             ]);
@@ -565,7 +571,7 @@ class CustomerApiController extends Controller
                 'quote_id' => $quote->id,
                 'customer_id' => $quote->quoteRequest->user_id,
                 'supplier_id' => $quote->user_id,
-                'total_amount' => $quote->amount,
+                'total_amount' => $quote->amount + ($quote->amount * ((env('SYSTEM_CHARGE', 10) / 2) / 100)),
                 'pallet_type' => $quote->quoteRequest->getPalletType(),
                 'pickup_address' => $quote->quoteRequest->pickup_address,
                 'delivery_address' => $quote->quoteRequest->delivery_address,
@@ -595,13 +601,19 @@ class CustomerApiController extends Controller
                 ]);
             }
 
+            // Calculate charges (Split SYSTEM_CHARGE 50/50 between customer and supplier)
+            // Note: Client half is deducted during withdrawal as per user request.
+            $systemChargePercent = (float) env('SYSTEM_CHARGE', 10);
+            $halfChargePercent = $systemChargePercent / 2;
+            $customerAddon = $quote->amount * ($halfChargePercent / 100);
+
             // Create Invoice
             Invoice::create([
                 'order_id' => $order->id,
                 'invoice_number' => 'INV-'.(Invoice::count() + 202545),
                 'supplier_amount' => $quote->amount,
-                'platform_fee' => 0,
-                'total_amount' => $quote->amount,
+                'platform_fee' => $customerAddon,
+                'total_amount' => $quote->amount + $customerAddon,
                 'status' => 'due',
                 'due_date' => now()->addDays(30),
             ]);

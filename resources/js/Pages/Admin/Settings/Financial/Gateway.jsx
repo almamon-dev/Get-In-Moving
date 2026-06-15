@@ -15,6 +15,7 @@ export default function FinancialGateway({ settings }) {
         stripe_secret: settings.stripe_secret || '',
         stripe_webhook_secret: settings.stripe_webhook_secret || '',
         fund_hold_minutes: settings.fund_hold_minutes || 5,
+        system_charge: settings.system_charge || 10,
     });
 
     const handleCopy = (text, field) => {
@@ -194,6 +195,31 @@ export default function FinancialGateway({ settings }) {
                                     (e.g., 20160 for 14 days, 5 for testing).
                                 </p>
                                 {errors.fund_hold_minutes && <p className="text-red-500 text-xs mt-1">{errors.fund_hold_minutes}</p>}
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                    System Charge (%)
+                                </label>
+                                <div className="relative">
+                                    <input 
+                                        type="number" 
+                                        value={data.system_charge}
+                                        onChange={e => setData('system_charge', e.target.value)}
+                                        placeholder="10"
+                                        min="0"
+                                        max="100"
+                                        step="0.01"
+                                        className={`w-full h-[52px] pl-4 pr-12 bg-white border ${errors.system_charge ? 'border-red-500' : 'border-[#e3e4e8]'} rounded-[8px] text-[14px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all`}
+                                    />
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#727586] text-[12px] font-bold uppercase">
+                                        %
+                                    </div>
+                                </div>
+                                <p className="text-[12px] text-[#727586]">
+                                    Percentage of each transaction that will be collected as system fee.
+                                </p>
+                                {errors.system_charge && <p className="text-red-500 text-xs mt-1">{errors.system_charge}</p>}
                             </div>
                         </div>
                     </div>

@@ -86,23 +86,28 @@ class SupplierFinanceApiController extends Controller
         try {
             DB::beginTransaction();
 
+            $systemChargePercent = (float) env('SYSTEM_CHARGE', 10);
+            $halfChargePercent = $systemChargePercent / 2;
+            $feeAmount = $withdrawAmount * ($halfChargePercent / 100);
+            $netAmount = $withdrawAmount - $feeAmount;
+
             $withdrawRequest = WithdrawRequest::create([
                 'supplier_id' => $user->id,
                 'account_name' => $request->account_name,
-                'amount' => $withdrawAmount,
+                'amount' => $netAmount,
                 'payment_method' => $request->payment_method ?? 'Manual',
-                'payment_details' => $request->payment_details,
+                'payment_details' => $request->payment_details . " (Gross: €".number_format($withdrawAmount, 2).", Fee: €".number_format($feeAmount, 2).")",
                 'status' => 'pending',
             ]);
 
-            // Deduction from balance
+            // Deduction from balance (Full gross amount)
             $user->decrement('balance', $withdrawAmount);
 
             SupplierTransaction::create([
                 'supplier_id' => $user->id,
                 'amount' => -$withdrawAmount,
                 'type' => 'withdrawal',
-                'description' => 'Withdrawal request (#'.$withdrawRequest->id.') for '.$request->account_name,
+                'description' => 'Withdrawal request (#'.$withdrawRequest->id.'). Net: €'.number_format($netAmount, 2).' after '. $halfChargePercent .'% system fee.',
             ]);
 
             DB::commit();

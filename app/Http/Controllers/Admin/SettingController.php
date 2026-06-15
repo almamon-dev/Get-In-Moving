@@ -63,6 +63,7 @@ class SettingController extends Controller
             'stripe_secret' => $dbSettings['stripe_secret'] ?? config('services.stripe.secret'),
             'stripe_webhook_secret' => $dbSettings['stripe_webhook_secret'] ?? config('services.stripe.webhook_secret'),
             'fund_hold_minutes' => $dbSettings['fund_hold_minutes'] ?? env('FUND_HOLD_MINUTES', 5),
+            'system_charge' => $dbSettings['system_charge'] ?? env('SYSTEM_CHARGE', 10),
         ];
 
         return Inertia::render('Admin/Settings/Financial/Gateway', [
@@ -196,6 +197,7 @@ class SettingController extends Controller
             'stripe_secret' => 'STRIPE_SECRET',
             'stripe_webhook_secret' => 'STRIPE_WEBHOOK_SECRET',
             'fund_hold_minutes' => 'FUND_HOLD_MINUTES',
+            'system_charge' => 'SYSTEM_CHARGE',
         ];
 
         $envUpdateData = [];
@@ -221,6 +223,8 @@ class SettingController extends Controller
         // Batch update .env if needed
         if (!empty($envUpdateData)) {
             $this->updateEnv($envUpdateData);
+            // Clear config cache so changes take effect immediately
+            \Illuminate\Support\Facades\Artisan::call('config:clear');
         }
 
         return redirect()->back()->with('success', 'Settings updated successfully.');
