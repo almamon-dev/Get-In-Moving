@@ -22,6 +22,12 @@ Route::middleware('auth')->group(function () {
         Route::resource('suppliers', \App\Http\Controllers\Admin\SupplierController::class)->only(['index', 'show', 'destroy']);
         Route::patch('suppliers/{supplier}/compliance', [\App\Http\Controllers\Admin\SupplierController::class, 'updateCompliance'])->name('suppliers.compliance');
         Route::patch('suppliers/{supplier}/verification', [\App\Http\Controllers\Admin\SupplierController::class, 'updateVerification'])->name('suppliers.verification');
+        Route::patch('suppliers/{supplier}/auto-renew', [\App\Http\Controllers\Admin\SupplierController::class, 'updateAutoRenew'])->name('suppliers.auto-renew');
+
+        // Subscription Management
+        Route::get('subscriptions', [\App\Http\Controllers\Admin\SubscriptionController::class, 'index'])->name('subscriptions.index');
+        Route::delete('subscriptions/{subscription}', [\App\Http\Controllers\Admin\SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
+        Route::post('subscriptions/bulk-destroy', [\App\Http\Controllers\Admin\SubscriptionController::class, 'bulkDestroy'])->name('subscriptions.bulk-destroy');
 
         // Issue/Dispute Management
         Route::get('issues', [\App\Http\Controllers\Admin\IssueController::class, 'index'])->name('issues.index');
@@ -33,8 +39,12 @@ Route::middleware('auth')->group(function () {
         Route::patch('withdrawals/{withdraw_request}/status', [\App\Http\Controllers\Admin\WithdrawRequestController::class, 'updateStatus'])->name('withdrawals.status');
 
         // Pricing Plans Management
+        Route::post('pricing-plans/bulk-destroy', [\App\Http\Controllers\Admin\PricingPlanController::class, 'bulkDestroy'])->name('pricing-plans.bulk-destroy');
         Route::resource('pricing-plans', \App\Http\Controllers\Admin\PricingPlanController::class);
         Route::patch('pricing-plans/{pricingPlan}/toggle-active', [\App\Http\Controllers\Admin\PricingPlanController::class, 'toggleActive'])->name('pricing-plans.toggle-active');
+
+        // Page Management
+        Route::resource('pages', \App\Http\Controllers\Admin\PageController::class);
 
         // Settings Routes
         Route::prefix('settings')->name('settings.')->group(function () {
@@ -123,4 +133,15 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+// Stripe Webhooks (Must be outside auth middleware)
+Route::post('stripe/webhook', [\App\Http\Controllers\WebhookController::class, 'handleWebhook']);
+
 require __DIR__.'/auth.php';
+
+Route::get('/{slug}', function ($slug) {
+    $page = \App\Models\Page::where('slug', $slug)->where('is_published', true)->firstOrFail();
+
+    return Inertia::render('Frontend/Page', [
+        'page' => $page
+    ]);
+})->name('page.show');

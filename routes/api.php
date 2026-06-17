@@ -7,10 +7,19 @@ use App\Http\Controllers\API\Supplier\EmployeeApiController;
 use App\Http\Controllers\API\Supplier\SupplierApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Models\Page;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+Route::get('/pages/{slug}', function ($slug) {
+    $page = Page::where('slug', $slug)->where('is_published', true)->firstOrFail();
+    return response()->json([
+        'success' => true,
+        'data' => $page
+    ]);
+});
 
 Route::get('/customer/quote-requests/template/download', [CustomerApiController::class, 'downloadTemplate'])
     ->name('api.customer.template.download')
@@ -36,6 +45,11 @@ Route::prefix('auth')->group(function () {
 
 // Stripe Webhook
 Route::post('/webhooks/stripe', [\App\Http\Controllers\API\StripeWebhookController::class, 'handle']);
+
+// Stripe Connect Public Redirects
+Route::get('/stripe/connect/return', [\App\Http\Controllers\API\Supplier\StripeConnectController::class, 'returnUrl']);
+Route::get('/stripe/connect/refresh', [\App\Http\Controllers\API\Supplier\StripeConnectController::class, 'refreshUrl']);
+
 // Protected Routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthApiController::class, 'logoutApi']);
@@ -99,7 +113,27 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/orders/{id}/rate', [CustomerApiController::class, 'submitReview']);
     });
 
-    // Supplier Endpoints
+    // Supplier Endpoints (Public for authenticated suppliers, even if unverified)
+    Route::prefix('supplier')->group(function () {
+        Route::post('/stripe/connect', [\App\Http\Controllers\API\Supplier\StripeConnectController::class, 'onboard']);
+
+        // Profile & Settings
+        Route::get('/profile', [SupplierApiController::class, 'getProfile']);
+        Route::post('/profile', [SupplierApiController::class, 'updateProfile']);
+        Route::post('/profile/logo', [SupplierApiController::class, 'updateLogo']);
+        Route::post('/profile/logo-remove', [SupplierApiController::class, 'removeLogo']);
+        Route::post('/profile/compliance/insurance', [SupplierApiController::class, 'updateInsurance']);
+        Route::post('/profile/compliance/license', [SupplierApiController::class, 'updateLicense']);
+        Route::post('/profile/change-password', [SupplierApiController::class, 'changePassword']);
+        Route::post('/profile/delete-account', [SupplierApiController::class, 'deleteAccount']);
+
+        // Notifications
+        Route::get('/notifications', [SupplierApiController::class, 'getNotifications']);
+        Route::post('/notifications/{id}/read', [SupplierApiController::class, 'markNotificationRead']);
+        Route::post('/notifications/read-all', [SupplierApiController::class, 'markAllNotificationsRead']);
+    });
+
+    // Strict Supplier Endpoints
     Route::middleware('supplier')->prefix('supplier')->group(function () {
         Route::get('/dashboard', [SupplierApiController::class, 'getDashboardData']);
         Route::get('/available-requests', [SupplierApiController::class, 'getAvailableRequests']);
@@ -133,21 +167,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/employees', [EmployeeApiController::class, 'store']);
         Route::post('/employees/{id}/status', [EmployeeApiController::class, 'updateStatus']);
         Route::delete('/employees/{id}', [EmployeeApiController::class, 'destroy']);
-
-        // Profile & Settings
-        Route::get('/profile', [SupplierApiController::class, 'getProfile']);
-        Route::post('/profile', [SupplierApiController::class, 'updateProfile']);
-        Route::post('/profile/logo', [SupplierApiController::class, 'updateLogo']);
-        Route::post('/profile/logo-remove', [SupplierApiController::class, 'removeLogo']);
-        Route::post('/profile/compliance/insurance', [SupplierApiController::class, 'updateInsurance']);
-        Route::post('/profile/compliance/license', [SupplierApiController::class, 'updateLicense']);
-        Route::post('/profile/change-password', [SupplierApiController::class, 'changePassword']);
-        Route::post('/profile/delete-account', [SupplierApiController::class, 'deleteAccount']);
-
-        // Notifications
-        Route::get('/notifications', [SupplierApiController::class, 'getNotifications']);
-        Route::post('/notifications/{id}/read', [SupplierApiController::class, 'markNotificationRead']);
-        Route::post('/notifications/read-all', [SupplierApiController::class, 'markAllNotificationsRead']);
 
         // Payments
         Route::get('/payments', [SupplierApiController::class, 'getPayments']);

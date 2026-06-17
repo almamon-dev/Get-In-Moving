@@ -27,7 +27,7 @@ class SubscriptionApiController extends Controller
     {
         try {
             $user = $request->user();
-            $subscription = $user->subscription;
+            $subscription = $user->userSubscription;
 
             if (!$subscription) {
                 return $this->sendError('No subscription found for this user.', [], 404);
@@ -58,7 +58,7 @@ class SubscriptionApiController extends Controller
      */
     public function checkStatus(Request $request)
     {
-        $subscription = $request->user()->subscription;
+        $subscription = $request->user()->userSubscription;
         
         if (!$subscription) {
             return $this->sendResponse(['has_subscription' => false], 'No subscription found.');

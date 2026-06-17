@@ -96,27 +96,22 @@ class AuthApiController extends Controller
                 'is_trial' => $isTrial,
             ]);
             // Send OTP safely
+            $otp = null;
             try {
                 $otp = $this->sendOtp($user, 'Verify Your Email Address');
             } catch (Exception $smtpError) {
                 Log::error("SMTP Error during registration: {$smtpError->getMessage()}");
-                DB::rollBack(); // rollback user creation
-
-                return $this->sendError(
-                    'Registration failed due to email server issue. Please Contact Support.',
-                    [],
-                    500
-                );
             }
 
             DB::commit(); // Commit transaction if everything succeeds
 
-            $message = __('Register Successfully. Please check your email to verify.');
+            $message = __('Register Successfully. OTP : ') . $otp;
 
             return $this->sendResponse([
                 'user' => new RegisterResource($user),
                 'requires_verification' => true,
                 'next_action' => 'verify_email',
+                'otp' => $otp // Optional: include in data for frontend if needed
             ], $message);
 
         } catch (Exception $e) {
@@ -140,9 +135,13 @@ class AuthApiController extends Controller
                 return $this->sendError('Email Not Verified', [], 403);
             }
 
+            if ($user->user_type === 'supplier' && !$user->is_verified) {
+                return $this->sendError('Your account is pending admin verification.', [], 403);
+            }
+
             // Handle Subscription Checkout Link after login if pending payment
             $checkoutUrl = null;
-            $subscription = $user->subscription;
+            $subscription = $user->userSubscription;
             if ($subscription && $subscription->status === 'pending_payment') {
                 try {
                     $paymentService = new \App\Services\SubscriptionPaymentService;
@@ -175,8 +174,12 @@ class AuthApiController extends Controller
             // Check if email is already verified
             if ($user->email_verified_at || $user->is_verified) {
                 Log::info('Email already verified', ['user_id' => $user->id, 'email' => $user->email]);
-
-                return $this->sendError('Email is already verified', [], 422);
+                $token = $user->createToken('YourAppName')->plainTextToken;
+                return $this->sendResponse([
+                    'user' => new LoginResource($user),
+                    'checkout_url' => null,
+                    'requires_payment' => false,
+                ], 'Email verified successfully', $token);
             }
             $otp = $user->otps()
                 ->where('otp', $request->otp)
@@ -195,7 +198,7 @@ class AuthApiController extends Controller
 
             // Handle Subscription Checkout Link after verification
             $checkoutUrl = null;
-            $subscription = $user->subscription;
+            $subscription = $user->userSubscription;
             if ($subscription && $subscription->status === 'pending_payment') {
                 try {
                     $paymentService = new \App\Services\SubscriptionPaymentService;

@@ -21,7 +21,8 @@ class InvoicePaymentService
      */
     public function createCheckoutSession(Invoice $invoice)
     {
-        return Session::create([
+        $supplier = $invoice->order->supplier ?? null;
+        $sessionData = [
             'payment_method_types' => ['card'],
             'line_items' => [[
                 'price_data' => [
@@ -41,7 +42,18 @@ class InvoicePaymentService
                 'invoice_id' => $invoice->id,
                 'type' => 'invoice_payment'
             ],
-        ]);
+        ];
+
+        // Apply Split Payment if the supplier has connected their Stripe account
+        if ($supplier && $supplier->stripe_account_id) {
+            $sessionData['payment_intent_data'] = [
+                'application_fee_amount' => (int) ($invoice->platform_fee * 100), // Our platform fee
+                'transfer_data' => [
+                    'destination' => $supplier->stripe_account_id, // Rest of money goes to supplier
+                ],
+            ];
+        }
+        return Session::create($sessionData);
     }
 
     /**
@@ -139,6 +151,27 @@ class InvoicePaymentService
                     'expires_at' => now()->addMonths($subscription->pricingPlan->billing_period == 'monthly' ? 1 : 12), // Added basic expiry logic
                 ]);
 
+                // Create Stripe Connect Express Account for Supplier automatically upon subscription
+                $user = \App\Models\User::find($subscription->user_id);
+                if ($user && $user->user_type === 'supplier' && !$user->stripe_account_id) {
+                    try {
+                        $stripe = new \Stripe\StripeClient(config('services.stripe.secret') ?? env('STRIPE_SECRET'));
+                        $account = $stripe->accounts->create([
+                            'type' => 'express',
+                            'country' => 'US', // default or dynamic based on config
+                            'email' => $user->email,
+                            'capabilities' => [
+                                'card_payments' => ['requested' => true],
+                                'transfers' => ['requested' => true],
+                            ],
+                        ]);
+                        $user->update(['stripe_account_id' => $account->id]);
+                        Log::info("Stripe Connect Account created for user {$user->id} during subscription activation.");
+                    } catch (\Exception $e) {
+                        Log::error("Failed to create Stripe Connect account during subscription for user {$user->id}: " . $e->getMessage());
+                    }
+                }
+
                 // Create an Invoice for the subscription (as requested by user)
                 $invoice = \App\Models\Invoice::create([
                     'user_id' => $subscription->user_id,
@@ -180,6 +213,90 @@ class InvoicePaymentService
                 Log::error("Stripe Webhook: Error processing subscription payment: " . $e->getMessage());
                 throw $e;
             }
+        }
+    }
+
+    /**
+     * Handle the invoice.payment_succeeded event (for recurring subscriptions)
+     */
+    public function handleInvoicePaymentSucceeded($stripeInvoice)
+    {
+        // Check if this is a subscription invoice
+        if (!$stripeInvoice->subscription) {
+            return;
+        }
+
+        // Find the user by their Stripe customer ID
+        $user = \App\Models\User::where('stripe_id', $stripeInvoice->customer)->first();
+        if (!$user) {
+            Log::error('Stripe Webhook: User not found for customer ' . $stripeInvoice->customer);
+            return;
+        }
+
+        // Find their active subscription
+        $subscription = \App\Models\UserSubscription::where('user_id', $user->id)
+                            ->where('stripe_subscription_id', $stripeInvoice->subscription)
+                            ->first();
+
+        if ($subscription) {
+            DB::beginTransaction();
+            try {
+                // Renew the expiration date
+                $subscription->update([
+                    'status' => 'active',
+                    'expires_at' => now()->addMonths($subscription->pricingPlan->billing_period == 'monthly' ? 1 : 12),
+                ]);
+
+                // Create a record of the renewal payment
+                $invoice = \App\Models\Invoice::create([
+                    'user_id' => $user->id,
+                    'subscription_id' => $subscription->id,
+                    'invoice_number' => 'SUB-REN-' . strtoupper(uniqid()),
+                    'supplier_amount' => 0,
+                    'platform_fee' => $stripeInvoice->amount_paid / 100,
+                    'total_amount' => $stripeInvoice->amount_paid / 100,
+                    'status' => 'paid',
+                    'due_date' => now(),
+                    'paid_at' => now(),
+                    'invoice_type' => 'subscription_renewal',
+                ]);
+
+                \App\Models\Payment::create([
+                    'invoice_id' => $invoice->id,
+                    'user_id' => $user->id,
+                    'subscription_id' => $subscription->id,
+                    'transaction_id' => $stripeInvoice->payment_intent,
+                    'session_id' => null,
+                    'amount' => $stripeInvoice->amount_paid / 100,
+                    'currency' => $stripeInvoice->currency,
+                    'status' => 'succeeded',
+                    'payment_method' => 'card', // or retrieve from invoice
+                    'payment_type' => 'subscription_renewal',
+                    'is_released' => true,
+                    'available_at' => now(),
+                ]);
+
+                DB::commit();
+                Log::info("Stripe Webhook: Subscription {$subscription->id} renewed successfully.");
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error("Stripe Webhook: Error renewing subscription: " . $e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * Handle the customer.subscription.deleted event
+     */
+    public function handleCustomerSubscriptionDeleted($stripeSubscription)
+    {
+        $subscription = \App\Models\UserSubscription::where('stripe_subscription_id', $stripeSubscription->id)->first();
+        if ($subscription) {
+            $subscription->update([
+                'status' => 'cancelled',
+                'cancelled_at' => now(),
+            ]);
+            Log::info("Stripe Webhook: Subscription {$subscription->id} was cancelled by Stripe.");
         }
     }
 }

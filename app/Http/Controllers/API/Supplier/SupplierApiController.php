@@ -237,6 +237,14 @@ class SupplierApiController extends Controller
 
         $user = $request->user();
 
+        // Check if supplier is onboarded to Stripe Connect
+        if (!$user->is_stripe_connected) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You must complete Stripe Connect onboarding before you can submit quotes.'
+            ], 403);
+        }
+
         // Check if already quoted - if so, submit as a revision
         $existing = Quote::where('quote_request_id', $id)
             ->where('user_id', $user->id)

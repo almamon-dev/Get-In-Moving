@@ -16,6 +16,7 @@ class UserSubscription extends Model
         'expires_at',
         'status',
         'is_trial',
+        'auto_renew',
     ];
 
     protected $casts = [

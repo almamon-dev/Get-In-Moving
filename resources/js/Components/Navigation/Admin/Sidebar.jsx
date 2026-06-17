@@ -5,7 +5,7 @@ import {
     Cloud, CreditCard, Store, ChevronRight, ChevronsLeft,
     Settings, ShieldCheck, DollarSign, Cog, Users, FolderTree,
     Smartphone, Monitor, CircleDollarSign, Hexagon, LogOut, User,
-    Truck, UserCircle, AlertCircle
+    Truck, UserCircle, AlertCircle, FileText
 } from "lucide-react";
 
 const Sidebar = ({ isCollapsed, toggleCollapse }) => {
@@ -48,6 +48,18 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     path: route('admin.pricing-plans.index'),
                     icon: <CircleDollarSign />,
                     route: "admin.pricing-plans.index"
+                },
+                {
+                    label: "Page Management",
+                    path: route('admin.pages.index'),
+                    icon: <FileText />,
+                    route: "admin.pages.index"
+                },
+                {
+                    label: "Subscriptions",
+                    path: route('admin.subscriptions.index'),
+                    icon: <CreditCard />,
+                    route: "admin.subscriptions.index"
                 },
                 {
                     label: "Withdrawals",

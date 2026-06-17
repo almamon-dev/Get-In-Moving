@@ -7,8 +7,8 @@ export default function AdminLayout({ children }) {
     const [isCollapsed, setIsCollapsed] = useState(false); // Initially open/expanded
 
     // Constants for width
-    const expandedWidth = "260px";
-    const collapsedWidth = "90px";
+    const expandedWidth = "220px";
+    const collapsedWidth = "64px";
 
     return (
         <div className="flex h-screen bg-[#f8fafc] overflow-hidden">
@@ -40,7 +40,7 @@ export default function AdminLayout({ children }) {
                 <Header onMenuClick={() => setIsMobileOpen(true)} />
                 
                 <main className="flex-1 overflow-y-auto">
-                    <div className="p-6 md:p-8 max-w-[1600px] mx-auto">
+                    <div className="p-4 md:p-6 max-w-[1600px] mx-auto">
                         {children}
                     </div>
                 </main>

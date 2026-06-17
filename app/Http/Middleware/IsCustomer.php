@@ -17,14 +17,7 @@ class IsCustomer
     {
         $user = $request->user();
         if ($user && $user->user_type === 'customer') {
-            if (!$user->is_verified) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Your account is pending admin verification.',
-                ], 403);
-            }
-            
-            if (!$user->subscription || $user->subscription->status !== 'active' || $user->subscription->expires_at < now()) {
+            if (!$user->userSubscription || $user->userSubscription->status !== 'active' || $user->userSubscription->expires_at < now()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You do not have an active subscription.',

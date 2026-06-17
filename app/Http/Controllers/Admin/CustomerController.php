@@ -15,7 +15,7 @@ class CustomerController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::with(['subscription.pricingPlan'])
+        $query = User::with(['userSubscription.pricingPlan'])
             ->where('user_type', 'customer');
 
         // Search functionality
@@ -54,7 +54,7 @@ class CustomerController extends Controller
      */
     public function show(User $customer)
     {
-        $customer->load('subscription.pricingPlan');
+        $customer->load('userSubscription.pricingPlan');
         
         return Inertia::render('Admin/Customers/Show', [
             'customer' => $customer,

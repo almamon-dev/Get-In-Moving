@@ -41,6 +41,9 @@ class SupplierProfileResource extends JsonResource
             ],
             'deletion_requested' => $this->deletion_requested_at !== null,
             'status' => $this->status,
+            'is_verified' => (bool) $this->is_verified,
+            'stripe_account_id' => $this->stripe_account_id,
+            'is_stripe_connected' => (bool) $this->is_stripe_connected,
         ];
     }
 }

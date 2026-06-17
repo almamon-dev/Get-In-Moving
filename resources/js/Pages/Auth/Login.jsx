@@ -41,6 +41,18 @@ export default function Login({ status, canResetPassword }) {
                 </div>
             )}
 
+            {/* Demo Credentials Section */}
+            <div className="mb-6 flex justify-center">
+                <button
+                    type="button"
+                    onClick={() => setData({ ...data, email: 'admin@getitmoving.com', password: 'admin123' })}
+                    className="flex flex-col items-center justify-center p-3 px-8 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 hover:bg-[#673de6] hover:text-white dark:bg-gray-800 dark:hover:bg-[#673de6] transition-all group shadow-sm"
+                >
+                    <span className="font-semibold text-gray-800 dark:text-gray-200 group-hover:text-white">Admin Credentials</span>
+                    <span className="text-[11px] text-gray-500 group-hover:text-purple-200 mt-1">Click to auto-fill</span>
+                </button>
+            </div>
+
             <div className="relative mb-6">
                 <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>

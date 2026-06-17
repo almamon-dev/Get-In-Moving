@@ -48,14 +48,16 @@ class IssueController extends Controller
             });
         }
 
-        $issues = $query->paginate(15)->withQueryString();
+        $perPage = $request->input('per_page', 10);
+        $issues = $query->paginate($perPage)->withQueryString();
 
         return Inertia::render('Admin/Issues/Index', [
             'issues' => $issues,
             'stats' => $stats,
             'filters' => [
                 'search' => $search,
-                'status' => $status
+                'status' => $status,
+                'per_page' => $perPage
             ]
         ]);
     }

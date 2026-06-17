@@ -5,7 +5,7 @@ import {
     AlertCircle, Search, Home, 
     User, Truck, Calendar, 
     MoreHorizontal, CheckCircle, ArrowUpRight,
-    Search as SearchIcon, Shield, ChevronDown
+    Search as SearchIcon, Shield, ChevronDown, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 export default function Index({ issues, filters = {}, auth, stats }) {
@@ -20,7 +20,15 @@ export default function Index({ issues, filters = {}, auth, stats }) {
 
     const handleStatusChange = (status) => {
         setStatusFilter(status);
-        updateFilters({ status: status, page: 1 });
+        updateFilters({ status: status, page: 1, per_page: filters.per_page });
+    };
+
+    const handlePerPageChange = (e) => {
+        updateFilters({ per_page: e.target.value, page: 1 });
+    };
+
+    const handlePageChange = (url) => {
+        if (url) router.get(url, {}, { preserveState: true, replace: true });
     };
 
     const updateFilters = (newFilters) => {
@@ -35,132 +43,62 @@ export default function Index({ issues, filters = {}, auth, stats }) {
         <AdminLayout user={auth?.user}>
             <Head title="Raised Issues" />
 
-            <div className="space-y-6 max-w-8xl mx-auto pb-20">
-                {/* Top Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-[24px] font-bold text-[#2f3344] tracking-tight">
-                            Raised Issues & Disputes
-                        </h1>
-                        <div className="flex items-center gap-2 text-[13px] text-[#727586] mt-1">
-                            <Home size={16} className="text-[#727586]" />
-                            <span className="text-[#c3c4ca]">-</span>
-                            <span>Orders</span>
-                            <span className="text-[#c3c4ca]">-</span>
-                            <span>Disputes</span>
+            <div className="min-h-screen bg-[#f5f6f8]">
+                <div className="w-full mx-auto px-6 py-8">
+                    
+                    {/* Header Row */}
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
+                        <div>
+                            <h1 className="text-[24px] font-bold text-[#111827] tracking-tight">Raised Issues & Disputes</h1>
+                            <p className="text-[14px] text-[#6b7280] mt-0.5">Review and resolve conflicts regarding delivery rejections</p>
                         </div>
                     </div>
-                </div>
-
-                {/* Promo Banner - Matches Supplier Management */}
-                {showPromo && (
-                    <div className="relative bg-[#fff0f0] rounded-[12px] p-6 border border-[#ffe3e3] overflow-hidden flex items-center justify-between">
-                        <div className="flex-1">
-                            <h2 className="text-[18px] font-bold text-[#2f3344] mb-1">
-                                Resolution Center & Dispute Management
-                            </h2>
-                            <p className="text-[14px] text-[#727586]">
-                                Review and resolve conflicts between customers and suppliers regarding delivery rejections.
-                            </p>
+                    {/* Main Container */}
+                    <div className="bg-white rounded-md border border-[#e5e7eb] shadow-sm">
+                        
+                        {/* Tabs Row */}
+                        <div className="flex items-center gap-6 px-6 border-b border-[#e5e7eb] overflow-x-auto">
+                            {[
+                                { name: 'All Disputes', value: 'all', count: stats.total },
+                                { name: 'Pending Review', value: 'pending', count: stats.pending },
+                                { name: 'Resolved Cases', value: 'resolved', count: stats.resolved }
+                            ].map((tab) => {
+                                const isActive = statusFilter === tab.value;
+                                
+                                return (
+                                    <button
+                                        key={tab.name}
+                                        onClick={() => handleStatusChange(tab.value)}
+                                        className={`flex items-center gap-2 py-3.5 text-[14px] font-medium border-b-2 whitespace-nowrap transition-colors ${
+                                            isActive 
+                                                ? 'border-[#673ab7] text-[#673ab7]' 
+                                                : 'border-transparent text-[#6b7280] hover:text-[#374151] hover:border-gray-300'
+                                        }`}
+                                    >
+                                        {tab.name}
+                                        <span className="bg-[#f3f4f6] text-[#4b5563] text-[11px] px-2 py-0.5 rounded-full font-bold">
+                                            {tab.count}
+                                        </span>
+                                    </button>
+                                );
+                            })}
                         </div>
-                        <div className="flex items-center gap-4">
-                            <div className="w-[100px] h-[60px] relative hidden md:block">
-                                <div className="absolute right-0 top-0 text-rose-500 opacity-20 transform rotate-12">
-                                    <AlertCircle size={40} />
-                                </div>
-                                <div className="absolute right-10 bottom-0 text-rose-500 opacity-20">
-                                    <Shield size={30} />
-                                </div>
-                            </div>
-                            <button 
-                                onClick={() => setShowPromo(false)}
-                                className="w-8 h-8 flex items-center justify-center bg-white rounded-lg border border-[#e3e4e8] text-[#727586] hover:bg-slate-50 transition-all"
-                            >
-                                <ChevronDown size={18} />
-                            </button>
+
+                        {/* Search & Filter Toolbar */}
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 border-b border-[#e5e7eb]">
+                            <form onSubmit={handleSearch} className="relative w-full md:w-[400px]">
+                                <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search by order number, customer name, email or supplier..." 
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full h-10 pl-10 pr-4 bg-white border border-[#d1d5db] rounded-[4px] text-[13px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] placeholder:text-[#9ca3af]"
+                                />
+                            </form>
                         </div>
-                        <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-rose-500/5 to-transparent pointer-events-none"></div>
-                    </div>
-                )}
 
-                {/* Stats Cards - Matches Supplier Management */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="bg-white rounded-[12px] border border-[#e3e4e8] p-6 shadow-sm">
-                        <div className="text-[13px] font-medium text-[#727586] uppercase tracking-wider">Total Issues</div>
-                        <div className="mt-2 text-[32px] font-bold text-[#2f3344] uppercase tracking-tight">{stats.total}</div>
-                    </div>
-                    <div className="bg-white rounded-[12px] border border-[#e3e4e8] p-6 shadow-sm">
-                        <div className="text-[13px] font-medium text-[#727586] uppercase tracking-wider">POD Rejections</div>
-                        <div className="mt-2 text-[32px] font-bold text-rose-500 uppercase tracking-tight">{stats.rejected}</div>
-                    </div>
-                    <div className="bg-white rounded-[12px] border border-[#e3e4e8] p-6 shadow-sm">
-                        <div className="text-[13px] font-medium text-[#727586] uppercase tracking-wider">Pending Review</div>
-                        <div className="mt-2 text-[32px] font-bold text-amber-500 uppercase tracking-tight">{stats.pending}</div>
-                    </div>
-                    <div className="bg-white rounded-[12px] border border-[#e3e4e8] p-6 shadow-sm">
-                        <div className="text-[13px] font-medium text-[#727586] uppercase tracking-wider">Resolved</div>
-                        <div className="mt-2 text-[32px] font-bold text-emerald-500 uppercase tracking-tight">{stats.resolved}</div>
-                    </div>
-                </div>
-
-                {/* Main Content Card - Matches Supplier Management */}
-                <div className="bg-white rounded-[12px] border border-[#e3e4e8] shadow-sm overflow-hidden">
-                    {/* Tabs / Filters - Functional */}
-                    <div className="px-6 border-b border-[#e3e4e8]">
-                        <div className="flex gap-10">
-                            <button
-                                onClick={() => handleStatusChange('all')}
-                                className={`pt-5 pb-4 text-[14px] font-bold transition-all relative ${
-                                    statusFilter === 'all' ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
-                                }`}
-                            >
-                                All Disputes
-                                {statusFilter === 'all' && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#673ab7] rounded-t-full"></div>
-                                )}
-                            </button>
-                            <button
-                                onClick={() => handleStatusChange('pending')}
-                                className={`pt-5 pb-4 text-[14px] font-bold transition-all relative ${
-                                    statusFilter === 'pending' ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
-                                }`}
-                            >
-                                Pending Review
-                                {statusFilter === 'pending' && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#673ab7] rounded-t-full"></div>
-                                )}
-                            </button>
-                            <button
-                                onClick={() => handleStatusChange('resolved')}
-                                className={`pt-5 pb-4 text-[14px] font-bold transition-all relative ${
-                                    statusFilter === 'resolved' ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
-                                }`}
-                            >
-                                Resolved Cases
-                                {statusFilter === 'resolved' && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#673ab7] rounded-t-full"></div>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Search Bar - Matches Supplier Management */}
-                    <div className="p-7">
-                        <form onSubmit={handleSearch} className="relative w-full">
-                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[#a0a3af]">
-                                <SearchIcon size={22} />
-                            </div>
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search by order number, customer name, email or supplier..."
-                                className="w-full h-[52px] pl-14 pr-6 bg-white border border-[#e3e4e8] rounded-[8px] text-[15px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all"
-                            />
-                        </form>
-                    </div>
-
-                    {/* Table Area */}
+                        {/* Table Area */}
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
@@ -234,6 +172,52 @@ export default function Index({ issues, filters = {}, auth, stats }) {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+
+                    {/* Pagination */}
+                    <div className="flex items-center justify-end gap-8 px-8 py-5 border-t border-[#e3e4e8]">
+                        <div className="flex items-center gap-3">
+                            <span className="text-[13px] text-[#727586]">Items per page:</span>
+                            <div className="relative">
+                                <select
+                                    value={filters.per_page || 10}
+                                    onChange={handlePerPageChange}
+                                    className="h-[38px] pl-4 pr-10 bg-white border border-[#e3e4e8] rounded-[6px] text-[13px] text-[#2f3344] font-medium appearance-none cursor-pointer focus:border-[#673ab7] outline-none"
+                                >
+                                    <option value="5">5</option>
+                                    <option value="10">10</option>
+                                    <option value="15">15</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#727586]">
+                                    <ChevronDown size={14} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-6">
+                            <span className="text-[13px] text-[#2f3344] font-medium">
+                                {issues.from || 0} - {issues.to || 0} of {issues.total || 0}
+                            </span>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => handlePageChange(issues.prev_page_url)}
+                                    disabled={!issues.prev_page_url}
+                                    className="w-[34px] h-[34px] flex items-center justify-center rounded-full text-[#673ab7] hover:bg-[#673ab7]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                >
+                                    <ChevronLeft size={20} />
+                                </button>
+                                <button
+                                    onClick={() => handlePageChange(issues.next_page_url)}
+                                    disabled={!issues.next_page_url}
+                                    className="w-[34px] h-[34px] flex items-center justify-center rounded-full text-[#673ab7] hover:bg-[#673ab7]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                >
+                                    <ChevronRight size={20} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     </div>
                 </div>
             </div>

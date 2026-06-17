@@ -8,10 +8,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+use Laravel\Cashier\Billable;
+
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory,Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, Billable;
 
     /**
      * The attributes that are mass assignable.
@@ -107,10 +109,10 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the user's active subscription.
+     * Get the subscription for the user.
      */
-    public function subscription()
+    public function userSubscription()
     {
-        return $this->hasOne(UserSubscription::class)->latestOfMany();
+        return $this->hasOne(UserSubscription::class)->latestOfMany('created_at');
     }
 }

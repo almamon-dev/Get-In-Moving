@@ -128,11 +128,41 @@ class PricingPlanSeeder extends Seeder
             ],
         ];
 
-        foreach ($supplierPlans as $plan) {
-            PricingPlan::create($plan);
-        }
+        $allPlans = array_merge($supplierPlans, $customerPlans);
 
-        foreach ($customerPlans as $plan) {
+        foreach ($allPlans as $plan) {
+            // Push to Stripe if configured
+            if (env('STRIPE_SECRET') && $plan['price'] > 0) {
+                try {
+                    $stripe = \Laravel\Cashier\Cashier::stripe();
+                    
+                    $interval = match ($plan['billing_period']) {
+                        'annual' => 'year',
+                        default => 'month',
+                    };
+                    $intervalCount = ($plan['billing_period'] === 'quarterly') ? 3 : 1;
+
+                    $product = $stripe->products->create([
+                        'name' => $plan['name'] . ' (' . ucfirst($plan['user_type']) . ')',
+                        'description' => ucfirst($plan['user_type']) . ' Plan',
+                    ]);
+
+                    $price = $stripe->prices->create([
+                        'product' => $product->id,
+                        'unit_amount' => $plan['price'] * 100, // Stripe uses cents
+                        'currency' => config('cashier.currency', 'usd'),
+                        'recurring' => ['interval' => $interval, 'interval_count' => $intervalCount],
+                    ]);
+
+                    $plan['stripe_product_id'] = $product->id;
+                    $plan['stripe_price_id'] = $price->id;
+                    
+                    $this->command->info("Created Stripe Product: {$plan['name']} ({$plan['user_type']})");
+                } catch (\Exception $e) {
+                    $this->command->error("Stripe Error for {$plan['name']}: " . $e->getMessage());
+                }
+            }
+
             PricingPlan::create($plan);
         }
     }

@@ -17,7 +17,7 @@ class SupplierController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::with(['subscription.pricingPlan'])->where('user_type', 'supplier');
+        $query = User::with(['userSubscription.pricingPlan'])->where('user_type', 'supplier');
 
         // Search functionality
         if ($request->has('search') && $request->search) {
@@ -69,7 +69,7 @@ class SupplierController extends Controller
      */
     public function show(User $supplier)
     {
-        $supplier->load('subscription.pricingPlan');
+        $supplier->load('userSubscription.pricingPlan');
         
         $supplier->insurance_document = Helper::generateURL($supplier->insurance_document);
         $supplier->license_document = Helper::generateURL($supplier->license_document);
@@ -135,5 +135,24 @@ class SupplierController extends Controller
 
         return redirect()->route('admin.suppliers.index')
             ->with('success', 'Supplier deleted successfully.');
+    }
+
+    /**
+     * Update auto renew status.
+     */
+    public function updateAutoRenew(Request $request, User $supplier)
+    {
+        $request->validate([
+            'auto_renew' => 'required|boolean',
+        ]);
+
+        if ($supplier->userSubscription) {
+            $supplier->userSubscription->update([
+                'auto_renew' => $request->auto_renew,
+            ]);
+        }
+
+        return redirect()->back()
+            ->with('success', 'Auto renewal status updated successfully.');
     }
 }

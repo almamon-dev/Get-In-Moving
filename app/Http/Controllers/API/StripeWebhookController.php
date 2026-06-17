@@ -40,6 +40,23 @@ class StripeWebhookController extends Controller
                 $session = $event->data->object;
                 $this->paymentService->handleCheckoutSessionCompleted($session);
                 break;
+            case 'account.updated':
+                $account = $event->data->object;
+                $user = \App\Models\User::where('stripe_account_id', $account->id)->first();
+                if ($user) {
+                    $isCompleted = $account->details_submitted && $account->charges_enabled;
+                    $user->update(['is_stripe_connected' => $isCompleted]);
+                    Log::info("Stripe Webhook: Account updated for user {$user->id}. Connected: " . ($isCompleted ? 'Yes' : 'No'));
+                }
+                break;
+            case 'invoice.payment_succeeded':
+                $invoice = $event->data->object;
+                $this->paymentService->handleInvoicePaymentSucceeded($invoice);
+                break;
+            case 'customer.subscription.deleted':
+                $subscription = $event->data->object;
+                $this->paymentService->handleCustomerSubscriptionDeleted($subscription);
+                break;
             // Handle other event types
             default:
                 Log::info('Unhandled Stripe event type: ' . $event->type);

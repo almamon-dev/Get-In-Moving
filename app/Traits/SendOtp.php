@@ -35,13 +35,11 @@ trait SendOtp
                     (int) str_pad('9', $otpLength, '9')
                 );
 
-                // Send OTP first
+                // Attempt to send OTP via email, but don't fail if SMTP is not configured
                 try {
                     Mail::to($user->email)->send(new \App\Mail\OtpMail($otp, $user, $purpose));
                 } catch (Exception $e) {
                     Log::error("Failed to send OTP to {$user->email}: {$e->getMessage()}");
-                    DB::rollBack();
-                    throw new Exception('SMTP Error: OTP email not sent.');
                 }
 
                 // Email sent → insert OTP in DB

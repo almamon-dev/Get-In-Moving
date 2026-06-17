@@ -53,10 +53,50 @@ class PricingPlanController extends Controller
             'order' => 'nullable|integer',
         ]);
 
+        if (env('STRIPE_SECRET') && $validated['price'] > 0) {
+            $stripe = \Laravel\Cashier\Cashier::stripe();
+            
+            $interval = match ($validated['billing_period']) {
+                'annual' => 'year',
+                default => 'month',
+            };
+            $intervalCount = ($validated['billing_period'] === 'quarterly') ? 3 : 1;
+
+            try {
+                $product = $stripe->products->create([
+                    'name' => $validated['name'],
+                    'description' => ucfirst($validated['user_type']) . ' Plan',
+                ]);
+
+                $price = $stripe->prices->create([
+                    'product' => $product->id,
+                    'unit_amount' => $validated['price'] * 100, // Stripe uses cents
+                    'currency' => config('cashier.currency', 'usd'),
+                    'recurring' => ['interval' => $interval, 'interval_count' => $intervalCount],
+                ]);
+
+                $validated['stripe_product_id'] = $product->id;
+                $validated['stripe_price_id'] = $price->id;
+            } catch (\Exception $e) {
+                // Log or handle Stripe error
+                \Log::error('Stripe Pricing Plan Creation Error: ' . $e->getMessage());
+            }
+        }
+
         PricingPlan::create($validated);
 
         return redirect()->route('admin.pricing-plans.index')
             ->with('success', 'Pricing plan created successfully.');
+    }
+
+    /**
+     * Display the specified pricing plan.
+     */
+    public function show(PricingPlan $pricingPlan)
+    {
+        return Inertia::render('Admin/PricingPlans/Show', [
+            'pricingPlan' => $pricingPlan,
+        ]);
     }
 
     /**
@@ -86,6 +126,52 @@ class PricingPlanController extends Controller
             'order' => 'nullable|integer',
         ]);
 
+        if (env('STRIPE_SECRET')) {
+            $stripe = \Laravel\Cashier\Cashier::stripe();
+            try {
+                // If the product exists and name changed, update the product name
+                if ($pricingPlan->stripe_product_id && $pricingPlan->name !== $validated['name']) {
+                    $stripe->products->update($pricingPlan->stripe_product_id, [
+                        'name' => $validated['name'],
+                    ]);
+                }
+
+                // If price or billing period changed, we must create a new Price in Stripe
+                if (
+                    $validated['price'] > 0 && 
+                    ($pricingPlan->price != $validated['price'] || $pricingPlan->billing_period !== $validated['billing_period'])
+                ) {
+                    $interval = match ($validated['billing_period']) {
+                        'annual' => 'year',
+                        default => 'month',
+                    };
+                    $intervalCount = ($validated['billing_period'] === 'quarterly') ? 3 : 1;
+
+                    // Reuse existing product if possible, else create one
+                    $productId = $pricingPlan->stripe_product_id;
+                    if (!$productId) {
+                        $product = $stripe->products->create([
+                            'name' => $validated['name'],
+                            'description' => ucfirst($validated['user_type']) . ' Plan',
+                        ]);
+                        $productId = $product->id;
+                        $validated['stripe_product_id'] = $productId;
+                    }
+
+                    $newPrice = $stripe->prices->create([
+                        'product' => $productId,
+                        'unit_amount' => $validated['price'] * 100,
+                        'currency' => config('cashier.currency', 'usd'),
+                        'recurring' => ['interval' => $interval, 'interval_count' => $intervalCount],
+                    ]);
+
+                    $validated['stripe_price_id'] = $newPrice->id;
+                }
+            } catch (\Exception $e) {
+                \Log::error('Stripe Pricing Plan Update Error: ' . $e->getMessage());
+            }
+        }
+
         $pricingPlan->update($validated);
 
         return redirect()->route('admin.pricing-plans.index')
@@ -114,5 +200,21 @@ class PricingPlanController extends Controller
 
         return redirect()->back()
             ->with('success', 'Plan status updated successfully.');
+    }
+
+    /**
+     * Bulk delete pricing plans.
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:pricing_plans,id',
+        ]);
+
+        PricingPlan::whereIn('id', $request->ids)->delete();
+
+        return redirect()->back()
+            ->with('success', 'Selected plans deleted successfully.');
     }
 }

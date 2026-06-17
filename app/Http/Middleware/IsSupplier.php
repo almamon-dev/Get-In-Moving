@@ -24,7 +24,7 @@ class IsSupplier
                 ], 403);
             }
             
-            if (!$user->subscription || $user->subscription->status !== 'active' || $user->subscription->expires_at < now()) {
+            if (!$user->userSubscription || $user->userSubscription->status !== 'active' || $user->userSubscription->expires_at < now()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You do not have an active subscription.',

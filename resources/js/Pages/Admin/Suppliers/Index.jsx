@@ -6,6 +6,7 @@ import {
     Search, X, Check, AlertCircle, Trash2,
     ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, Shield
 } from 'lucide-react';
+import Modal from '@/Components/Modal';
 
 export default function Index({ auth, suppliers, filters = {}, stats }) {
     const [search, setSearch] = useState(filters.search || '');
@@ -13,6 +14,8 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
     const [compliance, setCompliance] = useState(filters.compliance !== undefined ? (filters.compliance === '1' ? 'approved' : (filters.compliance === '0' ? 'pending' : 'all')) : 'all');
     const [selectedIds, setSelectedIds] = useState([]);
     const [showPromo, setShowPromo] = useState(true);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', action: null });
+    const [successModal, setSuccessModal] = useState({ isOpen: false, title: '', message: '' });
 
     const handleSearch = (value) => {
         setSearch(value);
@@ -66,191 +69,190 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
     };
 
     const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this supplier?')) {
-            router.delete(route('admin.suppliers.destroy', id));
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Supplier',
+            message: 'Are you sure you want to delete this supplier? This action cannot be undone.',
+            action: () => {
+                router.delete(route('admin.suppliers.destroy', id), {
+                    onSuccess: () => {
+                        setConfirmModal({ isOpen: false, title: '', message: '', action: null });
+                        setSuccessModal({
+                            isOpen: true,
+                            title: 'Success!',
+                            message: 'Supplier has been successfully deleted.'
+                        });
+                    }
+                });
+            }
+        });
     };
 
     const toggleCompliance = (supplier) => {
-        if (confirm(`Are you sure you want to ${supplier.is_compliance_verified ? 'revoke' : 'approve'} compliance for this supplier?`)) {
-            router.patch(route('admin.suppliers.compliance', supplier.id), {
-                is_compliance_verified: !supplier.is_compliance_verified,
-            });
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: supplier.is_compliance_verified ? 'Revoke Compliance' : 'Approve Compliance',
+            message: `Are you sure you want to ${supplier.is_compliance_verified ? 'revoke' : 'approve'} compliance for this supplier?`,
+            action: () => {
+                router.patch(route('admin.suppliers.compliance', supplier.id), {
+                    is_compliance_verified: !supplier.is_compliance_verified,
+                }, {
+                    onSuccess: () => {
+                        setConfirmModal({ isOpen: false, title: '', message: '', action: null });
+                        setSuccessModal({
+                            isOpen: true,
+                            title: 'Success!',
+                            message: `Supplier compliance has been successfully ${supplier.is_compliance_verified ? 'revoked' : 'approved'}.`
+                        });
+                    }
+                });
+            }
+        });
     };
 
     return (
         <AdminLayout user={auth.user}>
             <Head title="Suppliers" />
 
-            <div className="space-y-6 max-w-8xl mx-auto pb-20">
-                {/* Top Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-[24px] font-bold text-[#2f3344] tracking-tight">
-                            Supplier Management
-                        </h1>
-                        <div className="flex items-center gap-2 text-[13px] text-[#727586] mt-1">
-                            <Home size={16} className="text-[#727586]" />
-                            <span className="text-[#c3c4ca]">-</span>
-                            <span>Suppliers</span>
+            <div className="min-h-screen bg-[#f5f6f8]">
+                <div className="w-full mx-auto px-6 py-8">
+                    
+                    {/* Header Row */}
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
+                        <div>
+                            <h1 className="text-[24px] font-bold text-[#111827] tracking-tight">Supplier Management</h1>
+                            <p className="text-[14px] text-[#6b7280] mt-0.5">Manage supplier compliance, verification, and accounts</p>
+                        </div>
+                        <div className="flex items-center gap-3 mt-4 md:mt-0">
+                            {selectedIds.length > 0 && (
+                                <>
+                                    <button 
+                                        onClick={() => {
+                                            setConfirmModal({
+                                                isOpen: true,
+                                                title: 'Approve Selected Suppliers',
+                                                message: 'Are you sure you want to approve compliance for selected suppliers?',
+                                                action: () => {
+                                                    // Assuming there is a bulk compliance route, else they need to do it one by one
+                                                    // For now, close modal
+                                                    setConfirmModal({ isOpen: false, title: '', message: '', action: null });
+                                                }
+                                            });
+                                        }}
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 border border-green-200 rounded text-[13px] font-medium hover:bg-green-100 transition-colors shadow-sm"
+                                    >
+                                        <Shield size={16} />
+                                        Approve Selected
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            setConfirmModal({
+                                                isOpen: true,
+                                                title: 'Delete Selected Suppliers',
+                                                message: 'Are you sure you want to delete selected suppliers?',
+                                                action: () => {
+                                                    // Bulk destroy route assuming it exists or keep for UI
+                                                    setConfirmModal({ isOpen: false, title: '', message: '', action: null });
+                                                }
+                                            });
+                                        }}
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded text-[13px] font-medium hover:bg-red-100 transition-colors shadow-sm"
+                                    >
+                                        <Trash2 size={16} />
+                                        Delete Selected ({selectedIds.length})
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
-                </div>
 
-                {/* Promo Banner */}
-                {showPromo && (
-                    <div className="relative bg-[#f4f0ff] rounded-[12px] p-6 border border-[#e9e3ff] overflow-hidden flex items-center justify-between">
-                        <div className="flex-1">
-                            <h2 className="text-[18px] font-bold text-[#2f3344] mb-1">
-                                Manage supplier compliance and verification
-                            </h2>
-                            <p className="text-[14px] text-[#727586]">
-                                Review insurance documents, approve compliance, and manage supplier accounts.
-                            </p>
+                    {/* Main Container */}
+                    <div className="bg-white rounded-md border border-[#e5e7eb] shadow-sm">
+                        
+                        {/* Tabs Row */}
+                        <div className="flex items-center gap-6 px-6 border-b border-[#e5e7eb] overflow-x-auto">
+                            {[
+                                { name: 'All', value: 'all', count: stats.total, click: () => handleStatusChange('all') },
+                                { name: 'Verified', value: 'verified', count: stats.verified, click: () => handleStatusChange('verified') },
+                                { name: 'Compliance Approved', value: 'approved', count: stats.compliance_verified, click: () => handleComplianceChange('approved') },
+                                { name: 'Pending Review', value: 'pending', count: stats.compliance_pending, click: () => handleComplianceChange('pending') }
+                            ].map((tab) => {
+                                const isActive = (tab.value === 'all' && verified === 'all' && compliance === 'all') || 
+                                                 (tab.value === 'verified' && verified === 'verified') || 
+                                                 (tab.value === 'approved' && compliance === 'approved') || 
+                                                 (tab.value === 'pending' && compliance === 'pending');
+                                
+                                return (
+                                    <button
+                                        key={tab.name}
+                                        onClick={tab.click}
+                                        className={`flex items-center gap-2 py-3.5 text-[14px] font-medium border-b-2 whitespace-nowrap transition-colors ${
+                                            isActive 
+                                                ? 'border-[#673ab7] text-[#673ab7]' 
+                                                : 'border-transparent text-[#6b7280] hover:text-[#374151] hover:border-gray-300'
+                                        }`}
+                                    >
+                                        {tab.name}
+                                        <span className="bg-[#f3f4f6] text-[#4b5563] text-[11px] px-2 py-0.5 rounded-full font-bold">
+                                            {tab.count}
+                                        </span>
+                                    </button>
+                                );
+                            })}
                         </div>
-                        <div className="flex items-center gap-4">
-                            <div className="w-[100px] h-[60px] relative hidden md:block">
-                                <div className="absolute right-0 top-0 text-[#673ab7] opacity-20 transform rotate-12">
-                                    <Truck size={40} />
-                                </div>
-                                <div className="absolute right-10 bottom-0 text-[#673ab7] opacity-20">
-                                    <Shield size={30} />
-                                </div>
+
+                        {/* Search & Filter Toolbar */}
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 border-b border-[#e5e7eb]">
+                            <div className="relative w-full md:w-[400px]">
+                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search by name, email, company, or policy number..." 
+                                    value={search}
+                                    onChange={(e) => handleSearch(e.target.value)}
+                                    className="w-full h-10 pl-10 pr-4 bg-white border border-[#d1d5db] rounded-[4px] text-[13px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] placeholder:text-[#9ca3af]"
+                                />
                             </div>
-                            <button
-                                onClick={() => setShowPromo(false)}
-                                className="w-8 h-8 flex items-center justify-center bg-white rounded-lg border border-[#e3e4e8] text-[#727586] hover:bg-slate-50 transition-all"
-                            >
-                                <ChevronDown size={18} />
-                            </button>
                         </div>
-                        <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-[#673ab7]/5 to-transparent pointer-events-none"></div>
-                    </div>
-                )}
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="bg-white rounded-[12px] border border-[#e3e4e8] p-6 shadow-sm">
-                        <div className="text-[13px] font-medium text-[#727586] uppercase tracking-wider">Total Suppliers</div>
-                        <div className="mt-2 text-[32px] font-bold text-[#2f3344]">{stats.total}</div>
-                    </div>
-                    <div className="bg-white rounded-[12px] border border-[#e3e4e8] p-6 shadow-sm">
-                        <div className="text-[13px] font-medium text-[#727586] uppercase tracking-wider">Verified</div>
-                        <div className="mt-2 text-[32px] font-bold text-[#00b090]">{stats.verified}</div>
-                    </div>
-                    <div className="bg-white rounded-[12px] border border-[#e3e4e8] p-6 shadow-sm">
-                        <div className="text-[13px] font-medium text-[#727586] uppercase tracking-wider">Compliance Approved</div>
-                        <div className="mt-2 text-[32px] font-bold text-[#2c8af8]">{stats.compliance_verified}</div>
-                    </div>
-                    <div className="bg-white rounded-[12px] border border-[#e3e4e8] p-6 shadow-sm">
-                        <div className="text-[13px] font-medium text-[#727586] uppercase tracking-wider">Pending Review</div>
-                        <div className="mt-2 text-[32px] font-bold text-[#ffb000]">{stats.compliance_pending}</div>
-                    </div>
-                </div>
-
-                {/* Main Content Card */}
-                <div className="bg-white rounded-[12px] border border-[#e3e4e8] shadow-sm overflow-hidden">
-                    {/* Filter Tabs */}
-                    <div className="px-6 border-b border-[#e3e4e8]">
-                        <div className="flex gap-10">
-                            <button
-                                onClick={() => handleStatusChange('all')}
-                                className={`pt-5 pb-4 text-[14px] font-bold transition-all relative ${verified === 'all' ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
-                                    }`}
-                            >
-                                All suppliers
-                                {verified === 'all' && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#673ab7] rounded-t-full"></div>
-                                )}
-                            </button>
-                            <button
-                                onClick={() => handleStatusChange('verified')}
-                                className={`pt-5 pb-4 text-[14px] font-bold transition-all relative ${verified === 'verified' ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
-                                    }`}
-                            >
-                                Verified
-                                {verified === 'verified' && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#673ab7] rounded-t-full"></div>
-                                )}
-                            </button>
-                            <button
-                                onClick={() => handleComplianceChange('approved')}
-                                className={`pt-5 pb-4 text-[14px] font-bold transition-all relative ${compliance === 'approved' ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
-                                    }`}
-                            >
-                                Compliance Approved
-                                {compliance === 'approved' && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#673ab7] rounded-t-full"></div>
-                                )}
-                            </button>
-                            <button
-                                onClick={() => handleComplianceChange('pending')}
-                                className={`pt-5 pb-4 text-[14px] font-bold transition-all relative ${compliance === 'pending' ? 'text-[#673ab7]' : 'text-[#727586] hover:text-[#2f3344]'
-                                    }`}
-                            >
-                                Pending Review
-                                {compliance === 'pending' && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#673ab7] rounded-t-full"></div>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Search Bar */}
-                    <div className="p-7">
-                        <div className="relative w-full">
-                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[#a0a3af]">
-                                <Search size={22} />
-                            </div>
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(e) => handleSearch(e.target.value)}
-                                placeholder="Search by name, email, company, or policy number..."
-                                className="w-full h-[52px] pl-14 pr-6 bg-white border border-[#e3e4e8] rounded-[8px] text-[15px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Table Area */}
-                    <div className="overflow-x-auto">
+                        {/* Table Area */}
+                        <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-[#e3e4e8]">
-                                    <th className="pl-7 pr-4 py-4 w-10">
+                                    <th className="pl-6 pr-3 py-3 w-10">
                                         <div
                                             onClick={toggleSelectAll}
-                                            className={`w-5 h-5 border-[2px] rounded cursor-pointer transition-all flex items-center justify-center ${selectedIds.length === suppliers.data.length && suppliers.data.length > 0
+                                            className={`w-[18px] h-[18px] border-[2px] rounded cursor-pointer transition-all flex items-center justify-center ${selectedIds.length === suppliers.data.length && suppliers.data.length > 0
                                                     ? 'bg-[#673ab7] border-[#673ab7]'
                                                     : 'border-[#c3c4ca] hover:border-[#673ab7]'
                                                 }`}
                                         >
-                                            {selectedIds.length === suppliers.data.length && suppliers.data.length > 0 && <Check size={14} className="text-white" />}
+                                            {selectedIds.length === suppliers.data.length && suppliers.data.length > 0 && <Check size={12} className="text-white" />}
                                         </div>
                                     </th>
-                                    <th className="text-left px-5 py-4 text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                    <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
                                         <div className="flex items-center gap-1.5 cursor-pointer hover:text-black group">
                                             Supplier
-                                            <ArrowUpDown size={14} className="text-[#a0a3af] group-hover:text-[#673ab7]" />
+                                            <ArrowUpDown size={12} className="text-[#a0a3af] group-hover:text-[#673ab7]" />
                                         </div>
                                     </th>
-                                    <th className="text-left px-5 py-4 text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                    <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
                                         Company
                                     </th>
-                                    <th className="text-left px-5 py-4 text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                    <th className="text-center px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
                                         Plan
                                     </th>
-                                    <th className="text-left px-5 py-4 text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                    <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
                                         Insurance
                                     </th>
-                                    <th className="text-left px-5 py-4 text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                    <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
                                         Policy Expiry
                                     </th>
-                                    <th className="text-left px-5 py-4 text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                    <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
                                         Status
                                     </th>
-                                    <th className="px-7 py-4"></th>
+                                    <th className="px-6 py-3"></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-[#f1f2f4]">
@@ -260,116 +262,113 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                                             key={supplier.id}
                                             className={`hover:bg-[#fafbfc] transition-colors group ${selectedIds.includes(supplier.id) ? 'bg-[#f4f0ff]/50' : ''}`}
                                         >
-                                            <td className="pl-7 pr-4 py-5">
+                                            <td className="pl-6 pr-3 py-2">
                                                 <div
                                                     onClick={() => toggleSelect(supplier.id)}
-                                                    className={`w-5 h-5 border-[2px] rounded cursor-pointer transition-all flex items-center justify-center ${selectedIds.includes(supplier.id)
+                                                    className={`w-[18px] h-[18px] border-[2px] rounded cursor-pointer transition-all flex items-center justify-center ${selectedIds.includes(supplier.id)
                                                             ? 'bg-[#673ab7] border-[#673ab7]'
                                                             : 'border-[#c3c4ca] hover:border-[#673ab7]'
                                                         }`}
                                                 >
-                                                    {selectedIds.includes(supplier.id) && <Check size={14} className="text-white" />}
+                                                    {selectedIds.includes(supplier.id) && <Check size={12} className="text-white" />}
                                                 </div>
                                             </td>
-                                            <td className="px-5 py-5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#2c8af8] to-[#1a7ae8] flex items-center justify-center text-white font-bold text-[14px]">
+                                            <td className="px-4 py-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2c8af8] to-[#1a7ae8] flex items-center justify-center text-white font-bold text-[12px]">
                                                         {supplier.name.charAt(0).toUpperCase()}
                                                     </div>
-                                                    <div>
-                                                        <p className="text-[14px] font-bold text-[#2f3344] group-hover:text-[#673ab7] transition-colors">
+                                                    <div className="flex flex-col">
+                                                        <p className="text-[13px] font-bold text-[#2f3344] group-hover:text-[#673ab7] transition-colors leading-tight">
                                                             {supplier.name}
                                                         </p>
-                                                        <p className="text-[12px] text-[#727586] font-normal">
+                                                        <p className="text-[11px] text-[#727586] font-normal leading-tight mt-0.5">
                                                             {supplier.email}
-                                                        </p>
-                                                        <p className="text-[12px] text-[#727586] font-normal">
-                                                            {supplier.phone_number}
                                                         </p>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-5 py-5">
-                                                <span className="text-[13px] font-medium text-[#2f3344]">
+                                            <td className="px-4 py-2">
+                                                <span className="text-[12px] font-medium text-[#2f3344]">
                                                     {supplier.company_name}
                                                 </span>
                                             </td>
-                                            <td className="px-5 py-5">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[13px] font-medium text-[#673ab7]">
-                                                        {supplier.subscription?.pricing_plan?.name || 'No Plan'}
+                                            <td className="px-4 py-2 text-center">
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-[12px] font-medium text-[#673ab7] leading-tight">
+                                                        {supplier.user_subscription?.pricing_plan?.name || 'No Plan'}
                                                     </span>
-                                                    {supplier.subscription?.expires_at && (
-                                                        <span className="text-[11px] text-[#727586]">
-                                                            Exp: {new Date(supplier.subscription.expires_at).toLocaleDateString()}
+                                                    {supplier.user_subscription?.expires_at && (
+                                                        <span className="text-[11px] text-[#727586] leading-tight mt-0.5">
+                                                            Exp: {new Date(supplier.user_subscription.expires_at).toLocaleDateString()}
                                                         </span>
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="px-5 py-5">
-                                                <div>
-                                                    <p className="text-[13px] text-[#2f3344] font-medium">
+                                            <td className="px-4 py-2">
+                                                <div className="flex flex-col">
+                                                    <p className="text-[12px] text-[#2f3344] font-medium leading-tight">
                                                         {supplier.insurance_provider_name}
                                                     </p>
-                                                    <p className="text-[12px] text-[#727586]">
+                                                    <p className="text-[11px] text-[#727586] leading-tight mt-0.5">
                                                         {supplier.policy_number}
                                                     </p>
                                                 </div>
                                             </td>
-                                            <td className="px-5 py-5">
-                                                <span className="text-[13px] text-[#727586]">
+                                            <td className="px-4 py-2">
+                                                <span className="text-[12px] text-[#727586]">
                                                     {new Date(supplier.policy_expiry_date).toLocaleDateString()}
                                                 </span>
                                             </td>
-                                            <td className="px-5 py-5">
-                                                <div className="flex flex-col gap-2">
-                                                    <div className="flex items-center gap-2">
+                                            <td className="px-4 py-2">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-1.5">
                                                         {supplier.is_verified ? (
                                                             <>
-                                                                <div className="w-[18px] h-[18px] rounded-full border-[1.5px] border-[#00b090] flex items-center justify-center text-[#00b090]">
-                                                                    <Check size={11} strokeWidth={3} />
+                                                                <div className="w-[14px] h-[14px] rounded-full border-[1.5px] border-[#00b090] flex items-center justify-center text-[#00b090]">
+                                                                    <Check size={9} strokeWidth={3} />
                                                                 </div>
-                                                                <span className="text-[13px] font-medium text-[#2f3344]">Verified</span>
+                                                                <span className="text-[12px] font-medium text-[#2f3344]">Verified</span>
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <div className="w-[18px] h-[18px] rounded-full border-[1.5px] border-[#ffb000] flex items-center justify-center text-[#ffb000]">
-                                                                    <AlertCircle size={11} strokeWidth={3} />
+                                                                <div className="w-[14px] h-[14px] rounded-full border-[1.5px] border-[#ffb000] flex items-center justify-center text-[#ffb000]">
+                                                                    <AlertCircle size={9} strokeWidth={3} />
                                                                 </div>
-                                                                <span className="text-[13px] font-medium text-[#2f3344]">Unverified</span>
+                                                                <span className="text-[12px] font-medium text-[#2f3344]">Unverified</span>
                                                             </>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1.5">
                                                         {supplier.is_compliance_verified ? (
                                                             <>
-                                                                <div className="w-[18px] h-[18px] rounded-full border-[1.5px] border-[#2c8af8] flex items-center justify-center text-[#2c8af8]">
-                                                                    <Shield size={11} strokeWidth={3} />
+                                                                <div className="w-[14px] h-[14px] rounded-full border-[1.5px] border-[#2c8af8] flex items-center justify-center text-[#2c8af8]">
+                                                                    <Shield size={9} strokeWidth={3} />
                                                                 </div>
-                                                                <span className="text-[13px] font-medium text-[#2f3344]">Compliance ✓</span>
+                                                                <span className="text-[12px] font-medium text-[#2f3344]">Compliance ✓</span>
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <div className="w-[18px] h-[18px] rounded-full border-[1.5px] border-[#ffb000] flex items-center justify-center text-[#ffb000]">
-                                                                    <AlertCircle size={11} strokeWidth={3} />
+                                                                <div className="w-[14px] h-[14px] rounded-full border-[1.5px] border-[#ffb000] flex items-center justify-center text-[#ffb000]">
+                                                                    <AlertCircle size={9} strokeWidth={3} />
                                                                 </div>
-                                                                <span className="text-[13px] font-medium text-[#2f3344]">Pending</span>
+                                                                <span className="text-[12px] font-medium text-[#2f3344]">Pending</span>
                                                             </>
                                                         )}
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="pr-7 py-5 text-right">
-                                                <div className="flex items-center justify-end gap-2">
+                                            <td className="pr-6 py-2 text-right">
+                                                <div className="flex items-center justify-end gap-1.5">
                                                     <Link
                                                         href={route('admin.suppliers.show', supplier.id)}
-                                                        className="h-[36px] inline-flex items-center bg-white border border-[#e3e4e8] text-[#2f3344] px-4 rounded-[6px] font-bold text-[13px] hover:border-[#673ab7] hover:text-[#673ab7] transition-all"
+                                                        className="h-[28px] inline-flex items-center bg-white border border-[#e3e4e8] text-[#2f3344] px-3 rounded text-[12px] font-bold hover:border-[#673ab7] hover:text-[#673ab7] transition-all"
                                                     >
                                                         View
                                                     </Link>
                                                     <button
                                                         onClick={() => toggleCompliance(supplier)}
-                                                        className={`h-[36px] inline-flex items-center px-3 rounded-[6px] font-bold text-[13px] transition-all ${supplier.is_compliance_verified
+                                                        className={`h-[28px] inline-flex items-center px-3 rounded font-bold text-[12px] transition-all ${supplier.is_compliance_verified
                                                                 ? 'bg-orange-50 text-orange-600 hover:bg-orange-100'
                                                                 : 'bg-green-50 text-green-600 hover:bg-green-100'
                                                             }`}
@@ -378,9 +377,9 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(supplier.id)}
-                                                        className="w-8 h-8 flex items-center justify-center text-[#727586] hover:bg-red-50 hover:text-red-600 rounded-lg transition-all"
+                                                        className="w-7 h-7 flex items-center justify-center text-[#727586] hover:bg-red-50 hover:text-red-600 rounded transition-all"
                                                     >
-                                                        <Trash2 size={16} />
+                                                        <Trash2 size={14} />
                                                     </button>
                                                 </div>
                                             </td>
@@ -454,39 +453,52 @@ export default function Index({ auth, suppliers, filters = {}, stats }) {
                     </div>
                 </div>
 
-                {/* Bulk Action Bar */}
-                {selectedIds.length > 0 && (
-                    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-full max-w-[800px] px-4 animate-in slide-in-from-bottom duration-300">
-                        <div className="bg-[#2f3344] text-white p-4 rounded-[12px] shadow-2xl flex items-center justify-between">
-                            <div className="flex items-center gap-4 border-r border-slate-600 pr-5">
-                                <span className="text-[14px] font-bold">{selectedIds.length} suppliers selected</span>
-                                <button
-                                    onClick={() => setSelectedIds([])}
-                                    className="text-slate-400 hover:text-white transition-colors"
-                                >
-                                    <X size={18} />
-                                </button>
-                            </div>
-
-                            <div className="flex items-center gap-6 px-4 flex-1">
-                                <button className="text-[14px] font-bold text-green-400 hover:text-green-300 transition-colors flex items-center gap-2">
-                                    <Shield size={16} /> Approve All
-                                </button>
-                                <button className="text-[14px] font-bold text-red-400 hover:text-red-300 transition-colors flex items-center gap-2">
-                                    <Trash2 size={16} /> Delete Selected
-                                </button>
-                            </div>
-
-                            <button
-                                onClick={() => setSelectedIds([])}
-                                className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-[13px] font-bold transition-all"
-                            >
-                                Cancel selection
-                            </button>
-                        </div>
-                    </div>
-                )}
+                </div>
             </div>
+
+            {/* Confirmation Modal */}
+            <Modal show={confirmModal.isOpen} onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })} maxWidth="md">
+                <div className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
+                            <AlertCircle size={20} />
+                        </div>
+                        <h2 className="text-[18px] font-bold text-[#2f3344]">{confirmModal.title}</h2>
+                    </div>
+                    <p className="text-[14px] text-[#727586] mb-6">{confirmModal.message}</p>
+                    <div className="flex justify-end gap-3">
+                        <button
+                            onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                            className="px-4 py-2 text-[13px] font-bold text-[#727586] hover:bg-[#f8f9fa] rounded-[8px] transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={confirmModal.action}
+                            className="px-4 py-2 text-[13px] font-bold text-white bg-[#673ab7] hover:bg-[#5e35b1] rounded-[8px] transition-colors"
+                        >
+                            Confirm Action
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Success Modal */}
+            <Modal show={successModal.isOpen} onClose={() => setSuccessModal({ ...successModal, isOpen: false })} maxWidth="sm">
+                <div className="p-6 text-center">
+                    <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-green-600 mx-auto mb-4">
+                        <Check size={32} strokeWidth={3} />
+                    </div>
+                    <h2 className="text-[20px] font-bold text-[#2f3344] mb-2">{successModal.title}</h2>
+                    <p className="text-[14px] text-[#727586] mb-6">{successModal.message}</p>
+                    <button
+                        onClick={() => setSuccessModal({ ...successModal, isOpen: false })}
+                        className="w-full py-2.5 text-[14px] font-bold text-white bg-[#00b090] hover:bg-[#009b7f] rounded-[8px] transition-colors"
+                    >
+                        Awesome!
+                    </button>
+                </div>
+            </Modal>
         </AdminLayout>
     );
 }

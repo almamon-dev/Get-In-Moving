@@ -39,15 +39,15 @@ const Header = ({ onMenuClick }) => {
     }, []);
 
     return (
-        <header className="h-[70px] bg-white/80 backdrop-blur-md sticky top-0 z-[50] flex items-center px-4 md:px-8 border-b border-slate-100 shadow-sm transition-all duration-300">
+        <header className="h-[54px] bg-white/95 backdrop-blur-md sticky top-0 z-[50] flex items-center px-3 md:px-5 border-b border-slate-100 shadow-sm transition-all duration-300">
 
             {/* LEFT: Toggle & Mobile Logo */}
             <div className="flex items-center gap-4">
                 <button
                     onClick={onMenuClick}
-                    className="lg:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
+                    className="lg:hidden p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
                 >
-                    <Menu size={20} />
+                    <Menu size={17} />
                 </button>
             </div>
 
@@ -61,19 +61,19 @@ const Header = ({ onMenuClick }) => {
                 <div className="flex items-center gap-1 border-r border-slate-100 pr-2 mr-2">
                     <Link
                         href="/"
-                        className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-[#0a66c2] rounded-xl transition-all"
+                        className="w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-[#0a66c2] rounded-lg transition-all"
                         title="Frontend"
                     >
-                        <Home size={20} strokeWidth={1.5} />
+                        <Home size={16} strokeWidth={1.5} />
                     </Link>
 
                     <div className="relative" ref={notificationRef}>
                         <button
                             onClick={() => setNotifOpen(!notifOpen)}
-                            className="w-10 h-10 flex items-center justify-center text-slate-500 hover:bg-slate-50 rounded-xl relative"
+                            className="w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-50 rounded-lg relative"
                             title="Notifications"
                         >
-                            <Bell size={20} strokeWidth={1.5} />
+                            <Bell size={16} strokeWidth={1.5} />
                             {auth?.user?.unread_notifications_count > 0 && (
                                 <span className="absolute top-2.5 right-2.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
                                     {auth.user.unread_notifications_count > 9 ? '9+' : auth.user.unread_notifications_count}
@@ -127,18 +127,18 @@ const Header = ({ onMenuClick }) => {
                 <div className="relative" ref={dropdownRef}>
                     <button
                         onClick={() => setOpen(!open)}
-                        className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100"
+                        className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100"
                     >
                         <img
                             src={auth?.user?.profile_picture || `https://ui-avatars.com/api/?name=${auth?.user?.name || 'Admin'}&background=673ab7&color=fff`}
                             alt="User"
-                            className="w-9 h-9 rounded-lg object-cover shadow-sm"
+                            className="w-7 h-7 rounded-md object-cover shadow-sm"
                         />
                         <div className="hidden lg:block text-left leading-tight">
-                            <p className="text-sm font-bold text-slate-700 block truncate">{auth?.user?.name || "User"}</p>
-                            <p className="text-[11px] text-slate-400 font-medium">{auth?.user?.designation || "Administrator"}</p>
+                            <p className="text-[12px] font-bold text-slate-700 block truncate">{auth?.user?.name || "User"}</p>
+                            <p className="text-[10px] text-slate-400 font-medium">{auth?.user?.designation || "Administrator"}</p>
                         </div>
-                        <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+                        <ChevronDown size={12} className={`text-slate-400 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
                     </button>
 
                     {/* Dropdown Menu */}
