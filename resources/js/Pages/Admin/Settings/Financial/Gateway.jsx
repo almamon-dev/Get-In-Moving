@@ -165,6 +165,34 @@ export default function FinancialGateway({ settings }) {
                         </div>
                     </div>
 
+                    {/* Webhook Setup Guide */}
+                    <div className="bg-[#f8f9fa] p-4 rounded-[12px] border border-[#e3e4e8]">
+                        <div className="flex items-center gap-2 pb-2 mb-2 border-b border-[#e3e4e8]">
+                            <ShieldCheck size={16} className="text-[#673ab7]" />
+                            <h3 className="text-[14px] font-bold text-[#2f3344]">Stripe Webhook Setup Guide</h3>
+                        </div>
+                        <div className="text-[12px] text-[#727586] space-y-1.5">
+                            <p><strong>1.</strong> In Stripe Dashboard, go to <strong>Developers &gt; Webhooks</strong> and click <strong>Add an endpoint</strong>.</p>
+                            <p className="flex items-center gap-1">
+                                <strong>2.</strong> URL: 
+                                <code className="bg-white px-1.5 py-0.5 rounded border border-[#e3e4e8] font-mono text-[11px] text-[#673ab7]">
+                                    https://your-domain.com/api/webhooks/stripe
+                                </code>
+                            </p>
+                            <div>
+                                <p className="mb-1.5"><strong>3.</strong> Select exactly these 7 events:</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {['account.updated', 'checkout.session.completed', 'customer.subscription.created', 'customer.subscription.deleted', 'customer.subscription.updated', 'invoice.payment_failed', 'invoice.payment_succeeded'].map(evt => (
+                                        <span key={evt} className="bg-white border border-[#e3e4e8] text-[#673ab7] font-mono text-[10.5px] px-2 py-0.5 rounded-full shadow-sm">
+                                            {evt}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                            <p className="pt-1"><strong>4.</strong> Save, reveal the <strong>Signing secret</strong>, and paste it into the Webhook Secret field above.</p>
+                        </div>
+                    </div>
+
                     {/* Fund Hold Management */}
                     <div className="space-y-8">
                         <div className="flex items-center gap-2 pb-2 border-b border-[#f1f2f4]">

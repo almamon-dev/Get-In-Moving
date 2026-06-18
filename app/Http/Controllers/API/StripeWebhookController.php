@@ -26,7 +26,9 @@ class StripeWebhookController extends Controller
 
         try {
             $event = Webhook::constructEvent(
-                $payload, $sigHeader, $endpointSecret
+                $payload,
+                $sigHeader,
+                $endpointSecret
             );
         } catch (\UnexpectedValueException $e) {
             return response()->json(['message' => 'Invalid payload'], 400);
@@ -57,11 +59,10 @@ class StripeWebhookController extends Controller
                 $subscription = $event->data->object;
                 $this->paymentService->handleCustomerSubscriptionDeleted($subscription);
                 break;
-            // Handle other event types
             default:
                 Log::info('Unhandled Stripe event type: ' . $event->type);
         }
-
-        return response()->json(['status' => 'success']);
+        $cashierController = new \Laravel\Cashier\Http\Controllers\WebhookController;
+        return $cashierController->handleWebhook($request);
     }
 }

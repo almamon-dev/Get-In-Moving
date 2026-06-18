@@ -32,14 +32,30 @@ class StripeConnectController extends Controller
                 ]);
             }
 
-            // Check if user already has a Stripe account ID
+            // Check if user already has a Stripe account ID, create it if missing
             if (!$user->stripe_account_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Stripe account is not generated yet. Please contact support if you have an active subscription.'
-                ]);
+                try {
+                    $account = $this->stripe->accounts->create([
+                        'type' => 'express',
+                        'country' => 'US',
+                        'email' => $user->email,
+                        'capabilities' => [
+                            'card_payments' => ['requested' => true],
+                            'transfers' => ['requested' => true],
+                        ],
+                        'settings' => [
+                            'payouts' => ['schedule' => ['interval' => 'manual']],
+                        ],
+                    ]);
+                    $user->update(['stripe_account_id' => $account->id]);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to create Stripe Connect account: ' . $e->getMessage()
+                    ]);
+                }
             }
-
+            
             // Create Account Link for onboarding
             $accountLink = $this->stripe->accountLinks->create([
                 'account' => $user->stripe_account_id,

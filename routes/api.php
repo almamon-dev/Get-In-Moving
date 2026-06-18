@@ -178,3 +178,17 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 });
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/supplier/billing-portal', function (\Illuminate\Http\Request $request) {
+        $returnUrl = config('app.frontend_url') . '/supplier-dashboard/settings';
+        $user = $request->user();
+        if (!$user->hasStripeId()) {
+            $user->createAsStripeCustomer();
+        }
+        return response()->json([
+            'success' => true,
+            'url' => $user->billingPortalUrl($returnUrl)
+        ]);
+    });
+});

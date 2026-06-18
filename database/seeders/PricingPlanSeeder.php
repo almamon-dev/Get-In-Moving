@@ -141,23 +141,54 @@ class PricingPlanSeeder extends Seeder
                         default => 'month',
                     };
                     $intervalCount = ($plan['billing_period'] === 'quarterly') ? 3 : 1;
+                    $productName = $plan['name'] . ' (' . ucfirst($plan['user_type']) . ')';
 
-                    $product = $stripe->products->create([
-                        'name' => $plan['name'] . ' (' . ucfirst($plan['user_type']) . ')',
-                        'description' => ucfirst($plan['user_type']) . ' Plan',
+                    // 1. Search if product already exists in Stripe
+                    $existingProducts = $stripe->products->search([
+                        'query' => "name:'" . $productName . "' AND active:'true'",
+                        'limit' => 1,
                     ]);
 
-                    $price = $stripe->prices->create([
-                        'product' => $product->id,
-                        'unit_amount' => $plan['price'] * 100, // Stripe uses cents
-                        'currency' => config('cashier.currency', 'usd'),
-                        'recurring' => ['interval' => $interval, 'interval_count' => $intervalCount],
-                    ]);
+                    if (count($existingProducts->data) > 0) {
+                        $product = $existingProducts->data[0];
+                        $this->command->info("Found existing Stripe Product: {$productName}");
+
+                        // Find existing price for this product
+                        $existingPrices = $stripe->prices->search([
+                            'query' => "product:'" . $product->id . "' AND active:'true'",
+                            'limit' => 1,
+                        ]);
+
+                        if (count($existingPrices->data) > 0) {
+                            $price = $existingPrices->data[0];
+                        } else {
+                            // Create price if missing
+                            $price = $stripe->prices->create([
+                                'product' => $product->id,
+                                'unit_amount' => $plan['price'] * 100,
+                                'currency' => config('cashier.currency', 'eur'), // using eur as per previous logic
+                                'recurring' => ['interval' => $interval, 'interval_count' => $intervalCount],
+                            ]);
+                        }
+                    } else {
+                        // 2. Create new Product and Price if not found
+                        $product = $stripe->products->create([
+                            'name' => $productName,
+                            'description' => ucfirst($plan['user_type']) . ' Plan',
+                        ]);
+
+                        $price = $stripe->prices->create([
+                            'product' => $product->id,
+                            'unit_amount' => $plan['price'] * 100, // Stripe uses cents
+                            'currency' => config('cashier.currency', 'eur'),
+                            'recurring' => ['interval' => $interval, 'interval_count' => $intervalCount],
+                        ]);
+                        $this->command->info("Created new Stripe Product: {$productName}");
+                    }
 
                     $plan['stripe_product_id'] = $product->id;
                     $plan['stripe_price_id'] = $price->id;
                     
-                    $this->command->info("Created Stripe Product: {$plan['name']} ({$plan['user_type']})");
                 } catch (\Exception $e) {
                     $this->command->error("Stripe Error for {$plan['name']}: " . $e->getMessage());
                 }
