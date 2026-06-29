@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 
 use Illuminate\Support\Facades\Schedule;
 Schedule::command('app:release-supplier-funds')->everyMinute();
+Schedule::command('app:check-document-expiry')->daily();

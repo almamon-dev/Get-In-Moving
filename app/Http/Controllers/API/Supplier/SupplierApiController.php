@@ -700,6 +700,13 @@ class SupplierApiController extends Controller
             'is_compliance_verified' => false,
         ]);
 
+        $user->notify(new \App\Notifications\DocumentUploadedNotification('Insurance'));
+        
+        $admins = \App\Models\User::where('user_type', 'admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new \App\Notifications\AdminDocumentVerificationRequiredNotification($user, 'Insurance'));
+        }
+
         return $this->sendResponse(new SupplierProfileResource($user), 'Insurance document updated and pending verification.');
     }
 
@@ -724,6 +731,13 @@ class SupplierApiController extends Controller
             'license_uploaded_at' => now(),
             'is_compliance_verified' => false,
         ]);
+
+        $user->notify(new \App\Notifications\DocumentUploadedNotification('Driver License'));
+        
+        $admins = \App\Models\User::where('user_type', 'admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new \App\Notifications\AdminDocumentVerificationRequiredNotification($user, 'Driver License'));
+        }
 
         return $this->sendResponse(new SupplierProfileResource($user), 'License document updated and pending verification.');
     }
@@ -809,6 +823,12 @@ class SupplierApiController extends Controller
     /**
      * Mark all notifications as read.
      */
+    public function markAllNotificationsRead()
+    {
+        auth()->user()->unreadNotifications->markAsRead();
+
+        return $this->sendResponse([], 'All notifications marked as read.');
+    }
 
     /**
      * Get payments data (stats + history) for the supplier.

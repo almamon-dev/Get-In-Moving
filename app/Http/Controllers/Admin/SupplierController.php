@@ -92,6 +92,8 @@ class SupplierController extends Controller
         $supplier->update([
             'is_compliance_verified' => $request->is_compliance_verified,
             'compliance_verified_at' => $request->is_compliance_verified ? now() : null,
+            'insurance_status' => $request->is_compliance_verified ? 'verified' : 'pending',
+            'license_status' => $request->is_compliance_verified ? 'verified' : 'pending',
         ]);
 
         if ($request->is_compliance_verified) {

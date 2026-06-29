@@ -12,6 +12,10 @@ class SupplierProfileResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $now = \Carbon\Carbon::now();
+        $policyExpiry = $this->policy_expiry_date ? \Carbon\Carbon::parse($this->policy_expiry_date) : null;
+        $licenseExpiry = $this->license_expiry_date ? \Carbon\Carbon::parse($this->license_expiry_date) : null;
+
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -26,16 +30,20 @@ class SupplierProfileResource extends JsonResource
             'country' => $this->country,
             'compliance' => [
                 'insurance' => [
-                    'status' => $this->is_compliance_verified ? 'approved' : ($this->insurance_status ?? 'pending'),
+                    'status' => $this->is_compliance_verified ? 'verified' : ($this->insurance_status ?? 'pending'),
                     'document_url' => \App\Helpers\Helper::generateURL($this->insurance_document),
                     'uploaded_at' => $this->insurance_uploaded_at instanceof \Carbon\Carbon ? $this->insurance_uploaded_at->format('j M Y') : ($this->insurance_uploaded_at ? date('j M Y', strtotime($this->insurance_uploaded_at)) : null),
-                    'expiry_at' => $this->policy_expiry_date instanceof \Carbon\Carbon ? $this->policy_expiry_date->format('j M Y') : ($this->policy_expiry_date ? date('j M Y', strtotime($this->policy_expiry_date)) : null),
+                    'expiry_at' => $policyExpiry ? $policyExpiry->format('j M Y') : null,
+                    'raw_expiry' => $this->policy_expiry_date,
+                    'days_until_expiry' => $policyExpiry ? $now->diffInDays($policyExpiry, false) : null,
                 ],
                 'license' => [
-                    'status' => $this->is_compliance_verified ? 'approved' : ($this->license_status ?? 'pending'),
+                    'status' => $this->is_compliance_verified ? 'verified' : ($this->license_status ?? 'pending'),
                     'document_url' => \App\Helpers\Helper::generateURL($this->license_document),
                     'uploaded_at' => $this->license_uploaded_at instanceof \Carbon\Carbon ? $this->license_uploaded_at->format('j M Y') : ($this->license_uploaded_at ? date('j M Y', strtotime($this->license_uploaded_at)) : null),
-                    'expiry_at' => $this->license_expiry_date instanceof \Carbon\Carbon ? $this->license_expiry_date->format('j M Y') : ($this->license_expiry_date ? date('j M Y', strtotime($this->license_expiry_date)) : null),
+                    'expiry_at' => $licenseExpiry ? $licenseExpiry->format('j M Y') : null,
+                    'raw_expiry' => $this->license_expiry_date,
+                    'days_until_expiry' => $licenseExpiry ? $now->diffInDays($licenseExpiry, false) : null,
                 ],
                 'is_verified' => (bool) $this->is_compliance_verified,
             ],

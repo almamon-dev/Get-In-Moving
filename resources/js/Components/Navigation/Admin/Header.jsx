@@ -73,10 +73,10 @@ const Header = ({ onMenuClick }) => {
                             className="w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-50 rounded-lg relative"
                             title="Notifications"
                         >
-                            <Bell size={16} strokeWidth={1.5} />
+                            <Bell size={18} strokeWidth={1.5} />
                             {auth?.user?.unread_notifications_count > 0 && (
-                                <span className="absolute top-2.5 right-2.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
-                                    {auth.user.unread_notifications_count > 9 ? '9+' : auth.user.unread_notifications_count}
+                                <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                                    {auth.user.unread_notifications_count > 99 ? '99+' : auth.user.unread_notifications_count}
                                 </span>
                             )}
                         </button>
