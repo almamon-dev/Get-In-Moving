@@ -22,7 +22,8 @@ class SettingController extends Controller
             'meta_description',
             'keywords',
             'force_ssl',
-            'debug_mode'
+            'debug_mode',
+            'pay_later_system_enabled'
         ];
 
         $dbSettings = Setting::whereIn('key', $keys)->pluck('value', 'key');
@@ -35,6 +36,7 @@ class SettingController extends Controller
             'keywords' => $dbSettings['keywords'] ?? '',
             'force_ssl' => isset($dbSettings['force_ssl']) ? filter_var($dbSettings['force_ssl'], FILTER_VALIDATE_BOOLEAN) : true,
             'debug_mode' => isset($dbSettings['debug_mode']) ? filter_var($dbSettings['debug_mode'], FILTER_VALIDATE_BOOLEAN) : config('app.debug'),
+            'pay_later_system_enabled' => isset($dbSettings['pay_later_system_enabled']) ? filter_var($dbSettings['pay_later_system_enabled'], FILTER_VALIDATE_BOOLEAN) : true,
         ];
 
         return Inertia::render('Admin/Settings/Website/System', [

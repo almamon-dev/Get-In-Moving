@@ -18,6 +18,8 @@ Route::middleware('auth')->group(function () {
         // Customer Management
         Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class)->only(['index', 'show', 'destroy']);
         Route::patch('customers/{customer}/verification', [\App\Http\Controllers\Admin\CustomerController::class, 'updateVerification'])->name('customers.verification');
+        Route::patch('customers/{customer}/pay-later-status', [\App\Http\Controllers\Admin\CustomerController::class, 'updatePayLaterStatus'])->name('customers.pay-later-status');
+        Route::get('pay-later-approvals', [\App\Http\Controllers\Admin\CustomerController::class, 'payLaterApprovals'])->name('pay-later-approvals.index');
 
         Route::resource('suppliers', \App\Http\Controllers\Admin\SupplierController::class)->only(['index', 'show', 'destroy']);
         Route::patch('suppliers/{supplier}/compliance', [\App\Http\Controllers\Admin\SupplierController::class, 'updateCompliance'])->name('suppliers.compliance');
@@ -126,6 +128,9 @@ Route::middleware('auth')->group(function () {
         });
 
         // Notifications
+        Route::get('notifications', function () {
+            return Inertia::render('Admin/Notifications/Index');
+        })->name('notifications.index');
         Route::post('notifications/read-all', function () {
             auth()->user()->unreadNotifications->markAsRead();
             return back();

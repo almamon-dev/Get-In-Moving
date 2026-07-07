@@ -90,25 +90,35 @@ const Header = ({ onMenuClick }) => {
                                         <button onClick={markAllAsRead} className="text-[11px] text-[#0a66c2] font-semibold hover:underline">Mark all as read</button>
                                     )}
                                 </div>
-                                <div className="max-h-[300px] overflow-y-auto">
+                                <div className="max-h-[350px] overflow-y-auto">
                                     {auth?.user?.notifications?.length > 0 ? (
-                                        auth.user.notifications.map((notif) => (
-                                            <div key={notif.id} className="p-4 hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors cursor-pointer group">
-                                                <div className="flex gap-3">
-                                                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
-                                                        <CreditCard size={16} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[13px] text-slate-800 font-medium group-hover:text-[#0a66c2] transition-colors leading-snug">
-                                                            {notif.data.message}
-                                                        </p>
-                                                        <p className="text-[11px] text-slate-400 mt-1">
-                                                            {new Date(notif.created_at).toLocaleDateString()}
-                                                        </p>
+                                        <>
+                                            {auth.user.notifications.slice(0, 6).map((notif) => (
+                                                <div key={notif.id} className="p-4 hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors cursor-pointer group">
+                                                    <div className="flex gap-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                                                            <CreditCard size={16} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[13px] text-slate-800 font-medium group-hover:text-[#0a66c2] transition-colors leading-snug">
+                                                                {notif.data.message || notif.data.title || "New Notification"}
+                                                            </p>
+                                                            <p className="text-[11px] text-slate-400 mt-1">
+                                                                {new Date(notif.created_at).toLocaleDateString()}
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))
+                                            ))}
+                                            {auth.user.notifications.length > 6 && (
+                                                <Link 
+                                                    href={route('admin.notifications.index')} 
+                                                    className="block w-full text-center py-3 text-[13px] text-[#0a66c2] font-bold hover:bg-slate-50 transition-colors border-t border-slate-100"
+                                                >
+                                                    See all notifications
+                                                </Link>
+                                            )}
+                                        </>
                                     ) : (
                                         <div className="p-8 text-center">
                                             <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">

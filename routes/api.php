@@ -21,6 +21,13 @@ Route::get('/pages/{slug}', function ($slug) {
     ]);
 });
 
+Route::get('/settings', function () {
+    return response()->json([
+        'success' => true,
+        'data' => \App\Models\Setting::pluck('value', 'key')->toArray()
+    ]);
+});
+
 Route::get('/customer/quote-requests/template/download', [CustomerApiController::class, 'downloadTemplate'])
     ->name('api.customer.template.download')
     ->middleware('signed');
@@ -80,6 +87,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/quote-requests/sample-pdf-link', [CustomerApiController::class, 'getSamplePdfLink']);
         Route::get('/quote-requests/template', [CustomerApiController::class, 'downloadTemplate']);
         Route::get('/quote-requests', [CustomerApiController::class, 'getMyQuoteRequests']);
+        Route::delete('/quote-requests/{id}', [CustomerApiController::class, 'deleteQuoteRequest']);
+        Route::get('/quote-requests/{id}/edit', [CustomerApiController::class, 'editQuoteRequest']);
+        Route::put('/quote-requests/{id}', [CustomerApiController::class, 'updateQuoteRequest']);
         Route::get('/quote-requests/{id}/quotes', [CustomerApiController::class, 'getRequestQuotes']);
         Route::post('/quotes/{id}/accept', [CustomerApiController::class, 'acceptQuote']);
         Route::post('/quotes/{id}/accept-revision', [CustomerApiController::class, 'acceptRevision']);
@@ -100,6 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/profile', [\App\Http\Controllers\API\Customer\SettingsController::class, 'updateProfile']);
         Route::post('/change-password', [\App\Http\Controllers\API\Customer\SettingsController::class, 'changePassword']);
         Route::delete('/account', [\App\Http\Controllers\API\Customer\SettingsController::class, 'deleteAccount']);
+        Route::post('/pay-later/request', [CustomerApiController::class, 'requestPayLater']);
 
         // Notifications
         Route::get('/notifications', [CustomerApiController::class, 'getNotifications']);
@@ -182,6 +193,18 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/supplier/billing-portal', function (\Illuminate\Http\Request $request) {
         $returnUrl = config('app.frontend_url') . '/supplier-dashboard/settings';
+        $user = $request->user();
+        if (!$user->hasStripeId()) {
+            $user->createAsStripeCustomer();
+        }
+        return response()->json([
+            'success' => true,
+            'url' => $user->billingPortalUrl($returnUrl)
+        ]);
+    });
+
+    Route::post('/client/billing-portal', function (\Illuminate\Http\Request $request) {
+        $returnUrl = config('app.frontend_url') . '/client-dashboard/settings';
         $user = $request->user();
         if (!$user->hasStripeId()) {
             $user->createAsStripeCustomer();

@@ -215,13 +215,6 @@ export default function Index({ auth, pages = [] }) {
                                                     <div className="flex items-center justify-end">
                                                         <div className="flex bg-white shadow-sm border border-[#e5e7eb] rounded-[4px] overflow-hidden">
                                                             <Link 
-                                                                href={route('admin.pages.show', page.id)}
-                                                                title="View Details"
-                                                                className="w-7 h-7 flex items-center justify-center bg-[#f0fdfa] hover:bg-[#ccfbf1] text-[#0d9488] border-r border-[#e5e7eb] transition-colors"
-                                                            >
-                                                                <Eye size={12} />
-                                                            </Link>
-                                                            <Link 
                                                                 href={route('admin.pages.edit', page.id)}
                                                                 title="Edit Page"
                                                                 className="w-7 h-7 flex items-center justify-center bg-[#ebf5ff] hover:bg-[#dbeafe] text-[#2563eb] border-r border-[#e5e7eb] transition-colors"

@@ -18,16 +18,10 @@ import {
 } from "lucide-react";
 import Modal from '@/Components/Modal';
 
-export default function Index({ auth, customers, filters = {}, stats }) {
+export default function PayLaterApprovals({ auth, requests, filters = {}, stats }) {
     const [search, setSearch] = useState(filters.search || "");
-    const [verified, setVerified] = useState(
-        filters.verified !== undefined
-            ? filters.verified === "1"
-                ? "verified"
-                : filters.verified === "0"
-                  ? "unverified"
-                  : "all"
-            : "all",
+    const [status, setStatus] = useState(
+        filters.status || "all"
     );
     const [selectedIds, setSelectedIds] = useState([]);
     const [showPromo, setShowPromo] = useState(true);
@@ -41,17 +35,16 @@ export default function Index({ auth, customers, filters = {}, stats }) {
 
     const updateFilters = (newFilters) => {
         router.get(
-            route("admin.customers.index"),
+            route("admin.pay-later-approvals.index"),
             { ...filters, ...newFilters },
             { preserveState: true, replace: true },
         );
     };
 
     const handleStatusChange = (newStatus) => {
-        setVerified(newStatus);
-        const statusVal =
-            newStatus === "all" ? "" : newStatus === "verified" ? "1" : "0";
-        updateFilters({ verified: statusVal, page: 1 });
+        setStatus(newStatus);
+        const statusVal = newStatus === "all" ? "" : newStatus;
+        updateFilters({ status: statusVal, page: 1 });
     };
 
     const handlePerPageChange = (e) => {
@@ -63,10 +56,10 @@ export default function Index({ auth, customers, filters = {}, stats }) {
     };
 
     const toggleSelectAll = () => {
-        if (selectedIds.length === customers.data.length) {
+        if (selectedIds.length === requests.data.length) {
             setSelectedIds([]);
         } else {
-            setSelectedIds(customers.data.map((c) => c.id));
+            setSelectedIds(requests.data.map((c) => c.id));
         }
     };
 
@@ -81,16 +74,16 @@ export default function Index({ auth, customers, filters = {}, stats }) {
     const handleDelete = (id) => {
         setConfirmModal({
             isOpen: true,
-            title: 'Delete Customer',
-            message: 'Are you sure you want to delete this customer? This action cannot be undone.',
+            title: 'Delete Pay Later Request',
+            message: 'Are you sure you want to delete this pay later request? The customer will remain in the system.',
             action: () => {
-                router.delete(route('admin.customers.destroy', id), {
+                router.patch(route('admin.customers.pay-later-status', id), { pay_later_status: 'inactive' }, {
                     onSuccess: () => {
                         setConfirmModal({ isOpen: false, title: '', message: '', action: null });
                         setSuccessModal({
                             isOpen: true,
                             title: 'Success!',
-                            message: 'Customer has been successfully deleted.'
+                            message: 'Pay later request has been successfully deleted.'
                         });
                     }
                 });
@@ -100,7 +93,7 @@ export default function Index({ auth, customers, filters = {}, stats }) {
 
     return (
         <AdminLayout user={auth.user}>
-            <Head title="Customers" />
+            <Head title="Pay Later Approvals" />
 
             <div className="min-h-screen bg-[#f5f6f8]">
                 <div className="w-full mx-auto px-6 py-8">
@@ -108,38 +101,11 @@ export default function Index({ auth, customers, filters = {}, stats }) {
                     {/* Header Row */}
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
                         <div>
-                            <h1 className="text-[24px] font-bold text-[#111827] tracking-tight">Customer Management</h1>
-                            <p className="text-[14px] text-[#6b7280] mt-0.5">Manage your customer base, verification status, and accounts</p>
+                            <h1 className="text-[24px] font-bold text-[#111827] tracking-tight">Pay Later Approvals</h1>
+                            <p className="text-[14px] text-[#6b7280] mt-0.5">Manage customer requests for the Pay Later facility</p>
                         </div>
                         <div className="flex items-center gap-3 mt-4 md:mt-0">
-                            {selectedIds.length > 0 && (
-                                <button 
-                                    onClick={() => {
-                                        setConfirmModal({
-                                            isOpen: true,
-                                            title: 'Delete Selected Customers',
-                                            message: 'Are you sure you want to delete selected customers?',
-                                            action: () => {
-                                                router.post(route('admin.customers.bulk-destroy'), { ids: selectedIds }, {
-                                                    onSuccess: () => {
-                                                        setSelectedIds([]);
-                                                        setConfirmModal({ isOpen: false, title: '', message: '', action: null });
-                                                        setSuccessModal({
-                                                            isOpen: true,
-                                                            title: 'Success!',
-                                                            message: 'Selected customers have been successfully deleted.'
-                                                        });
-                                                    }
-                                                });
-                                            }
-                                        });
-                                    }}
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded text-[13px] font-medium hover:bg-red-100 transition-colors shadow-sm"
-                                >
-                                    <Trash2 size={16} />
-                                    Delete Selected ({selectedIds.length})
-                                </button>
-                            )}
+                            {/* Actions can go here in the future */}
                         </div>
                     </div>
 
@@ -148,9 +114,9 @@ export default function Index({ auth, customers, filters = {}, stats }) {
                         
                         {/* Tabs Row */}
                         <div className="flex items-center gap-6 px-6 border-b border-[#e5e7eb] overflow-x-auto">
-                            {['All', 'Verified', 'Unverified'].map((tab) => {
+                            {['All', 'Pending', 'Approved', 'Rejected'].map((tab) => {
                                 const tabValue = tab.toLowerCase();
-                                const isActive = verified === tabValue;
+                                const isActive = status === tabValue;
                                 
                                 return (
                                     <button
@@ -164,7 +130,7 @@ export default function Index({ auth, customers, filters = {}, stats }) {
                                     >
                                         {tab}
                                         <span className="bg-[#f3f4f6] text-[#4b5563] text-[11px] px-2 py-0.5 rounded-full font-bold">
-                                            {tab === 'All' ? stats.total : tab === 'Verified' ? stats.verified : stats.unverified}
+                                            {stats[tabValue] || 0}
                                         </span>
                                     </button>
                                 );
@@ -195,15 +161,15 @@ export default function Index({ auth, customers, filters = {}, stats }) {
                                             onClick={toggleSelectAll}
                                             className={`w-[18px] h-[18px] border-[2px] rounded cursor-pointer transition-all flex items-center justify-center ${
                                                 selectedIds.length ===
-                                                    customers.data.length &&
-                                                customers.data.length > 0
+                                                    requests.data.length &&
+                                                requests.data.length > 0
                                                     ? "bg-[#673ab7] border-[#673ab7]"
                                                     : "border-[#c3c4ca] hover:border-[#673ab7]"
                                             }`}
                                         >
                                             {selectedIds.length ===
-                                                customers.data.length &&
-                                                customers.data.length > 0 && (
+                                                requests.data.length &&
+                                                requests.data.length > 0 && (
                                                     <Check
                                                         size={12}
                                                         className="text-white"
@@ -232,9 +198,7 @@ export default function Index({ auth, customers, filters = {}, stats }) {
                                     <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
                                         Pay Later
                                     </th>
-                                    <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
-                                        Status
-                                    </th>
+
                                     <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
                                         Joined
                                     </th>
@@ -242,8 +206,8 @@ export default function Index({ auth, customers, filters = {}, stats }) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-[#f1f2f4]">
-                                {customers.data.length > 0 ? (
-                                    customers.data.map((customer) => (
+                                {requests.data.length > 0 ? (
+                                    requests.data.map((customer) => (
                                         <tr
                                             key={customer.id}
                                             className={`hover:bg-[#fafbfc] transition-colors group ${selectedIds.includes(customer.id) ? "bg-[#f4f0ff]/50" : ""}`}
@@ -335,39 +299,7 @@ export default function Index({ auth, customers, filters = {}, stats }) {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-2">
-                                                <div className="flex items-center gap-1.5">
-                                                    {customer.is_verified ? (
-                                                        <>
-                                                            <div className="w-[14px] h-[14px] rounded-full border-[1.5px] border-[#00b090] flex items-center justify-center text-[#00b090]">
-                                                                <Check
-                                                                    size={9}
-                                                                    strokeWidth={
-                                                                        3
-                                                                    }
-                                                                />
-                                                            </div>
-                                                            <span className="text-[12px] font-medium text-[#2f3344]">
-                                                                Verified
-                                                            </span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <div className="w-[14px] h-[14px] rounded-full border-[1.5px] border-[#ffb000] flex items-center justify-center text-[#ffb000]">
-                                                                <AlertCircle
-                                                                    size={9}
-                                                                    strokeWidth={
-                                                                        3
-                                                                    }
-                                                                />
-                                                            </div>
-                                                            <span className="text-[12px] font-medium text-[#2f3344]">
-                                                                Unverified
-                                                            </span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </td>
+
                                             <td className="px-4 py-2">
                                                 <span className="text-[12px] text-[#727586]">
                                                     {new Date(
@@ -382,9 +314,9 @@ export default function Index({ auth, customers, filters = {}, stats }) {
                                                             "admin.customers.show",
                                                             customer.id,
                                                         )}
-                                                        className="h-[28px] inline-flex items-center bg-white border border-[#e3e4e8] text-[#2f3344] px-3 rounded text-[12px] font-bold hover:border-[#673ab7] hover:text-[#673ab7] transition-all"
+                                                        className="h-[28px] inline-flex items-center bg-[#673ab7] text-white px-4 rounded text-[12px] font-bold hover:bg-[#5e35b1] transition-all"
                                                     >
-                                                        View
+                                                        Review Request
                                                     </Link>
                                                     <button
                                                         onClick={() =>
@@ -414,7 +346,7 @@ export default function Index({ auth, customers, filters = {}, stats }) {
                                                     />
                                                 </div>
                                                 <p className="text-[16px] font-bold text-[#2f3344]">
-                                                    No customers found
+                                                    No requests found
                                                 </p>
                                                 <p className="text-[14px]">
                                                     Try adjusting your search or
@@ -464,17 +396,17 @@ export default function Index({ auth, customers, filters = {}, stats }) {
 
                         <div className="flex items-center gap-6">
                             <span className="text-[13px] text-[#2f3344] font-medium">
-                                {customers.from || 0} - {customers.to || 0} of{" "}
-                                {customers.total || 0}
+                                {requests.from || 0} - {requests.to || 0} of{" "}
+                                {requests.total || 0}
                             </span>
                             <div className="flex gap-2">
                                 <button
                                     onClick={() =>
                                         handlePageChange(
-                                            customers.prev_page_url,
+                                            requests.prev_page_url,
                                         )
                                     }
-                                    disabled={!customers.prev_page_url}
+                                    disabled={!requests.prev_page_url}
                                     className="w-[34px] h-[34px] flex items-center justify-center rounded-full text-[#673ab7] hover:bg-[#673ab7]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                                 >
                                     <ChevronLeft size={20} />
@@ -482,10 +414,10 @@ export default function Index({ auth, customers, filters = {}, stats }) {
                                 <button
                                     onClick={() =>
                                         handlePageChange(
-                                            customers.next_page_url,
+                                            requests.next_page_url,
                                         )
                                     }
-                                    disabled={!customers.next_page_url}
+                                    disabled={!requests.next_page_url}
                                     className="w-[34px] h-[34px] flex items-center justify-center rounded-full text-[#673ab7] hover:bg-[#673ab7]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                                 >
                                     <ChevronRight size={20} />

@@ -19,27 +19,6 @@ export default function Show({ auth, customer }) {
         { id: 'subscription', label: 'Subscription', icon: <CreditCard size={18} /> },
         { id: 'settings', label: 'Settings', icon: <Settings size={18} /> },
     ];
-    const toggleVerification = () => {
-        setConfirmModal({
-            isOpen: true,
-            title: customer.is_verified ? 'Unverify Customer' : 'Verify Customer',
-            message: `Are you sure you want to ${customer.is_verified ? 'unverify' : 'verify'} this customer?`,
-            action: () => {
-                router.patch(route('admin.customers.verification', customer.id), {
-                    is_verified: !customer.is_verified,
-                }, {
-                    onSuccess: () => {
-                        setConfirmModal({ isOpen: false, title: '', message: '', action: null });
-                        setSuccessModal({
-                            isOpen: true,
-                            title: 'Success!',
-                            message: `Customer account has been successfully ${customer.is_verified ? 'unverified' : 'verified'}.`
-                        });
-                    }
-                });
-            }
-        });
-    };
 
     const handleDelete = () => {
         setConfirmModal({
@@ -302,21 +281,40 @@ export default function Show({ auth, customer }) {
                                                 <h2 className="text-[15px] font-bold text-[#2f3344]">Configuration</h2>
                                             </div>
                                             <div className="p-0">
-                                                {/* Account Verification */}
+
+
+                                                {/* Pay Later Status */}
                                                 <div className="flex flex-col p-5 hover:bg-[#f8f9fa] transition-colors border-b border-[#f1f2f4]">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <div className="flex items-center gap-2">
-                                                            <Check size={16} className={customer.is_verified ? 'text-green-600' : 'text-[#a0a3af]'} />
-                                                            <p className="text-[13px] font-bold text-[#2f3344]">Account Access</p>
+                                                            <CreditCard size={16} className={customer.pay_later_status === 'approved' ? 'text-green-600' : 'text-[#a0a3af]'} />
+                                                            <p className="text-[13px] font-bold text-[#2f3344]">Pay Later Status</p>
                                                         </div>
-                                                        <button
-                                                            onClick={toggleVerification}
-                                                            className={`w-9 h-5 rounded-full transition-colors flex items-center px-1 ${customer.is_verified ? 'bg-[#00b090]' : 'bg-[#e3e4e8]'}`}
+                                                        <select
+                                                            value={customer.pay_later_status || 'inactive'}
+                                                            onChange={(e) => {
+                                                                router.patch(route('admin.customers.pay-later-status', customer.id), {
+                                                                    pay_later_status: e.target.value
+                                                                }, {
+                                                                    preserveScroll: true,
+                                                                    onSuccess: () => {
+                                                                        setSuccessModal({
+                                                                            isOpen: true,
+                                                                            title: 'Success!',
+                                                                            message: 'Pay Later status updated.'
+                                                                        });
+                                                                    }
+                                                                });
+                                                            }}
+                                                            className="text-xs font-bold w-24 border-gray-300 rounded px-2 py-1"
                                                         >
-                                                            <div className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${customer.is_verified ? 'translate-x-3.5' : 'translate-x-0'}`} />
-                                                        </button>
+                                                            <option value="inactive">Inactive</option>
+                                                            <option value="pending">Pending</option>
+                                                            <option value="approved">Approved</option>
+                                                            <option value="rejected">Rejected</option>
+                                                        </select>
                                                     </div>
-                                                    <p className="text-[11px] text-[#727586]">Allow user to login and use platform</p>
+                                                    <p className="text-[11px] text-[#727586]">Manage the Pay Later facility for this customer</p>
                                                 </div>
                                             </div>
                                         </div>

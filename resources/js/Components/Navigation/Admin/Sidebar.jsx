@@ -32,6 +32,12 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     route: "admin.customers.index"
                 },
                 {
+                    label: "Pay Later Approvals",
+                    path: route('admin.pay-later-approvals.index'),
+                    icon: <CreditCard />,
+                    route: "admin.pay-later-approvals.index"
+                },
+                {
                     label: "Suppliers",
                     path: route('admin.suppliers.index'),
                     icon: <Truck />,
@@ -145,7 +151,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
         const content = (
             <>
                 {/* Icon */}
-                <div className={`${isCollapsed ? 'mb-1' : 'mr-3'} transition-transform duration-200 group-hover:scale-110 ${active || isOpen ? 'text-[#0a66c2]' : 'text-slate-400 group-hover:text-[#0a66c2]'}`}>
+                <div className={`flex-shrink-0 ${isCollapsed ? 'mb-1' : 'mr-3'} transition-transform duration-200 group-hover:scale-110 ${active || isOpen ? 'text-[#0a66c2]' : 'text-slate-400 group-hover:text-[#0a66c2]'}`}>
                     {React.cloneElement(item.icon, {
                         size: isCollapsed ? 24 : 18,
                         strokeWidth: active || isOpen ? 2 : 1.5
@@ -154,7 +160,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
 
                 {/* Label */}
                 {!isCollapsed && (
-                    <span className={`font-medium leading-tight transition-all duration-300 text-[14px] flex-1 text-left
+                    <span className={`font-medium leading-tight transition-all duration-300 text-[14px] flex-1 text-left whitespace-nowrap truncate
                         ${active || isOpen ? 'text-[#0a66c2]' : 'text-slate-600'}`}>
                         {item.label}
                     </span>
@@ -164,7 +170,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                 {!isCollapsed && !isLogout && (
                     <ChevronRight
                         size={14}
-                        className={`transition-all duration-200 text-slate-300 group-hover:text-slate-500 ${isOpen ? 'rotate-90' : ''} ${item.children ? '' : 'opacity-60'}`}
+                        className={`flex-shrink-0 transition-all duration-200 text-slate-300 group-hover:text-slate-500 ${isOpen ? 'rotate-90' : ''} ${item.children ? '' : 'opacity-60'}`}
                     />
                 )}
 

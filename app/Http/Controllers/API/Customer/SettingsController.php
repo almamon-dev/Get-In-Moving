@@ -25,6 +25,7 @@ class SettingsController extends Controller
             'phone' => $user->phone_number,
             'company_name' => $user->company_name,
             'profile_picture' => Helper::generateURL($user->profile_picture),
+            'pay_later_status' => $user->pay_later_status,
         ], 'Profile retrieved successfully.');
     }
 
@@ -60,6 +61,7 @@ class SettingsController extends Controller
             'phone' => $user->phone_number,
             'company_name' => $user->company_name,
             'profile_picture' => Helper::generateURL($user->profile_picture),
+            'pay_later_status' => $user->pay_later_status,
         ], 'Profile updated successfully.');
     }
 

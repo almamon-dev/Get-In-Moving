@@ -180,9 +180,9 @@ export default function FinancialGateway({ settings }) {
                                 </code>
                             </p>
                             <div>
-                                <p className="mb-1.5"><strong>3.</strong> Select exactly these 7 events:</p>
+                                <p className="mb-1.5"><strong>3.</strong> Select exactly these 9 events:</p>
                                 <div className="flex flex-wrap gap-1.5">
-                                    {['account.updated', 'checkout.session.completed', 'customer.subscription.created', 'customer.subscription.deleted', 'customer.subscription.updated', 'invoice.payment_failed', 'invoice.payment_succeeded'].map(evt => (
+                                    {['account.updated', 'checkout.session.completed', 'customer.deleted', 'customer.subscription.created', 'customer.subscription.deleted', 'customer.subscription.updated', 'customer.updated', 'invoice.payment_action_required', 'invoice.payment_succeeded'].map(evt => (
                                         <span key={evt} className="bg-white border border-[#e3e4e8] text-[#673ab7] font-mono text-[10.5px] px-2 py-0.5 rounded-full shadow-sm">
                                             {evt}
                                         </span>

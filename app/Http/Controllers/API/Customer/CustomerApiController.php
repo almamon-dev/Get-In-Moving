@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use App\Notifications\NewQuoteRequestAvailableNotification;
+use Illuminate\Support\Facades\Notification;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CustomerApiController extends Controller
@@ -104,6 +106,33 @@ class CustomerApiController extends Controller
 
             DB::commit();
 
+            // Direct Notification to Suppliers
+            try {
+                // Find all active suppliers
+                $allSuppliers = \App\Models\User::where('user_type', 'supplier')
+                    ->where('status', 'active')
+                    ->get();
+
+                // Filter suppliers whose city, zip, or country is found in the pickup or delivery address
+                $suppliers = $allSuppliers->filter(function($supplier) use ($quoteRequest) {
+                    $pickup = strtolower($quoteRequest->pickup_address ?? '');
+                    $delivery = strtolower($quoteRequest->delivery_address ?? '');
+                    
+                    $matchesCity = !empty($supplier->city) && (str_contains($pickup, strtolower($supplier->city)) || str_contains($delivery, strtolower($supplier->city)));
+                    $matchesZip = !empty($supplier->zip_code) && (str_contains($pickup, strtolower($supplier->zip_code)) || str_contains($delivery, strtolower($supplier->zip_code)));
+                    $matchesCountry = !empty($supplier->country) && (str_contains($pickup, strtolower($supplier->country)) || str_contains($delivery, strtolower($supplier->country)));
+                    
+                    return $matchesCity || $matchesZip || $matchesCountry;
+                });
+
+                if ($suppliers->isNotEmpty()) {
+                    Notification::send($suppliers, new NewQuoteRequestAvailableNotification($quoteRequest->load('user')));
+                    Log::info('Notifications sent to ' . $suppliers->count() . ' matched suppliers for QuoteRequest: ' . $quoteRequest->id);
+                }
+            } catch (\Exception $notifyEx) {
+                Log::error('Failed to send supplier notifications: ' . $notifyEx->getMessage());
+            }
+
             return $this->sendResponse(new \App\Http\Resources\API\Customer\QuoteRequestResource($quoteRequest->load('items')), 'Quote request created successfully.', null, 201);
 
         } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
@@ -116,6 +145,79 @@ class CustomerApiController extends Controller
             Log::error('Error in createQuoteRequest: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
             return $this->sendError('Failed to create quote request.', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get a quote request for editing.
+     */
+    public function editQuoteRequest($id)
+    {
+        $quoteRequest = QuoteRequest::with('items')->where('user_id', auth()->id())->find($id);
+
+        if (!$quoteRequest) {
+            return $this->sendError('Quote request not found.', [], 404);
+        }
+
+        return $this->sendResponse($quoteRequest, 'Quote request retrieved for editing.');
+    }
+
+    /**
+     * Update an existing quote request.
+     */
+    public function updateQuoteRequest(CreateQuoteRequest $request, $id)
+    {
+        Log::info('Entering updateQuoteRequest.', [
+            'id' => $id,
+            'input_keys' => array_keys($request->all()),
+        ]);
+
+        $quoteRequest = QuoteRequest::where('user_id', $request->user()->id)->find($id);
+
+        if (!$quoteRequest) {
+            return $this->sendError('Quote request not found.', [], 404);
+        }
+
+        DB::beginTransaction();
+        try {
+            $quoteRequest->update([
+                'pickup_address' => $request->pickup_address,
+                'delivery_address' => $request->delivery_address,
+                'pickup_date' => $request->pickup_date,
+                'delivery_date' => $request->delivery_date,
+                'pickup_time_from' => $request->pickup_time_from,
+                'pickup_time_till' => $request->pickup_time_till,
+                'delivery_time_from' => $request->delivery_time_from,
+                'delivery_time_till' => $request->delivery_time_till,
+                'additional_notes' => $request->additional_notes,
+            ]);
+
+            // Handle items from array
+            if ($request->has('items') && is_array($request->items)) {
+                // Delete existing items
+                $quoteRequest->items()->delete();
+                
+                // Add new items
+                foreach ($request->items as $item) {
+                    QuoteRequestItem::create([
+                        'quote_request_id' => $quoteRequest->id,
+                        'item_type' => $item['item_type'],
+                        'quantity' => $item['quantity'],
+                        'length' => $item['length'] ?? null,
+                        'width' => $item['width'] ?? null,
+                        'height' => $item['height'] ?? null,
+                        'weight' => $item['weight'] ?? null,
+                    ]);
+                }
+            }
+
+            DB::commit();
+            return $this->sendResponse(new \App\Http\Resources\API\Customer\QuoteRequestResource($quoteRequest->load('items')), 'Quote request updated successfully.', null, 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error in updateQuoteRequest: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return $this->sendError('Failed to update quote request.', ['error' => $e->getMessage()], 500);
         }
     }
 
@@ -221,6 +323,7 @@ class CustomerApiController extends Controller
      */
     public function getMyQuoteRequests(Request $request)
     {
+
         $perPage = $request->input('per_page', 10);
 
         $requests = QuoteRequest::withCount('quotes')
@@ -231,6 +334,19 @@ class CustomerApiController extends Controller
         $requests->setCollection(QuoteRequestResource::collection($requests->getCollection())->collection);
 
         return $this->sendResponse($requests, 'Your quote requests retrieved.');
+    }
+
+    public function deleteQuoteRequest(Request $request, $id)
+    {
+        $quoteRequest = QuoteRequest::where('user_id', $request->user()->id)->find($id);
+
+        if (!$quoteRequest) {
+            return $this->sendError('Quote request not found.', [], 404);
+        }
+
+        $quoteRequest->delete();
+
+        return $this->sendResponse([], 'Quote request deleted successfully.');
     }
 
     /**
@@ -1120,5 +1236,30 @@ class CustomerApiController extends Controller
         ]);
 
         return $this->sendResponse($review, 'Thank you for your feedback! Your rating has been submitted.');
+    }
+
+    /**
+     * Request Pay Later feature.
+     */
+    public function requestPayLater()
+    {
+        $user = auth()->user();
+
+        if ($user->pay_later_status !== 'inactive' && $user->pay_later_status !== 'rejected') {
+            return $this->sendError('You have already requested or have been approved for Pay Later.', [], 422);
+        }
+
+        $user->update(['pay_later_status' => 'pending']);
+
+        // Notify admins (Assuming an Admin model or notification system exists, 
+        // we could just send a DB notification or log it for now)
+        \App\Models\User::where('user_type', 'admin')->each(function($admin) use ($user) {
+            $admin->notify(new \App\Notifications\PayLaterRequestedNotification($user));
+        });
+
+        // Notify the user themselves
+        $user->notify(new \App\Notifications\PayLaterRequestSubmittedNotification());
+
+        return $this->sendResponse(['status' => $user->pay_later_status], 'Pay Later request submitted successfully. Awaiting admin approval.');
     }
 }

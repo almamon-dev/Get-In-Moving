@@ -49,6 +49,12 @@ class AuthApiController extends Controller
                 'terms_accepted_at' => now(),
             ];
 
+            // Auto-verify admin approval if the user is a customer, but require email OTP
+            if ($request->user_type === 'customer') {
+                $userData['is_verified'] = true;
+                $userData['verified_at'] = now();
+            }
+
             // If supplier, add additional fields
             if ($request->user_type === 'supplier') {
                 $userData['insurance_type'] = $request->insurance_type;
@@ -95,28 +101,30 @@ class AuthApiController extends Controller
                 'status' => $isTrial ? 'active' : 'pending_payment',
                 'is_trial' => $isTrial,
             ]);
-            // Send OTP safely
+            $requiresVerification = true;
+
             $otp = null;
-            try {
-                $otp = $this->sendOtp($user, 'Verify Your Email Address');
-            } catch (Exception $smtpError) {
-                Log::error("SMTP Error during registration: {$smtpError->getMessage()}");
+            if ($requiresVerification) {
+                try {
+                    $otp = $this->sendOtp($user, 'Verify Your Email Address');
+                } catch (Exception $smtpError) {
+                    Log::error("SMTP Error during registration: {$smtpError->getMessage()}");
+                }
             }
 
             DB::commit(); // Commit transaction if everything succeeds
 
-            $message = __('Register Successfully. OTP : ') . $otp;
+            $message = $requiresVerification ? __('Register Successfully. OTP : ') . $otp : __('Register Successfully.');
 
             return $this->sendResponse([
                 'user' => new RegisterResource($user),
-                'requires_verification' => true,
-                'next_action' => 'verify_email',
+                'requires_verification' => $requiresVerification,
+                'next_action' => $requiresVerification ? 'verify_email' : 'login',
                 'otp' => $otp // Optional: include in data for frontend if needed
             ], $message);
-
         } catch (Exception $e) {
             DB::rollBack();
-            Log::error('Registration Error: '.$e->getMessage(), ['context' => $request->all()]);
+            Log::error('Registration Error: ' . $e->getMessage(), ['context' => $request->all()]);
 
             return $this->sendError('Registration failed', ['error' => $e->getMessage()], 500);
         }
@@ -148,7 +156,7 @@ class AuthApiController extends Controller
                     $session = $paymentService->createCheckoutSession($subscription);
                     $checkoutUrl = $session->url;
                 } catch (Exception $stripeError) {
-                    Log::error('Stripe Session Error after login: '.$stripeError->getMessage());
+                    Log::error('Stripe Session Error after login: ' . $stripeError->getMessage());
                 }
             }
 
@@ -160,7 +168,7 @@ class AuthApiController extends Controller
                 'requires_payment' => $checkoutUrl !== null,
             ], 'Login successful', $token);
         } catch (Exception $e) {
-            Log::error('Login Error: '.$e->getMessage());
+            Log::error('Login Error: ' . $e->getMessage());
 
             return $this->sendError('Login failed', ['error' => $e->getMessage()], 500);
         }
@@ -172,7 +180,7 @@ class AuthApiController extends Controller
             $user = User::where('email', $request->email)->firstOrFail();
             Log::info('Verify Email Attempt', ['email' => $request->email, 'otp' => $request->otp]);
             // Check if email is already verified
-            if ($user->email_verified_at || $user->is_verified) {
+            if ($user->email_verified_at) {
                 Log::info('Email already verified', ['user_id' => $user->id, 'email' => $user->email]);
                 $token = $user->createToken('YourAppName')->plainTextToken;
                 return $this->sendResponse([
@@ -205,7 +213,7 @@ class AuthApiController extends Controller
                     $session = $paymentService->createCheckoutSession($subscription);
                     $checkoutUrl = $session->url;
                 } catch (Exception $stripeError) {
-                    Log::error('Stripe Session Error after verification: '.$stripeError->getMessage());
+                    Log::error('Stripe Session Error after verification: ' . $stripeError->getMessage());
                 }
             }
 
@@ -217,7 +225,7 @@ class AuthApiController extends Controller
                 'requires_payment' => $checkoutUrl !== null,
             ], 'Email verified successfully', $token);
         } catch (Exception $e) {
-            Log::error('Email Verification Error: '.$e->getMessage());
+            Log::error('Email Verification Error: ' . $e->getMessage());
 
             return $this->sendError('Verification failed', ['error' => $e->getMessage()], 500);
         }
@@ -231,7 +239,7 @@ class AuthApiController extends Controller
 
             return $this->sendResponse(new RegisterResource($user), 'OTP resent successfully.');
         } catch (Exception $e) {
-            Log::error('Resend OTP Error: '.$e->getMessage());
+            Log::error('Resend OTP Error: ' . $e->getMessage());
 
             return $this->sendError('OTP resend failed', ['error' => $e->getMessage()], 500);
         }
@@ -245,7 +253,7 @@ class AuthApiController extends Controller
 
             return $this->sendResponse(new RegisterResource($user), 'OTP sent for password reset.');
         } catch (Exception $e) {
-            Log::error('Forgot Password Error: '.$e->getMessage());
+            Log::error('Forgot Password Error: ' . $e->getMessage());
 
             return $this->sendError('Failed to send OTP', ['error' => $e->getMessage()], 500);
         }
@@ -275,7 +283,7 @@ class AuthApiController extends Controller
 
             return $this->sendResponse(new RegisterResource($user), 'OTP verified. Token generated for password reset.', $token);
         } catch (Exception $e) {
-            Log::error('OTP Verification Error: '.$e->getMessage());
+            Log::error('OTP Verification Error: ' . $e->getMessage());
 
             return $this->sendError('Failed to verify OTP', ['error' => $e->getMessage()], 500);
         }
@@ -301,7 +309,7 @@ class AuthApiController extends Controller
 
             return $this->sendResponse([], 'Password reset successfully.');
         } catch (Exception $e) {
-            Log::error('Reset Password Error: '.$e->getMessage());
+            Log::error('Reset Password Error: ' . $e->getMessage());
 
             return $this->sendError('Failed to reset password', ['error' => $e->getMessage()], 500);
         }
@@ -314,7 +322,7 @@ class AuthApiController extends Controller
 
             return $this->sendResponse([], 'Logout successful.');
         } catch (Exception $e) {
-            Log::error('Logout Error: '.$e->getMessage());
+            Log::error('Logout Error: ' . $e->getMessage());
 
             return $this->sendError('Logout failed', ['error' => 'Please try again'], 500);
         }

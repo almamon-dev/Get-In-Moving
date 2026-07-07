@@ -125,6 +125,38 @@ export default function WebsiteSystem({ settings }) {
                         </div>
                     </div>
                 </div>
+
+                {/* System Toggles */}
+                <div className="bg-white rounded-[10px] border border-[#e3e4e8] shadow-sm overflow-hidden">
+                    <div className="px-7 py-5 border-b border-[#e3e4e8]">
+                        <h2 className="text-[18px] font-bold text-[#2f3344]">System Toggles</h2>
+                    </div>
+                    <div className="p-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                            <div className="flex items-center justify-between p-4 border border-[#e3e4e8] rounded-lg">
+                                <div>
+                                    <h3 className="font-bold text-[#2f3344] text-[15px]">Pay Later System</h3>
+                                    <p className="text-[#727586] text-[12px] mt-1">Enable or disable the Pay Later facility globally</p>
+                                </div>
+                                <ToggleSwitch 
+                                    enabled={data.pay_later_system_enabled !== false} 
+                                    onToggle={() => toggleSetting('pay_later_system_enabled')} 
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 border border-[#e3e4e8] rounded-lg">
+                                <div>
+                                    <h3 className="font-bold text-[#2f3344] text-[15px]">Force SSL</h3>
+                                    <p className="text-[#727586] text-[12px] mt-1">Redirect all HTTP traffic to HTTPS</p>
+                                </div>
+                                <ToggleSwitch 
+                                    enabled={data.force_ssl} 
+                                    onToggle={() => toggleSetting('force_ssl')} 
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </form>
         </AdminLayout>
     );

@@ -37,9 +37,12 @@ trait SendOtp
 
                 // Attempt to send OTP via email, but don't fail if SMTP is not configured
                 try {
+                    Log::info("Attempting to send OTP email to {$user->email} with mailer: " . config('mail.default'));
                     Mail::to($user->email)->send(new \App\Mail\OtpMail($otp, $user, $purpose));
-                } catch (Exception $e) {
+                    Log::info("Successfully sent OTP email to {$user->email}");
+                } catch (\Throwable $e) {
                     Log::error("Failed to send OTP to {$user->email}: {$e->getMessage()}");
+                    Log::error("Stack Trace: " . $e->getTraceAsString());
                 }
 
                 // Email sent → insert OTP in DB

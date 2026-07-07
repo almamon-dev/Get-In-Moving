@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { ChevronLeft, Save } from 'lucide-react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 export default function Edit({ auth, page }) {
     const [formData, setFormData] = useState({
@@ -41,7 +43,7 @@ export default function Edit({ auth, page }) {
                     <div className="flex items-center gap-4 mb-8">
                         <Link
                             href={route('admin.pages.index')}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 text-[#6b7280] hover:text-[#111827] hover:bg-white border border-[#e3e4e8] rounded-lg text-[14px] font-medium transition-all"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 text-[#6b7280] hover:text-[#111827] hover:bg-white border border-[#e3e4e8] rounded-md text-[14px] font-medium transition-all"
                         >
                             <ChevronLeft size={18} />
                             Back
@@ -88,17 +90,26 @@ export default function Edit({ auth, page }) {
 
                                 {/* Content */}
                                 <div className="space-y-1.5">
-                                    <label className="text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                    <label className="text-[13px] font-bold text-[#2f3344] uppercase tracking-wider mb-2 block">
                                         Page Content (HTML supported)
                                     </label>
-                                    <textarea
-                                        value={formData.content}
-                                        onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                                        rows="15"
-                                        className="w-full p-4 bg-white border border-[#e3e4e8] rounded-[6px] text-[14px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all font-mono"
-                                        placeholder="<h1>Terms and Conditions</h1><p>Enter your content here...</p>"
-                                    ></textarea>
-                                    {errors.content && <p className="text-[12px] text-red-500">{errors.content}</p>}
+                                    <ReactQuill 
+                                        theme="snow" 
+                                        value={formData.content} 
+                                        onChange={(content) => setFormData({ ...formData, content })} 
+                                        className="bg-white"
+                                        modules={{
+                                            toolbar: [
+                                                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                                                ['bold', 'italic', 'underline', 'strike'],
+                                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                                ['link', 'image'],
+                                                ['clean']
+                                            ],
+                                        }}
+                                        style={{ height: '300px', marginBottom: '50px' }}
+                                    />
+                                    {errors.content && <p className="text-[12px] text-red-500 mt-12">{errors.content}</p>}
                                 </div>
 
                                 {/* Status */}
