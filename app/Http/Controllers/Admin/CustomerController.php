@@ -141,11 +141,20 @@ class CustomerController extends Controller
     {
         $request->validate([
             'pay_later_status' => 'required|in:inactive,pending,approved,rejected',
+            'rejection_reason' => 'nullable|string|max:1000'
         ]);
 
-        $customer->update([
+        $updateData = [
             'pay_later_status' => $request->pay_later_status,
-        ]);
+        ];
+
+        if ($request->pay_later_status === 'rejected') {
+            $updateData['pay_later_rejection_reason'] = $request->rejection_reason;
+        } elseif ($request->pay_later_status === 'approved' || $request->pay_later_status === 'inactive') {
+            $updateData['pay_later_rejection_reason'] = null; // Clear reason if state changes
+        }
+
+        $customer->update($updateData);
 
         // Send notification if approved or rejected (optional, based on requirement)
         if ($request->pay_later_status === 'approved') {

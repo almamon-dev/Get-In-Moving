@@ -46,8 +46,11 @@ class InvoicePaymentService
 
         // Apply Split Payment if the supplier has connected their Stripe account
         if ($supplier && $supplier->stripe_account_id) {
+            $supplierFeeAmount = $invoice->supplier_fee ?? 0;
+            $totalPlatformFee = $invoice->platform_fee + $supplierFeeAmount;
+
             $sessionData['payment_intent_data'] = [
-                'application_fee_amount' => (int) ($invoice->platform_fee * 100), // Our platform fee
+                'application_fee_amount' => (int) ($totalPlatformFee * 100), // Our total platform fee (Customer's + Supplier's)
                 'transfer_data' => [
                     'destination' => $supplier->stripe_account_id, // Rest of money goes to supplier
                 ],

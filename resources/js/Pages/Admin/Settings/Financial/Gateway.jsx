@@ -16,6 +16,7 @@ export default function FinancialGateway({ settings }) {
         stripe_webhook_secret: settings.stripe_webhook_secret || '',
         fund_hold_minutes: settings.fund_hold_minutes || 5,
         system_charge: settings.system_charge || 10,
+        pay_later_days: settings.pay_later_days || 30,
     });
 
     const handleCopy = (text, field) => {
@@ -42,168 +43,170 @@ export default function FinancialGateway({ settings }) {
     return (
         <SettingsLayout 
             title="Payment Gateways" 
-            subtitle="Connect and manage your payment processors for automated transactions."
+            subtitle="Connect and manage your payment processors."
             breadcrumbs={["Financial", "Gateway"]}
         >
-            <div className="p-8">
-                <form onSubmit={handleSubmit} className="max-w-7xl space-y-12">
+            <div className="p-4 sm:p-6">
+                <form onSubmit={handleSubmit} className="max-w-full space-y-6">
                     {/* Active Gateway Toggle */}
-                    <div className="flex items-center justify-between p-6 bg-[#f8f9fa] rounded-[15px] border border-[#e3e4e8]">
-                        <div className="flex items-center gap-5">
-                            <div className="w-14 h-14 bg-white rounded-xl border border-[#e3e4e8] shadow-sm flex items-center justify-center text-[#673ab7]">
-                                <CreditCard size={28} />
+                    <div className="flex items-center justify-between p-4 bg-gray-50/50 rounded-lg border border-gray-200">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-white rounded-md border border-gray-200 shadow-sm flex items-center justify-center text-indigo-600">
+                                <CreditCard size={20} />
                             </div>
                             <div>
-                                <h4 className="text-[18px] font-bold text-[#2f3344]">Stripe Integration</h4>
-                                <p className="text-[13px] text-[#727586] mt-1">Accept credit cards and local payment methods globally.</p>
+                                <h4 className="text-sm font-semibold text-gray-900">Stripe Integration</h4>
+                                <p className="text-xs text-gray-500 mt-0.5">Accept payments globally via Stripe.</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <span className={`text-[12px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${
-                                data.stripe_mode === 'live' ? 'text-green-500 bg-green-50' : 'text-orange-500 bg-orange-50'
+                        <div className="flex items-center gap-3">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider ${
+                                data.stripe_mode === 'live' ? 'text-emerald-600 bg-emerald-50 border border-emerald-200' : 'text-amber-600 bg-amber-50 border border-amber-200'
                             }`}>
-                                {data.stripe_mode === 'live' ? 'Live' : 'Sandbox (Test)'}
+                                {data.stripe_mode === 'live' ? 'Live Mode' : 'Test Mode'}
                             </span>
                             <div 
                                 onClick={toggleMode}
-                                className={`w-12 h-6 rounded-full relative cursor-pointer transition-all duration-300 ${
-                                    data.stripe_mode === 'live' ? 'bg-[#673ab7]' : 'bg-[#a0a3af]'
+                                className={`w-10 h-5 rounded-full relative cursor-pointer transition-all duration-300 ${
+                                    data.stripe_mode === 'live' ? 'bg-indigo-600' : 'bg-gray-300'
                                 }`}
                             >
-                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300 ${
-                                    data.stripe_mode === 'live' ? 'right-1' : 'left-1'
+                                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300 ${
+                                    data.stripe_mode === 'live' ? 'right-0.5' : 'left-0.5'
                                 }`}></div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="space-y-8">
-                        <div className="flex items-center gap-2 pb-2 border-b border-[#f1f2f4]">
-                            <ShieldCheck size={20} className="text-[#673ab7]" />
-                            <h3 className="text-[16px] font-bold text-[#2f3344]">API Credentials</h3>
+                    <div className="bg-white p-5 rounded-lg border border-gray-200 space-y-5 shadow-sm">
+                        <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
+                            <ShieldCheck size={16} className="text-indigo-600" />
+                            <h3 className="text-sm font-semibold text-gray-900">API Credentials</h3>
                         </div>
 
-                        <div className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">Stripe Public Key</label>
+                        <div className="space-y-4">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Stripe Public Key</label>
                                 <div className="relative">
                                     <input 
                                         type="text" 
                                         value={data.stripe_key}
                                         onChange={e => setData('stripe_key', e.target.value)}
                                         placeholder="pk_live_..."
-                                        className={`w-full h-[52px] pl-4 pr-12 bg-white border ${errors.stripe_key ? 'border-red-500' : 'border-[#e3e4e8]'} rounded-[8px] text-[14px] font-mono focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all`}
+                                        className={`w-full h-10 pl-3 pr-10 bg-gray-50/50 border ${errors.stripe_key ? 'border-red-500' : 'border-gray-200'} rounded-md text-sm font-mono focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all`}
                                     />
                                     <button 
                                         type="button"
                                         onClick={() => handleCopy(data.stripe_key, 'key')}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[#a0a3af] hover:text-[#673ab7] transition-colors"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors"
                                     >
-                                        {copiedField === 'key' ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+                                        {copiedField === 'key' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                                     </button>
                                 </div>
-                                {errors.stripe_key && <p className="text-red-500 text-xs mt-1">{errors.stripe_key}</p>}
+                                {errors.stripe_key && <p className="text-red-500 text-[11px] mt-1">{errors.stripe_key}</p>}
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">Stripe Secret Key</label>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Stripe Secret Key</label>
                                 <div className="relative">
                                     <input 
                                         type={showSecret ? "text" : "password"} 
                                         value={data.stripe_secret}
                                         onChange={e => setData('stripe_secret', e.target.value)}
                                         placeholder="sk_live_..."
-                                        className={`w-full h-[52px] pl-4 pr-24 bg-white border ${errors.stripe_secret ? 'border-red-500' : 'border-[#e3e4e8]'} rounded-[8px] text-[14px] font-mono focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all`}
+                                        className={`w-full h-10 pl-3 pr-20 bg-gray-50/50 border ${errors.stripe_secret ? 'border-red-500' : 'border-gray-200'} rounded-md text-sm font-mono focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all`}
                                     />
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                                         <button 
                                             type="button"
                                             onClick={() => handleCopy(data.stripe_secret, 'secret')}
-                                            className="text-[#a0a3af] hover:text-[#673ab7] transition-colors"
+                                            className="text-gray-400 hover:text-indigo-600 transition-colors"
                                         >
-                                            {copiedField === 'secret' ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+                                            {copiedField === 'secret' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                                         </button>
                                         <button 
                                             type="button"
                                             onClick={() => setShowSecret(!showSecret)}
-                                            className="text-[#a0a3af] hover:text-[#673ab7] transition-colors"
+                                            className="text-gray-400 hover:text-indigo-600 transition-colors"
                                         >
-                                            {showSecret ? <EyeOff size={20} /> : <Eye size={20} />}
+                                            {showSecret ? <EyeOff size={14} /> : <Eye size={14} />}
                                         </button>
                                     </div>
                                 </div>
-                                {errors.stripe_secret && <p className="text-red-500 text-xs mt-1">{errors.stripe_secret}</p>}
+                                {errors.stripe_secret && <p className="text-red-500 text-[11px] mt-1">{errors.stripe_secret}</p>}
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">Webhook Secret</label>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Webhook Secret</label>
                                 <div className="relative">
                                     <input 
                                         type={showWebhook ? "text" : "password"} 
                                         value={data.stripe_webhook_secret}
                                         onChange={e => setData('stripe_webhook_secret', e.target.value)}
                                         placeholder="whsec_..."
-                                        className={`w-full h-[52px] pl-4 pr-24 bg-white border ${errors.stripe_webhook_secret ? 'border-red-500' : 'border-[#e3e4e8]'} rounded-[8px] text-[14px] font-mono focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all`}
+                                        className={`w-full h-10 pl-3 pr-20 bg-gray-50/50 border ${errors.stripe_webhook_secret ? 'border-red-500' : 'border-gray-200'} rounded-md text-sm font-mono focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all`}
                                     />
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                                         <button 
                                             type="button"
                                             onClick={() => handleCopy(data.stripe_webhook_secret, 'webhook')}
-                                            className="text-[#a0a3af] hover:text-[#673ab7] transition-colors"
+                                            className="text-gray-400 hover:text-indigo-600 transition-colors"
                                         >
-                                            {copiedField === 'webhook' ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+                                            {copiedField === 'webhook' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                                         </button>
                                         <button 
                                             type="button"
                                             onClick={() => setShowWebhook(!showWebhook)}
-                                            className="text-[#a0a3af] hover:text-[#673ab7] transition-colors"
+                                            className="text-gray-400 hover:text-indigo-600 transition-colors"
                                         >
-                                            {showWebhook ? <EyeOff size={20} /> : <Eye size={20} />}
+                                            {showWebhook ? <EyeOff size={14} /> : <Eye size={14} />}
                                         </button>
                                     </div>
                                 </div>
-                                {errors.stripe_webhook_secret && <p className="text-red-500 text-xs mt-1">{errors.stripe_webhook_secret}</p>}
+                                {errors.stripe_webhook_secret && <p className="text-red-500 text-[11px] mt-1">{errors.stripe_webhook_secret}</p>}
                             </div>
                         </div>
-                    </div>
 
-                    {/* Webhook Setup Guide */}
-                    <div className="bg-[#f8f9fa] p-4 rounded-[12px] border border-[#e3e4e8]">
-                        <div className="flex items-center gap-2 pb-2 mb-2 border-b border-[#e3e4e8]">
-                            <ShieldCheck size={16} className="text-[#673ab7]" />
-                            <h3 className="text-[14px] font-bold text-[#2f3344]">Stripe Webhook Setup Guide</h3>
-                        </div>
-                        <div className="text-[12px] text-[#727586] space-y-1.5">
-                            <p><strong>1.</strong> In Stripe Dashboard, go to <strong>Developers &gt; Webhooks</strong> and click <strong>Add an endpoint</strong>.</p>
-                            <p className="flex items-center gap-1">
-                                <strong>2.</strong> URL: 
-                                <code className="bg-white px-1.5 py-0.5 rounded border border-[#e3e4e8] font-mono text-[11px] text-[#673ab7]">
-                                    https://your-domain.com/api/webhooks/stripe
-                                </code>
-                            </p>
-                            <div>
-                                <p className="mb-1.5"><strong>3.</strong> Select exactly these 9 events:</p>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {['account.updated', 'checkout.session.completed', 'customer.deleted', 'customer.subscription.created', 'customer.subscription.deleted', 'customer.subscription.updated', 'customer.updated', 'invoice.payment_action_required', 'invoice.payment_succeeded'].map(evt => (
-                                        <span key={evt} className="bg-white border border-[#e3e4e8] text-[#673ab7] font-mono text-[10.5px] px-2 py-0.5 rounded-full shadow-sm">
-                                            {evt}
-                                        </span>
-                                    ))}
-                                </div>
+                        {/* Webhook Setup Guide */}
+                        <div className="bg-indigo-50/50 p-3 rounded-md border border-indigo-100/50 mt-4">
+                            <div className="flex items-center gap-1.5 pb-2 mb-2 border-b border-indigo-100/50">
+                                <ShieldCheck size={14} className="text-indigo-600" />
+                                <h3 className="text-xs font-semibold text-indigo-900">Webhook Setup Guide</h3>
                             </div>
-                            <p className="pt-1"><strong>4.</strong> Save, reveal the <strong>Signing secret</strong>, and paste it into the Webhook Secret field above.</p>
+                            <div className="text-[11px] text-indigo-900/70 space-y-1">
+                                <p><strong>1.</strong> In Stripe Dashboard: <strong>Developers &gt; Webhooks &gt; Add an endpoint</strong>.</p>
+                                <p className="flex items-center gap-1">
+                                    <strong>2.</strong> URL: 
+                                    <code className="bg-white px-1 py-0.5 rounded border border-indigo-100 font-mono text-[10px] text-indigo-700">
+                                        https://your-domain.com/api/webhooks/stripe
+                                    </code>
+                                </p>
+                                <div className="pt-1">
+                                    <p className="mb-1"><strong>3.</strong> Select exactly these events:</p>
+                                    <div className="flex flex-wrap gap-1">
+                                        {['account.updated', 'checkout.session.completed', 'customer.deleted', 'customer.subscription.created', 'customer.subscription.deleted', 'customer.subscription.updated', 'customer.updated', 'invoice.payment_action_required', 'invoice.payment_succeeded'].map(evt => (
+                                            <span key={evt} className="bg-white border border-indigo-100 text-indigo-600 font-mono text-[9px] px-1.5 py-0.5 rounded shadow-sm">
+                                                {evt}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                                <p className="pt-1"><strong>4.</strong> Save, reveal the <strong>Signing secret</strong>, and paste it into the Webhook Secret field above.</p>
+                            </div>
                         </div>
                     </div>
 
                     {/* Fund Hold Management */}
-                    <div className="space-y-8">
-                        <div className="flex items-center gap-2 pb-2 border-b border-[#f1f2f4]">
-                            <Clock size={20} className="text-[#673ab7]" />
-                            <h3 className="text-[16px] font-bold text-[#2f3344]">Escrow & Fund Management</h3>
+                    <div className="bg-white p-5 rounded-lg border border-gray-200 space-y-5 shadow-sm">
+                        <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
+                            <Clock size={16} className="text-indigo-600" />
+                            <h3 className="text-sm font-semibold text-gray-900">Escrow & Fund Management</h3>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-2">
-                                <label className="text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">
-                                    Supplier Fund Hold Period (Minutes)
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                    Fund Hold (Minutes)
                                 </label>
                                 <div className="relative">
                                     <input 
@@ -212,21 +215,20 @@ export default function FinancialGateway({ settings }) {
                                         onChange={e => setData('fund_hold_minutes', e.target.value)}
                                         placeholder="5"
                                         min="0"
-                                        className={`w-full h-[52px] pl-4 pr-12 bg-white border ${errors.fund_hold_minutes ? 'border-red-500' : 'border-[#e3e4e8]'} rounded-[8px] text-[14px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all`}
+                                        className={`w-full h-10 pl-3 pr-10 bg-gray-50/50 border ${errors.fund_hold_minutes ? 'border-red-500' : 'border-gray-200'} rounded-md text-sm focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all`}
                                     />
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#727586] text-[12px] font-bold uppercase">
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold uppercase">
                                         Min
                                     </div>
                                 </div>
-                                <p className="text-[12px] text-[#727586]">
-                                    Number of minutes funds will be held in escrow before being released to the supplier balance. 
-                                    (e.g., 20160 for 14 days, 5 for testing).
+                                <p className="text-[10px] text-gray-500 leading-snug">
+                                    Minutes funds will be held in escrow before releasing to the supplier (e.g., 20160 for 14 days).
                                 </p>
-                                {errors.fund_hold_minutes && <p className="text-red-500 text-xs mt-1">{errors.fund_hold_minutes}</p>}
+                                {errors.fund_hold_minutes && <p className="text-red-500 text-[11px] mt-1">{errors.fund_hold_minutes}</p>}
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[13px] font-bold text-[#2f3344] uppercase tracking-wider">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                     System Charge (%)
                                 </label>
                                 <div className="relative">
@@ -238,32 +240,55 @@ export default function FinancialGateway({ settings }) {
                                         min="0"
                                         max="100"
                                         step="0.01"
-                                        className={`w-full h-[52px] pl-4 pr-12 bg-white border ${errors.system_charge ? 'border-red-500' : 'border-[#e3e4e8]'} rounded-[8px] text-[14px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] transition-all`}
+                                        className={`w-full h-10 pl-3 pr-8 bg-gray-50/50 border ${errors.system_charge ? 'border-red-500' : 'border-gray-200'} rounded-md text-sm focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all`}
                                     />
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#727586] text-[12px] font-bold uppercase">
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold">
                                         %
                                     </div>
                                 </div>
-                                <p className="text-[12px] text-[#727586]">
-                                    Percentage of each transaction that will be collected as system fee.
+                                <p className="text-[10px] text-gray-500 leading-snug">
+                                    Percentage of each transaction collected as platform fee (split 50/50).
                                 </p>
-                                {errors.system_charge && <p className="text-red-500 text-xs mt-1">{errors.system_charge}</p>}
+                                {errors.system_charge && <p className="text-red-500 text-[11px] mt-1">{errors.system_charge}</p>}
+                            </div>
+                            
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                    Pay Later Duration
+                                </label>
+                                <div className="relative">
+                                    <input 
+                                        type="number" 
+                                        value={data.pay_later_days}
+                                        onChange={e => setData('pay_later_days', e.target.value)}
+                                        placeholder="30"
+                                        min="1"
+                                        className={`w-full h-10 pl-3 pr-10 bg-gray-50/50 border ${errors.pay_later_days ? 'border-red-500' : 'border-gray-200'} rounded-md text-sm focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all`}
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold uppercase">
+                                        Days
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-gray-500 leading-snug">
+                                    Number of days before an auto-deduction is triggered for Pay Later orders.
+                                </p>
+                                {errors.pay_later_days && <p className="text-red-500 text-[11px] mt-1">{errors.pay_later_days}</p>}
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex justify-end pt-6 border-t border-[#f1f2f4]">
+                    <div className="flex justify-end pt-2">
                         <button
                             type="submit"
                             disabled={processing}
-                            className="flex items-center gap-2 bg-[#673ab7] hover:bg-[#5e35b1] text-white px-8 py-3 rounded-[10px] font-bold text-[14px] transition-all shadow-lg shadow-[#673ab7]/20 disabled:opacity-70"
+                            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-md font-semibold text-sm transition-all shadow-sm disabled:opacity-70"
                         >
                             {processing ? (
-                                <Loader2 size={18} className="animate-spin" />
+                                <Loader2 size={16} className="animate-spin" />
                             ) : (
-                                <Save size={18} />
+                                <Save size={16} />
                             )}
-                            Save Changes
+                            Save Configuration
                         </button>
                     </div>
 

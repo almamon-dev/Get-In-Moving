@@ -24,6 +24,25 @@ class SupplierFinanceApiController extends Controller
     {
         $user = $request->user();
 
+        // 1. Total Earnings (All earning transactions regardless of status)
+        $totalEarnings = SupplierTransaction::where('supplier_id', $user->id)
+            ->where('type', 'earning')
+            ->sum('amount');
+
+        // 2. Escrow Balance (Earnings that are currently held in escrow)
+        $escrowBalance = SupplierTransaction::where('supplier_id', $user->id)
+            ->where('type', 'earning')
+            ->where('status', 'escrow')
+            ->sum('amount');
+
+        // 3. Total Withdrawn (Sum of all completed withdrawal requests)
+        $totalWithdrawn = WithdrawRequest::where('supplier_id', $user->id)
+            ->where('status', 'completed')
+            ->sum('amount');
+
+        // 4. Available Balance
+        $availableBalance = (float) $user->balance;
+
         $recentTransactions = SupplierTransaction::where('supplier_id', $user->id)
             ->with('order')
             ->latest()
@@ -31,11 +50,10 @@ class SupplierFinanceApiController extends Controller
             ->get()
             ->map(function ($transaction) {
                 $transaction->days_remaining = null;
-                if ($transaction->status === 'pending' && $transaction->available_at) {
+                if ($transaction->status === 'escrow' && $transaction->available_at) {
                     $days = now()->diffInDays($transaction->available_at, false);
                     $transaction->days_remaining = max(0, (int) $days);
                 }
-
                 return $transaction;
             });
 
@@ -45,7 +63,12 @@ class SupplierFinanceApiController extends Controller
             ->get();
 
         return $this->sendResponse([
-            'current_balance' => (float) $user->balance,
+            'stats' => [
+                'total_earnings' => $totalEarnings,
+                'escrow_balance' => $escrowBalance,
+                'available_balance' => $availableBalance,
+                'total_withdrawn' => $totalWithdrawn,
+            ],
             'recent_transactions' => $recentTransactions,
             'withdraw_requests' => $withdrawRequests,
         ], 'Financial dashboard data retrieved successfully.');

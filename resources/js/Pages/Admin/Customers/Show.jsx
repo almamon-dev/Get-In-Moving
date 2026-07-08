@@ -293,18 +293,30 @@ export default function Show({ auth, customer }) {
                                                         <select
                                                             value={customer.pay_later_status || 'inactive'}
                                                             onChange={(e) => {
-                                                                router.patch(route('admin.customers.pay-later-status', customer.id), {
-                                                                    pay_later_status: e.target.value
-                                                                }, {
-                                                                    preserveScroll: true,
-                                                                    onSuccess: () => {
-                                                                        setSuccessModal({
-                                                                            isOpen: true,
-                                                                            title: 'Success!',
-                                                                            message: 'Pay Later status updated.'
-                                                                        });
-                                                                    }
-                                                                });
+                                                                const newStatus = e.target.value;
+                                                                if (newStatus === 'rejected') {
+                                                                    const reason = window.prompt("Please enter a reason for rejection:");
+                                                                    if (reason === null) return; // User cancelled
+                                                                    
+                                                                    router.patch(route('admin.customers.pay-later-status', customer.id), {
+                                                                        pay_later_status: newStatus,
+                                                                        rejection_reason: reason
+                                                                    }, {
+                                                                        preserveScroll: true,
+                                                                        onSuccess: () => {
+                                                                            setSuccessModal({ isOpen: true, title: 'Success!', message: 'Pay Later status updated to Rejected.' });
+                                                                        }
+                                                                    });
+                                                                } else {
+                                                                    router.patch(route('admin.customers.pay-later-status', customer.id), {
+                                                                        pay_later_status: newStatus
+                                                                    }, {
+                                                                        preserveScroll: true,
+                                                                        onSuccess: () => {
+                                                                            setSuccessModal({ isOpen: true, title: 'Success!', message: 'Pay Later status updated.' });
+                                                                        }
+                                                                    });
+                                                                }
                                                             }}
                                                             className="text-xs font-bold w-24 border-gray-300 rounded px-2 py-1"
                                                         >
@@ -315,6 +327,9 @@ export default function Show({ auth, customer }) {
                                                         </select>
                                                     </div>
                                                     <p className="text-[11px] text-[#727586]">Manage the Pay Later facility for this customer</p>
+                                                    {customer.pay_later_status === 'rejected' && customer.pay_later_rejection_reason && (
+                                                        <p className="text-[11px] text-red-500 mt-1">Reason: {customer.pay_later_rejection_reason}</p>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

@@ -19,6 +19,20 @@ class SettingsController extends Controller
     {
         $user = $request->user();
         
+        $paymentMethods = $user->paymentMethods();
+        
+        $defaultPmLastFour = $user->pm_last_four;
+        $defaultPmType = $user->pm_type;
+        
+        // If they don't have a default PM in the database but have cards, fallback to the first card
+        if (!$defaultPmLastFour && $paymentMethods->isNotEmpty()) {
+            $firstPm = $paymentMethods->first()->asStripePaymentMethod();
+            if (isset($firstPm->card)) {
+                $defaultPmLastFour = $firstPm->card->last4;
+                $defaultPmType = $firstPm->card->brand;
+            }
+        }
+        
         return $this->sendResponse([
             'name' => $user->name,
             'email' => $user->email,
@@ -26,6 +40,13 @@ class SettingsController extends Controller
             'company_name' => $user->company_name,
             'profile_picture' => Helper::generateURL($user->profile_picture),
             'pay_later_status' => $user->pay_later_status,
+            'pay_later_requested_at' => $user->pay_later_requested_at,
+            'pay_later_rejection_reason' => $user->pay_later_rejection_reason,
+            'has_saved_card' => $paymentMethods->isNotEmpty(),
+            'default_pm_last_four' => $defaultPmLastFour,
+            'default_pm_type' => $defaultPmType,
+            'credit_card_last_four' => $user->pay_later_pm_last_four,
+            'credit_card_type' => $user->pay_later_pm_type,
         ], 'Profile retrieved successfully.');
     }
 

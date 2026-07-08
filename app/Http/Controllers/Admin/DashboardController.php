@@ -53,7 +53,7 @@ class DashboardController extends Controller
 
         $monthlyFees = \App\Models\Invoice::where('status', 'paid')
             ->whereBetween('paid_at', [$startDate, $endDate])
-            ->selectRaw('MONTHNAME(paid_at) as month, SUM(platform_fee) as total')
+            ->selectRaw("MONTHNAME(paid_at) as month, SUM(platform_fee + COALESCE(supplier_fee, 0)) as total")
             ->groupBy('month')
             ->get();
 
@@ -78,7 +78,10 @@ class DashboardController extends Controller
             ->get();
 
         // 6. Overall Stats
-        $platformFees = \App\Models\Invoice::where('status', 'paid')->sum('platform_fee');
+        // Include both customer platform fee and supplier fee (deducted via split payment)
+        $platformFees = \App\Models\Invoice::where('status', 'paid')
+            ->selectRaw("SUM(platform_fee + COALESCE(supplier_fee, 0)) as total_revenue")
+            ->value('total_revenue') ?? 0;
 
         $stats = [
             'total_customers' => User::where('user_type', 'customer')->count(),

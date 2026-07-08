@@ -41,7 +41,9 @@ class OrderResource extends JsonResource
                 'total' => (float) $this->total_amount,
                 'formatted' => '€'.number_format($this->total_amount, 2),
                 'is_paid' => $this->invoice?->status === 'paid',
+                'status' => $this->invoice?->status,
             ],
+            'payment_status' => $this->invoice?->status,
 
             'shipping' => [
                 'service' => $this->pallet_type,
@@ -57,6 +59,7 @@ class OrderResource extends JsonResource
                 'steps' => ['Pending', 'Confirmed', 'In Progress', 'Picked Up', 'Delivered', 'Completed'],
                 'note' => $this->status_note,
                 'proof' => Helper::generateURL($this->proof_of_delivery),
+                'pod_status' => $this->pod_status,
                 'history' => $this->updates->map(fn ($update) => [
                     'status' => $update->status,
                     'title' => $update->title,

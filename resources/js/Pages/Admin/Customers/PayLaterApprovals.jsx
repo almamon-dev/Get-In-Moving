@@ -27,6 +27,7 @@ export default function PayLaterApprovals({ auth, requests, filters = {}, stats 
     const [showPromo, setShowPromo] = useState(true);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', action: null });
     const [successModal, setSuccessModal] = useState({ isOpen: false, title: '', message: '' });
+    const [reviewModal, setReviewModal] = useState({ isOpen: false, customer: null, newStatus: '', reason: '' });
 
     const handleSearch = (value) => {
         setSearch(value);
@@ -309,15 +310,19 @@ export default function PayLaterApprovals({ auth, requests, filters = {}, stats 
                                             </td>
                                             <td className="pr-6 py-2 text-right">
                                                 <div className="flex items-center justify-end gap-1.5">
-                                                    <Link
-                                                        href={route(
-                                                            "admin.customers.show",
-                                                            customer.id,
-                                                        )}
+                                                    <button
+                                                        onClick={() =>
+                                                            setReviewModal({
+                                                                isOpen: true,
+                                                                customer: customer,
+                                                                newStatus: customer.pay_later_status || 'inactive',
+                                                                reason: ''
+                                                            })
+                                                        }
                                                         className="h-[28px] inline-flex items-center bg-[#673ab7] text-white px-4 rounded text-[12px] font-bold hover:bg-[#5e35b1] transition-all"
                                                     >
                                                         Review Request
-                                                    </Link>
+                                                    </button>
                                                     <button
                                                         onClick={() =>
                                                             handleDelete(
@@ -472,6 +477,132 @@ export default function PayLaterApprovals({ auth, requests, filters = {}, stats 
                         Awesome!
                     </button>
                 </div>
+            </Modal>
+
+            {/* Review Modal */}
+            <Modal show={reviewModal.isOpen} onClose={() => setReviewModal({ ...reviewModal, isOpen: false })} maxWidth="md">
+                {reviewModal.customer && (
+                    <div className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-[18px] font-bold text-[#2f3344]">Review Request</h2>
+                            <button onClick={() => setReviewModal({ ...reviewModal, isOpen: false })} className="text-gray-400 hover:text-gray-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-5 mb-5">
+                            <div>
+                                <h3 className="text-[14px] font-bold text-[#2f3344] mb-3">Customer Details</h3>
+                                <div className="space-y-2 text-[13px]">
+                                    <div className="flex items-start">
+                                        <span className="w-32 text-[#727586] font-medium">Name</span>
+                                        <span className="w-4 text-[#727586]">:</span>
+                                        <span className="font-semibold text-[#2f3344] flex-1">{reviewModal.customer.name}</span>
+                                    </div>
+                                    <div className="flex items-start">
+                                        <span className="w-32 text-[#727586] font-medium">Email</span>
+                                        <span className="w-4 text-[#727586]">:</span>
+                                        <span className="font-semibold text-[#2f3344] flex-1">{reviewModal.customer.email}</span>
+                                    </div>
+                                    <div className="flex items-start">
+                                        <span className="w-32 text-[#727586] font-medium">Phone Number</span>
+                                        <span className="w-4 text-[#727586]">:</span>
+                                        <span className="font-semibold text-[#2f3344] flex-1">{reviewModal.customer.phone_number || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex items-start">
+                                        <span className="w-32 text-[#727586] font-medium">Company Name</span>
+                                        <span className="w-4 text-[#727586]">:</span>
+                                        <span className="font-semibold text-[#2f3344] flex-1">{reviewModal.customer.company_name || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 className="text-[14px] font-bold text-[#2f3344] mb-3">Request Info</h3>
+                                <div className="space-y-2 text-[13px]">
+                                    <div className="flex items-start">
+                                        <span className="w-32 text-[#727586] font-medium">Requested At</span>
+                                        <span className="w-4 text-[#727586]">:</span>
+                                        <span className="font-semibold text-[#2f3344] flex-1">
+                                            {reviewModal.customer.pay_later_requested_at ? new Date(reviewModal.customer.pay_later_requested_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A'}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-start">
+                                        <span className="w-32 text-[#727586] font-medium">Current Status</span>
+                                        <span className="w-4 text-[#727586]">:</span>
+                                        <span className="font-semibold text-[#2f3344] capitalize flex-1">
+                                            {reviewModal.customer.pay_later_status || 'N/A'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">
+                                    Update Status
+                                </label>
+                                <select
+                                    value={reviewModal.newStatus}
+                                    onChange={(e) => setReviewModal({ ...reviewModal, newStatus: e.target.value })}
+                                    className="w-full h-10 px-3 bg-white border border-[#d1d5db] rounded-[4px] text-[13px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7]"
+                                >
+                                    <option value="inactive">Inactive</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+
+                            {reviewModal.newStatus === 'rejected' && (
+                                <div>
+                                    <label className="block text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">
+                                        Rejection Reason (Required)
+                                    </label>
+                                    <textarea
+                                        value={reviewModal.reason}
+                                        onChange={(e) => setReviewModal({ ...reviewModal, reason: e.target.value })}
+                                        className="w-full p-3 bg-white border border-[#d1d5db] rounded-[4px] text-[13px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] resize-none"
+                                        rows="3"
+                                        placeholder="Please provide a reason..."
+                                    ></textarea>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4">
+                            <button
+                                onClick={() => setReviewModal({ ...reviewModal, isOpen: false })}
+                                className="px-4 py-2 text-[13px] font-bold text-[#727586] hover:bg-[#f8f9fa] rounded-[8px] transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (reviewModal.newStatus === 'rejected' && !reviewModal.reason.trim()) {
+                                        alert("Please provide a rejection reason.");
+                                        return;
+                                    }
+                                    
+                                    const payload = { pay_later_status: reviewModal.newStatus };
+                                    if (reviewModal.newStatus === 'rejected') {
+                                        payload.rejection_reason = reviewModal.reason;
+                                    }
+                                    
+                                    router.patch(route('admin.customers.pay-later-status', reviewModal.customer.id), payload, {
+                                        preserveScroll: true,
+                                        onSuccess: () => {
+                                            setReviewModal({ isOpen: false, customer: null, newStatus: '', reason: '' });
+                                            setSuccessModal({ isOpen: true, title: 'Success!', message: 'Pay Later status has been updated.' });
+                                        }
+                                    });
+                                }}
+                                className="px-4 py-2 text-[13px] font-bold text-white bg-[#673ab7] hover:bg-[#5e35b1] rounded-[8px] transition-colors"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+                )}
             </Modal>
         </AdminLayout>
     );

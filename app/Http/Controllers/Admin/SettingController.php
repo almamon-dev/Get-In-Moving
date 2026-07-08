@@ -54,7 +54,8 @@ class SettingController extends Controller
             'stripe_key',
             'stripe_secret',
             'stripe_webhook_secret',
-            'fund_hold_minutes'
+            'fund_hold_minutes',
+            'pay_later_days'
         ];
 
         $dbSettings = Setting::whereIn('key', $keys)->pluck('value', 'key');
@@ -66,6 +67,7 @@ class SettingController extends Controller
             'stripe_webhook_secret' => $dbSettings['stripe_webhook_secret'] ?? config('services.stripe.webhook_secret'),
             'fund_hold_minutes' => $dbSettings['fund_hold_minutes'] ?? env('FUND_HOLD_MINUTES', 5),
             'system_charge' => $dbSettings['system_charge'] ?? env('SYSTEM_CHARGE', 10),
+            'pay_later_days' => $dbSettings['pay_later_days'] ?? env('PAY_LATER_DAYS', 30),
         ];
 
         return Inertia::render('Admin/Settings/Financial/Gateway', [
@@ -200,6 +202,7 @@ class SettingController extends Controller
             'stripe_webhook_secret' => 'STRIPE_WEBHOOK_SECRET',
             'fund_hold_minutes' => 'FUND_HOLD_MINUTES',
             'system_charge' => 'SYSTEM_CHARGE',
+            'pay_later_days' => 'PAY_LATER_DAYS',
         ];
 
         $envUpdateData = [];

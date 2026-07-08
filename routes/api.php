@@ -53,6 +53,14 @@ Route::prefix('auth')->group(function () {
 // Stripe Webhook
 Route::post('/webhooks/stripe', [\App\Http\Controllers\API\StripeWebhookController::class, 'handle']);
 
+// Stripe Public Config
+Route::get('/stripe/public-key', function () {
+    return response()->json([
+        'success' => true,
+        'key' => env('STRIPE_KEY')
+    ]);
+});
+
 // Stripe Connect Public Redirects
 Route::get('/stripe/connect/return', [\App\Http\Controllers\API\Supplier\StripeConnectController::class, 'returnUrl']);
 Route::get('/stripe/connect/refresh', [\App\Http\Controllers\API\Supplier\StripeConnectController::class, 'refreshUrl']);
@@ -104,6 +112,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/invoices/{id}', [CustomerApiController::class, 'getInvoiceDetails']);
         Route::get('/invoices/{id}/download', [CustomerApiController::class, 'downloadInvoice']);
         Route::post('/invoices/{id}/pay', [CustomerApiController::class, 'payInvoice']);
+        Route::post('/invoices/{id}/pay-later', [CustomerApiController::class, 'payInvoiceWithPayLater']);
 
         // Profile & Settings Management
         Route::get('/profile', [\App\Http\Controllers\API\Customer\SettingsController::class, 'getProfile']);
@@ -111,6 +120,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/change-password', [\App\Http\Controllers\API\Customer\SettingsController::class, 'changePassword']);
         Route::delete('/account', [\App\Http\Controllers\API\Customer\SettingsController::class, 'deleteAccount']);
         Route::post('/pay-later/request', [CustomerApiController::class, 'requestPayLater']);
+        Route::get('/pay-later/setup-intent', [CustomerApiController::class, 'setupPayLaterCard']);
+        Route::post('/pay-later/save-card', [CustomerApiController::class, 'savePayLaterCard']);
 
         // Notifications
         Route::get('/notifications', [CustomerApiController::class, 'getNotifications']);
@@ -192,7 +203,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/supplier/billing-portal', function (\Illuminate\Http\Request $request) {
-        $returnUrl = config('app.frontend_url') . '/supplier-dashboard/settings';
+        $returnUrl = $request->input('return_url', config('app.frontend_url') . '/supplier-dashboard/settings');
         $user = $request->user();
         if (!$user->hasStripeId()) {
             $user->createAsStripeCustomer();
@@ -204,7 +215,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     Route::post('/client/billing-portal', function (\Illuminate\Http\Request $request) {
-        $returnUrl = config('app.frontend_url') . '/client-dashboard/settings';
+        $returnUrl = $request->input('return_url', config('app.frontend_url') . '/client-dashboard/settings');
         $user = $request->user();
         if (!$user->hasStripeId()) {
             $user->createAsStripeCustomer();

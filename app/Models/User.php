@@ -63,6 +63,11 @@ class User extends Authenticatable
         'is_stripe_connected',
         'balance',
         'pay_later_status',
+        'pay_later_requested_at',
+        'pay_later_rejection_reason',
+        'pay_later_pm_id',
+        'pay_later_pm_last_four',
+        'pay_later_pm_type',
     ];
 
     /**

@@ -62,6 +62,7 @@ class InvoiceDetailResource extends JsonResource
                 'invoice_date' => $this->created_at?->format('j F Y'),
                 'due_date' => $this->due_date ? \Carbon\Carbon::parse($this->due_date)->format('j F Y') : 'N/A',
                 'payment_terms' => 'Net 30',
+                'payment_method' => $this->payments()->latest()->first()?->payment_method === 'pay_later' ? 'Pay Later' : ($this->payments()->latest()->first() ? 'Credit Card/Stripe' : 'N/A'),
             ],
         ];
     }

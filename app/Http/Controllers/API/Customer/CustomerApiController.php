@@ -12,15 +12,21 @@ use App\Http\Resources\API\Customer\QuoteRequestResource;
 use App\Imports\QuoteRequestItemsImport;
 use App\Models\Invoice;
 use App\Models\Order;
+use App\Models\OrderRequest;
+use App\Models\OrderQuote;
+use App\Models\Payment;
 use App\Models\OrderItem;
 use App\Models\Quote;
 use App\Models\QuoteRequest;
 use App\Models\QuoteRequestItem;
 use App\Models\Review;
+use App\Models\User;
 use App\Services\AiExtractionService;
 use App\Services\InvoicePaymentService;
+use App\Services\PaymentService;
 use App\Traits\ApiResponse;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -28,6 +34,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use App\Notifications\NewQuoteRequestAvailableNotification;
+use App\Notifications\NewQuoteReceivedNotification;
 use Illuminate\Support\Facades\Notification;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -530,6 +537,7 @@ class CustomerApiController extends Controller
             $systemChargePercent = (float) env('SYSTEM_CHARGE', 10);
             $halfChargePercent = $systemChargePercent / 2;
             $customerAddon = $quote->amount * ($halfChargePercent / 100);
+            $supplierFee = $quote->amount * ($halfChargePercent / 100);
 
             // Create Invoice
             Invoice::create([
@@ -537,9 +545,10 @@ class CustomerApiController extends Controller
                 'invoice_number' => 'INV-'.(Invoice::count() + 202545),
                 'supplier_amount' => $quote->amount,
                 'platform_fee' => $customerAddon,
+                'supplier_fee' => $supplierFee,
                 'total_amount' => $quote->amount + $customerAddon,
                 'status' => 'due',
-                'due_date' => now()->addDays(30),
+                'due_date' => now()->addDays((int) env('PAY_LATER_DAYS', 30)),
             ]);
 
             DB::commit();
@@ -722,6 +731,7 @@ class CustomerApiController extends Controller
             $systemChargePercent = (float) env('SYSTEM_CHARGE', 10);
             $halfChargePercent = $systemChargePercent / 2;
             $customerAddon = $quote->amount * ($halfChargePercent / 100);
+            $supplierFee = $quote->amount * ($halfChargePercent / 100);
 
             // Create Invoice
             Invoice::create([
@@ -729,9 +739,10 @@ class CustomerApiController extends Controller
                 'invoice_number' => 'INV-'.(Invoice::count() + 202545),
                 'supplier_amount' => $quote->amount,
                 'platform_fee' => $customerAddon,
+                'supplier_fee' => $supplierFee,
                 'total_amount' => $quote->amount + $customerAddon,
                 'status' => 'due',
-                'due_date' => now()->addDays(30),
+                'due_date' => now()->addDays((int) env('PAY_LATER_DAYS', 30)),
             ]);
 
             DB::commit();
@@ -972,6 +983,104 @@ class CustomerApiController extends Controller
     }
 
     /**
+     * Pay an invoice using the Pay Later facility.
+     */
+    public function payInvoiceWithPayLater($id)
+    {
+        $user = auth()->user();
+        
+        // 1. Verify user is approved for Pay Later
+        if ($user->pay_later_status !== 'approved') {
+            return $this->sendError('Your account is not approved for Pay Later.', [], 403);
+        }
+
+        // 2. Verify user has a saved payment method for Pay Later
+        if (!$user->pay_later_pm_id) {
+            return $this->sendError('You must add a card for Pay Later before using this facility.', [], 422);
+        }
+
+        $invoice = Invoice::with('order')->find($id);
+
+        if (! $invoice || $invoice->order->customer_id !== $user->id) {
+            return $this->sendError('Invoice not found.', [], 404);
+        }
+
+        if ($invoice->status === 'paid') {
+            return $this->sendError('Invoice is already paid.', [], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // 3. Update Invoice status
+            $invoice->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+            ]);
+
+            // 4. Create Payment record to track it was paid via Pay Later
+            $payment = Payment::create([
+                'invoice_id' => $invoice->id,
+                'user_id' => $user->id,
+                'transaction_id' => 'PAYLATER_' . uniqid(),
+                'amount' => $invoice->total_amount,
+                'currency' => 'EUR', // Assuming default currency is EUR
+                'status' => 'succeeded', // Matching stripe successful status
+                'payment_type' => 'order',
+                'payment_method' => 'pay_later',
+                'available_at' => now()->addMinutes((int) env('FUND_HOLD_MINUTES', 5)), // Held in escrow just like stripe
+                'metadata' => [
+                    'pm_id' => $user->pay_later_pm_id,
+                    'pm_last_four' => $user->pay_later_pm_last_four,
+                    'note' => 'Paid using Pay Later facility.'
+                ]
+            ]);
+
+            // 5. Create Supplier Transaction
+            if ($invoice->order && $invoice->order->supplier_id) {
+                \App\Models\SupplierTransaction::create([
+                    'supplier_id' => $invoice->order->supplier_id,
+                    'order_id' => $invoice->order->id,
+                    'amount' => $invoice->supplier_amount,
+                    'type' => 'earning',
+                    'status' => 'pending',
+                    'available_at' => $payment->available_at,
+                    'description' => "Earnings held in escrow for Order #{$invoice->order->order_number} (Available: {$payment->available_at->format('d M Y, h:i A')})",
+                ]);
+            }
+
+            // 6. Update related Order status to indicate it's paid and add progress update
+            if ($invoice->order) {
+                if (in_array($invoice->order->status, ['pending', 'accepted', 'assigned'])) {
+                    $invoice->order->update(['status' => 'in_progress']);
+
+                    $invoice->order->updates()->create([
+                        'status' => 'in_progress',
+                        'title' => 'Payment Successful & Order Started',
+                        'description' => "Payment for this order has been successfully processed via Pay Later. The order is now in progress.",
+                    ]);
+                }
+
+                // Notify supplier
+                if ($invoice->order->supplier) {
+                    try {
+                        $invoice->order->supplier->notify(new \App\Notifications\PaymentReceivedNotification($invoice));
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error("Failed to notify supplier of Pay Later payment: " . $e->getMessage());
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return $this->sendResponse([], 'Invoice successfully settled using Pay Later.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->sendError('Failed to process Pay Later payment.', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Get customer profile information.
      */
     public function getProfile(Request $request)
@@ -984,6 +1093,10 @@ class CustomerApiController extends Controller
             'phone' => $user->phone_number,
             'company_name' => $user->company_name,
             'profile_picture' => $user->profile_picture,
+            'pay_later_status' => $user->pay_later_status,
+            'pay_later_requested_at' => $user->pay_later_requested_at,
+            'pay_later_rejection_reason' => $user->pay_later_rejection_reason,
+            'has_saved_card' => $user->hasDefaultPaymentMethod(),
         ], 'Profile retrieved successfully.');
     }
 
@@ -1249,7 +1362,15 @@ class CustomerApiController extends Controller
             return $this->sendError('You have already requested or have been approved for Pay Later.', [], 422);
         }
 
-        $user->update(['pay_later_status' => 'pending']);
+        if (!$user->pay_later_pm_id) {
+            return $this->sendError('You must provide a valid Credit Card for the Pay Later facility. Please add one first.', [], 422);
+        }
+
+        $user->update([
+            'pay_later_status' => 'pending',
+            'pay_later_requested_at' => now(),
+            'pay_later_rejection_reason' => null
+        ]);
 
         // Notify admins (Assuming an Admin model or notification system exists, 
         // we could just send a DB notification or log it for now)
@@ -1261,5 +1382,60 @@ class CustomerApiController extends Controller
         $user->notify(new \App\Notifications\PayLaterRequestSubmittedNotification());
 
         return $this->sendResponse(['status' => $user->pay_later_status], 'Pay Later request submitted successfully. Awaiting admin approval.');
+    }
+
+    /**
+     * Create a SetupIntent for Pay Later card
+     */
+    public function setupPayLaterCard(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->hasStripeId()) {
+            $user->createAsStripeCustomer();
+        }
+        $intent = $user->createSetupIntent();
+        return $this->sendResponse([
+            'client_secret' => $intent->client_secret
+        ], 'SetupIntent created.');
+    }
+
+    /**
+     * Save the Pay Later card after SetupIntent succeeds
+     */
+    public function savePayLaterCard(Request $request)
+    {
+        $request->validate([
+            'payment_method_id' => 'required|string',
+        ]);
+
+        $user = $request->user();
+        try {
+            $paymentMethod = $user->addPaymentMethod($request->payment_method_id);
+            $stripePaymentMethod = $paymentMethod->asStripePaymentMethod();
+
+            if (isset($stripePaymentMethod->card)) {
+                if ($stripePaymentMethod->card->funding !== 'credit') {
+                    // Remove it from stripe as it's invalid for pay later
+                    $paymentMethod->delete();
+                    return $this->sendError('You must provide a valid Credit Card (not debit/prepaid) for the Pay Later facility.', [], 422);
+                }
+
+                $user->update([
+                    'pay_later_pm_id' => $stripePaymentMethod->id,
+                    'pay_later_pm_last_four' => $stripePaymentMethod->card->last4,
+                    'pay_later_pm_type' => $stripePaymentMethod->card->brand,
+                ]);
+
+                return $this->sendResponse([
+                    'last_four' => $stripePaymentMethod->card->last4,
+                    'type' => $stripePaymentMethod->card->brand,
+                ], 'Pay Later card saved successfully.');
+            }
+            
+            return $this->sendError('Invalid card details provided.', [], 422);
+            
+        } catch (\Exception $e) {
+            return $this->sendError('Failed to save card: ' . $e->getMessage(), [], 500);
+        }
     }
 }

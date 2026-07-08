@@ -15,9 +15,9 @@ class PodResource extends JsonResource
     {
         $statusMap = [
             'awaiting' => ['lbl' => 'Awaiting POD', 'clr' => 'warning', 'act' => 'Reupload', 'type' => 'upload'],
-            'pending' => ['lbl' => 'Confirm POD', 'clr' => 'success', 'act' => 'View POD', 'type' => 'view'],
-            'confirmed' => ['lbl' => 'Confirmed', 'clr' => 'info', 'act' => 'View POD', 'type' => 'view'],
-            'rejected' => ['lbl' => 'Issued', 'clr' => 'danger', 'act' => 'Reupload', 'type' => 'upload'],
+            'pending' => ['lbl' => 'Pending Approval', 'clr' => 'info', 'act' => 'View POD', 'type' => 'view'],
+            'approved' => ['lbl' => 'Approved', 'clr' => 'success', 'act' => 'View POD', 'type' => 'view'],
+            'rejected' => ['lbl' => 'Rejected', 'clr' => 'danger', 'act' => 'Reupload', 'type' => 'upload'],
         ];
 
         $pod = $statusMap[$this->pod_status] ?? $statusMap['awaiting'];
