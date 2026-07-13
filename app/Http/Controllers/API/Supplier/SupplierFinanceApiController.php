@@ -62,12 +62,40 @@ class SupplierFinanceApiController extends Controller
             ->limit(5)
             ->get();
 
+        // 5. Stripe Balances
+        $stripeAvailable = 0;
+        $stripePending = 0;
+
+        if ($user->stripe_account_id) {
+            try {
+                \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+                $balance = \Stripe\Balance::retrieve(
+                    ['stripe_account' => $user->stripe_account_id]
+                );
+                
+                // Available balance
+                if (isset($balance->available[0])) {
+                    $stripeAvailable = $balance->available[0]->amount / 100;
+                }
+                
+                // Pending balance
+                if (isset($balance->pending[0])) {
+                    $stripePending = $balance->pending[0]->amount / 100;
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to retrieve Stripe balance for supplier {$user->id}: " . $e->getMessage());
+            }
+        }
+
         return $this->sendResponse([
             'stats' => [
                 'total_earnings' => $totalEarnings,
                 'escrow_balance' => $escrowBalance,
                 'available_balance' => $availableBalance,
                 'total_withdrawn' => $totalWithdrawn,
+                'stripe_available' => $stripeAvailable,
+                'stripe_pending' => $stripePending,
+                'is_stripe_connected' => $user->is_stripe_connected,
             ],
             'recent_transactions' => $recentTransactions,
             'withdraw_requests' => $withdrawRequests,

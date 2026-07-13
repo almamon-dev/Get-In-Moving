@@ -8,6 +8,7 @@ use App\Http\Controllers\API\Supplier\SupplierApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\Page;
+use App\Http\Controllers\API\PublicApiController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -35,6 +36,9 @@ Route::get('/customer/quote-requests/template/download', [CustomerApiController:
 Route::get('/customer/quote-requests/pdf/sample/generate', [CustomerApiController::class, 'generateSamplePdf'])
     ->name('api.customer.sample-pdf.generate')
     ->middleware('signed');
+
+// Public Data
+Route::get('/public/supplier-availabilities', [PublicApiController::class, 'getSupplierAvailabilities']);
 
 // Pricing Plans
 Route::get('/pricing-plans', [\App\Http\Controllers\API\PricingPlanApiController::class, 'index']);
