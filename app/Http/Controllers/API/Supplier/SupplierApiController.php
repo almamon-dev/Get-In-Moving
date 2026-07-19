@@ -252,11 +252,24 @@ class SupplierApiController extends Controller
 
         if ($existing) {
             $existing->update([
+                'base_amount' => $request->base_amount ?? $request->amount,
                 'revised_amount' => $request->amount,
                 'revised_estimated_time' => $request->estimated_time,
                 'notes' => $request->notes,
                 'revision_status' => 'pending',
             ]);
+
+            // Replace old extra charges with the new revised ones
+            $existing->extraCharges()->delete();
+            if ($request->has('extra_charges') && is_array($request->extra_charges)) {
+                foreach ($request->extra_charges as $charge) {
+                    $existing->extraCharges()->create([
+                        'type' => $charge['type'],
+                        'custom_name' => $charge['customName'] ?? ($charge['custom_name'] ?? null),
+                        'amount' => $charge['amount'],
+                    ]);
+                }
+            }
 
             // Notify the customer about the revised offer
             $customer = $quoteRequest->user;
@@ -267,26 +280,51 @@ class SupplierApiController extends Controller
                     Log::error('Failed to notify customer of revised offer: '.$e->getMessage());
                 }
 
+                $messageText = 'I have submitted a revised offer of €'.number_format($request->amount, 0).' with estimated delivery: '.$request->estimated_time;
+                
+                if ($request->has('extra_charges') && is_array($request->extra_charges) && count($request->extra_charges) > 0) {
+                    $messageText .= "\n\nExtra Costs Breakdown:";
+                    foreach ($request->extra_charges as $charge) {
+                        $name = $charge['type'] === 'Custom' ? ($charge['customName'] ?? $charge['custom_name'] ?? 'Charge') : $charge['type'];
+                        $messageText .= "\n• {$name}: €" . number_format($charge['amount'], 2);
+                    }
+                }
+                
+                if ($request->notes) {
+                    $messageText .= "\n\nNote: ".$request->notes;
+                }
+
                 // Add a message to the chat history about this revision
                 \App\Models\Message::create([
                     'sender_id' => $user->id,
                     'receiver_id' => $customer->id,
                     'quote_id' => $existing->id,
-                    'message' => 'I have submitted a revised offer of €'.number_format($request->amount, 0).' with estimated delivery: '.$request->estimated_time.($request->notes ? "\n\nNote: ".$request->notes : ''),
+                    'message' => $messageText,
                 ]);
             }
 
-            return $this->sendResponse(new \App\Http\Resources\API\Supplier\QuoteResource($existing), 'Your offer has been updated.');
+            return $this->sendResponse(new \App\Http\Resources\API\Supplier\QuoteResource($existing->load('extraCharges')), 'Your offer has been updated.');
         }
 
         $quote = Quote::create([
             'quote_request_id' => $id,
             'user_id' => $user->id,
+            'base_amount' => $request->base_amount ?? $request->amount, // if not provided, fallback to amount
             'amount' => $request->amount,
             'estimated_time' => $request->estimated_time,
             'notes' => $request->notes,
             'status' => 'pending',
         ]);
+
+        if ($request->has('extra_charges') && is_array($request->extra_charges)) {
+            foreach ($request->extra_charges as $charge) {
+                $quote->extraCharges()->create([
+                    'type' => $charge['type'],
+                    'custom_name' => $charge['customName'] ?? null,
+                    'amount' => $charge['amount'],
+                ]);
+            }
+        }
 
         // Update the requested_date on the parent request to the latest submission date
         $quoteRequest->update(['requested_date' => now()]);
@@ -301,7 +339,7 @@ class SupplierApiController extends Controller
             }
         }
 
-        return $this->sendResponse(new QuoteResource($quote->load('user')), 'Quote submitted successfully.', null, 201);
+        return $this->sendResponse(new QuoteResource($quote->load(['user', 'extraCharges'])), 'Quote submitted successfully.', null, 201);
     }
 
     /**
@@ -311,7 +349,7 @@ class SupplierApiController extends Controller
     {
         $user = $request->user();
 
-        $quotes = Quote::with(['quoteRequest.items', 'quoteRequest.user'])
+        $quotes = Quote::with(['quoteRequest.items', 'quoteRequest.user', 'extraCharges'])
             ->where('user_id', $user->id)
             ->latest()
             ->get();
@@ -326,12 +364,17 @@ class SupplierApiController extends Controller
     {
         $request->validate([
             'amount' => 'required|numeric|min:1',
+            'base_amount' => 'nullable|numeric|min:0',
+            'extra_charges' => 'nullable|array',
+            'extra_charges.*.type' => 'required_with:extra_charges|string',
+            'extra_charges.*.amount' => 'required_with:extra_charges|numeric|min:0',
+            'extra_charges.*.customName' => 'nullable|string',
             'estimated_time' => 'nullable|string',
             'message' => 'nullable|string',
         ]);
 
         $user = $request->user();
-        $quote = Quote::with('quoteRequest.user')->where('id', $quoteId)
+        $quote = Quote::with(['quoteRequest.user', 'extraCharges'])->where('id', $quoteId)
             ->where('user_id', $user->id)
             ->first();
 
@@ -348,7 +391,20 @@ class SupplierApiController extends Controller
             'revised_estimated_time' => $request->estimated_time ?? $quote->estimated_time,
             'notes' => $request->message,
             'revision_status' => 'pending',
+            'base_amount' => $request->base_amount ?? $request->amount,
         ]);
+        
+        if ($request->has('extra_charges') && is_array($request->extra_charges)) {
+            $quote->extraCharges()->delete(); // clear old ones
+            foreach ($request->extra_charges as $charge) {
+                $quote->extraCharges()->create([
+                    'type' => $charge['type'],
+                    'custom_name' => $charge['customName'] ?? null,
+                    'amount' => $charge['amount'],
+                ]);
+            }
+        }
+
 
         // Notify the customer
         $customer = $quote->quoteRequest->user;

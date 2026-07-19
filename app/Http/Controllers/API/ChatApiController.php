@@ -21,7 +21,7 @@ class ChatApiController extends Controller
     {
         try {
             $user = auth()->user();
-            $quote = Quote::with('quoteRequest')->findOrFail($id);
+            $quote = Quote::with(['quoteRequest', 'user', 'extraCharges'])->findOrFail($id);
 
             // Security check: only the quote owner (supplier) or the request owner (customer) can see messages
             $isSupplier = $quote->user_id === $user->id;
@@ -30,7 +30,6 @@ class ChatApiController extends Controller
             if (! $isSupplier && ! $isCustomer) {
                 return $this->sendError('Unauthorized access to this chat.', [], 403);
             }
-
             // Mark incoming messages as read first
             Message::where('quote_id', $id)
                 ->where('receiver_id', $user->id)
@@ -47,6 +46,14 @@ class ChatApiController extends Controller
 
             $originalQuote = [
                 'price' => '€'.number_format($quote->amount, 0),
+                'base_amount' => $quote->base_amount ? '€'.number_format($quote->base_amount, 0) : null,
+                'extra_charges' => $quote->extraCharges ? $quote->extraCharges->map(function ($charge) {
+                    return [
+                        'type' => $charge->type,
+                        'custom_name' => $charge->custom_name,
+                        'amount' => (float) $charge->amount,
+                    ];
+                }) : [],
                 'location' => $quote->quoteRequest?->pickup_address,
                 'estimated_delivery' => $quote->estimated_time,
                 'pallet_type' => $quote->quoteRequest?->pallet_type,
@@ -57,6 +64,14 @@ class ChatApiController extends Controller
             if ($quote->revision_status === 'pending') {
                 $revisedQuote = [
                     'price' => '€'.number_format($quote->revised_amount, 0),
+                    'base_amount' => $quote->base_amount ? '€'.number_format($quote->base_amount, 0) : null,
+                    'extra_charges' => $quote->extraCharges ? $quote->extraCharges->map(function ($charge) {
+                        return [
+                            'type' => $charge->type,
+                            'custom_name' => $charge->custom_name,
+                            'amount' => (float) $charge->amount,
+                        ];
+                    }) : [],
                     'location' => $quote->quoteRequest?->pickup_address,
                     'estimated_delivery' => $quote->revised_estimated_time,
                     'pallet_type' => $quote->quoteRequest?->pallet_type,

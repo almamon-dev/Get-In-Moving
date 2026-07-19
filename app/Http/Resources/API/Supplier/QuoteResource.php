@@ -19,6 +19,16 @@ class QuoteResource extends JsonResource
             'id' => $this->id,
             'quote_request_id' => (int) $this->quote_request_id,
             'amount' => (float) $this->amount,
+            'base_amount' => $this->base_amount ? (float) $this->base_amount : null,
+            'extra_charges' => $this->whenLoaded('extraCharges', function () {
+                return $this->extraCharges->map(function ($charge) {
+                    return [
+                        'type' => $charge->type,
+                        'custom_name' => $charge->custom_name,
+                        'amount' => (float) $charge->amount,
+                    ];
+                });
+            }),
             'estimated_time' => $this->estimated_time,
             'notes' => $this->notes ?? '',
             'valid_until' => $this->valid_until,

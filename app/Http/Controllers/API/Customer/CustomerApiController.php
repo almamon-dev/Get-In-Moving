@@ -369,7 +369,7 @@ class CustomerApiController extends Controller
             return $this->sendError('Quote request not found.', [], 404);
         }
 
-        $quotes = Quote::with('supplier')
+        $quotes = Quote::with(['supplier', 'extraCharges'])
             ->where('quote_request_id', $id)
             ->latest()
             ->get();
@@ -481,7 +481,19 @@ class CustomerApiController extends Controller
 
         DB::beginTransaction();
         try {
-            $quote->update(['status' => 'accepted']);
+            // If there's a pending counter-offer, promote it to the actual amount before accepting
+            if ($quote->revision_status === 'pending') {
+                $quote->update([
+                    'amount' => $quote->revised_amount,
+                    'estimated_time' => $quote->revised_estimated_time,
+                    'revised_amount' => null,
+                    'revised_estimated_time' => null,
+                    'revision_status' => 'accepted',
+                    'status' => 'accepted',
+                ]);
+            } else {
+                $quote->update(['status' => 'accepted']);
+            }
 
             $rejectedQuotes = Quote::where('quote_request_id', $quote->quote_request_id)
                 ->where('id', '!=', $id)
@@ -772,18 +784,29 @@ class CustomerApiController extends Controller
             return $this->sendError('Unauthorized.', [], 403);
         }
 
+        $rejectedAmount = $quote->revised_amount;
+
         $quote->update([
             'revised_amount' => null,
             'revised_estimated_time' => null,
             'revision_status' => 'rejected',
         ]);
-
         if ($quote->user) {
             try {
                 $quote->user->notify(new \App\Notifications\QuoteRejectedNotification($quote, true));
             } catch (\Exception $e) {
                 Log::error('Failed to notify supplier of rejected revision: '.$e->getMessage());
             }
+        }
+
+        // Add a message to the chat history about this rejection
+        if ($rejectedAmount) {
+            \App\Models\Message::create([
+                'sender_id' => auth()->id(),
+                'receiver_id' => $quote->user_id,
+                'quote_id' => $quote->id,
+                'message' => "❌ I have declined your revised offer of €" . number_format($rejectedAmount, 0) . ". Let's stick to the original quote or propose a new one.",
+            ]);
         }
 
         return $this->sendResponse(new \App\Http\Resources\API\Customer\QuoteResource($quote), 'Revised offer rejected.');

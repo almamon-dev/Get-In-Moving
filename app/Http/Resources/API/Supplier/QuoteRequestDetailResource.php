@@ -48,10 +48,19 @@ class QuoteRequestDetailResource extends JsonResource
             ],
             'quote_submitted' => $supplierQuote ? [
                 'status_label' => $statusLabel,
-                'submitted_price' => '€'.number_format($supplierQuote->amount, 0),
-                'estimated_time' => $supplierQuote->estimated_time ?? '2-3 days',
+                'amount' => $supplierQuote->revision_status === 'pending' ? $supplierQuote->revised_amount : $supplierQuote->amount,
+                'base_amount' => $supplierQuote->base_amount,
+                'extra_charges' => $supplierQuote->extraCharges ? $supplierQuote->extraCharges->map(function ($charge) {
+                    return [
+                        'type' => $charge->type,
+                        'custom_name' => $charge->custom_name,
+                        'amount' => (float) $charge->amount,
+                    ];
+                }) : [],
+                'submitted_price' => '€'.number_format($supplierQuote->revision_status === 'pending' ? $supplierQuote->revised_amount : $supplierQuote->amount, 0),
+                'estimated_time' => ($supplierQuote->revision_status === 'pending' ? $supplierQuote->revised_estimated_time : $supplierQuote->estimated_time) ?? '2-3 days',
                 'notes' => $supplierQuote->notes ?? '',
-            ] : [],
+            ] : null,
         ];
     }
 

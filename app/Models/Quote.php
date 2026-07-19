@@ -12,6 +12,7 @@ class Quote extends Model
     protected $fillable = [
         'quote_request_id',
         'user_id',
+        'base_amount',
         'amount',
         'estimated_time',
         'notes',
@@ -40,5 +41,10 @@ class Quote extends Model
     public function order()
     {
         return $this->hasOne(Order::class);
+    }
+
+    public function extraCharges()
+    {
+        return $this->hasMany(QuoteExtraCharge::class);
     }
 }

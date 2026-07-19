@@ -20,14 +20,14 @@ class NegotiationApiController extends Controller
 
         if ($user->user_type === 'customer') {
             // Customer sees all quotes they received with latest messages
-            $quotes = \App\Models\Quote::with(['user', 'quoteRequest'])
+            $quotes = \App\Models\Quote::with(['user', 'quoteRequest', 'extraCharges'])
                 ->whereHas('quoteRequest', function ($q) use ($user) {
                     $q->where('user_id', $user->id);
                 })
                 ->get();
         } else {
             // Supplier sees all their submitted quotes with latest messages
-            $quotes = \App\Models\Quote::with(['user', 'quoteRequest.user'])
+            $quotes = \App\Models\Quote::with(['user', 'quoteRequest.user', 'extraCharges'])
                 ->where('user_id', $user->id)
                 ->get();
         }
@@ -75,6 +75,14 @@ class NegotiationApiController extends Controller
                     ->where('receiver_id', $user->id)
                     ->whereNull('read_at')
                     ->count(),
+                'base_amount' => $quote->base_amount,
+                'extra_charges' => $quote->extraCharges ? $quote->extraCharges->map(function ($charge) {
+                    return [
+                        'type' => $charge->type,
+                        'custom_name' => $charge->custom_name,
+                        'amount' => (float) $charge->amount,
+                    ];
+                }) : [],
             ];
         })->sortByDesc('created_at')->values();
 
