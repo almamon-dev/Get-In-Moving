@@ -19,6 +19,11 @@ class AiExtractionService
      */
     public function extractFromPdf($filePath, $originalFilename = null)
     {
+        if (empty($this->apiKey)) {
+            Log::error('OpenAI API Key is missing.');
+            throw new \Exception('OpenAI API Key not configured.');
+        }
+
         try {
             // 1. Upload file to OpenAI first
             $fileId = $this->uploadToOpenAi($filePath, $originalFilename);
@@ -76,7 +81,7 @@ class AiExtractionService
         Even if the items look similar, extract each one as a separate object in the JSON array.
         
         Return ONLY a valid JSON array of objects with these keys:
-        - pallet_type, pickup_address, delivery_address, pickup_date, pickup_time_from, pickup_time_till, item_type, quantity, length_cm, width_cm, height_cm, weight_kg, additional_notes.
+        - pallet_type, pickup_address, delivery_address, pickup_date, pickup_time_from, pickup_time_till, delivery_date, delivery_time_from, delivery_time_till, item_type, quantity, length_cm, width_cm, height_cm, weight_kg, additional_notes.
         
         CRITICAL: If an item is missing dimensions or weight, use null.
         CRITICAL: Your response must contain ONLY the JSON array. Start with [ and end with ]. No markdown, no intro, no outro.";

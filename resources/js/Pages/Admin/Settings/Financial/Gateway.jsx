@@ -14,9 +14,11 @@ export default function FinancialGateway({ settings }) {
         stripe_key: settings.stripe_key || '',
         stripe_secret: settings.stripe_secret || '',
         stripe_webhook_secret: settings.stripe_webhook_secret || '',
-        fund_hold_minutes: settings.fund_hold_minutes || 5,
         system_charge: settings.system_charge || 10,
         pay_later_days: settings.pay_later_days || 30,
+        pay_later_default_limit: settings.pay_later_default_limit || 5000,
+        pay_later_default_daily_limit: settings.pay_later_default_daily_limit || 1000,
+        pay_later_default_weekly_limit: settings.pay_later_default_weekly_limit || 2500,
     });
 
     const handleCopy = (text, field) => {
@@ -196,36 +198,14 @@ export default function FinancialGateway({ settings }) {
                         </div>
                     </div>
 
-                    {/* Fund Hold Management */}
+                    {/* Fund Management */}
                     <div className="bg-white p-5 rounded-lg border border-gray-200 space-y-5 shadow-sm">
                         <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
                             <Clock size={16} className="text-indigo-600" />
-                            <h3 className="text-sm font-semibold text-gray-900">Escrow & Fund Management</h3>
+                            <h3 className="text-sm font-semibold text-gray-900">Fees & Fund Management</h3>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                                    Fund Hold (Minutes)
-                                </label>
-                                <div className="relative">
-                                    <input 
-                                        type="number" 
-                                        value={data.fund_hold_minutes}
-                                        onChange={e => setData('fund_hold_minutes', e.target.value)}
-                                        placeholder="5"
-                                        min="0"
-                                        className={`w-full h-10 pl-3 pr-10 bg-gray-50/50 border ${errors.fund_hold_minutes ? 'border-red-500' : 'border-gray-200'} rounded-md text-sm focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all`}
-                                    />
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold uppercase">
-                                        Min
-                                    </div>
-                                </div>
-                                <p className="text-[10px] text-gray-500 leading-snug">
-                                    Minutes funds will be held in escrow before releasing to the supplier (e.g., 20160 for 14 days).
-                                </p>
-                                {errors.fund_hold_minutes && <p className="text-red-500 text-[11px] mt-1">{errors.fund_hold_minutes}</p>}
-                            </div>
 
                             <div className="space-y-1.5">
                                 <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -273,6 +253,75 @@ export default function FinancialGateway({ settings }) {
                                     Number of days before an auto-deduction is triggered for Pay Later orders.
                                 </p>
                                 {errors.pay_later_days && <p className="text-red-500 text-[11px] mt-1">{errors.pay_later_days}</p>}
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                    Pay Later Default Limit
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">
+                                        €
+                                    </div>
+                                    <input 
+                                        type="number" 
+                                        value={data.pay_later_default_limit}
+                                        onChange={e => setData('pay_later_default_limit', e.target.value)}
+                                        placeholder="5000"
+                                        min="100"
+                                        className={`w-full h-10 pl-8 pr-3 bg-gray-50/50 border ${errors.pay_later_default_limit ? 'border-red-500' : 'border-gray-200'} rounded-md text-sm focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all`}
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-500 leading-snug">
+                                    The global default Total Limit granted to a user automatically upon first request.
+                                </p>
+                                {errors.pay_later_default_limit && <p className="text-red-500 text-[11px] mt-1">{errors.pay_later_default_limit}</p>}
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                    Pay Later Default Daily Limit
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">
+                                        €
+                                    </div>
+                                    <input 
+                                        type="number" 
+                                        value={data.pay_later_default_daily_limit}
+                                        onChange={e => setData('pay_later_default_daily_limit', e.target.value)}
+                                        placeholder="1000"
+                                        min="0"
+                                        className={`w-full h-10 pl-8 pr-3 bg-gray-50/50 border ${errors.pay_later_default_daily_limit ? 'border-red-500' : 'border-gray-200'} rounded-md text-sm focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all`}
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-500 leading-snug">
+                                    The global default Daily Limit granted to a user automatically.
+                                </p>
+                                {errors.pay_later_default_daily_limit && <p className="text-red-500 text-[11px] mt-1">{errors.pay_later_default_daily_limit}</p>}
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                    Pay Later Default Weekly Limit
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">
+                                        €
+                                    </div>
+                                    <input 
+                                        type="number" 
+                                        value={data.pay_later_default_weekly_limit}
+                                        onChange={e => setData('pay_later_default_weekly_limit', e.target.value)}
+                                        placeholder="2500"
+                                        min="0"
+                                        className={`w-full h-10 pl-8 pr-3 bg-gray-50/50 border ${errors.pay_later_default_weekly_limit ? 'border-red-500' : 'border-gray-200'} rounded-md text-sm focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all`}
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-500 leading-snug">
+                                    The global default Weekly Limit granted to a user automatically.
+                                </p>
+                                {errors.pay_later_default_weekly_limit && <p className="text-red-500 text-[11px] mt-1">{errors.pay_later_default_weekly_limit}</p>}
                             </div>
                         </div>
                     </div>

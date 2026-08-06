@@ -1,94 +1,74 @@
 import React, { useState } from "react";
 import AdminLayout from "@/Layouts/AdminLayout";
-import { Head, Link, router } from "@inertiajs/react";
+import { Head, Link, router, useForm } from "@inertiajs/react";
 import {
-    Home,
-    MoreVertical,
-    Plus,
-    Users,
     Search,
+    Edit3,
+    Eye,
     X,
+    CreditCard,
     Check,
     AlertCircle,
-    Trash2,
-    ChevronDown,
     ChevronLeft,
     ChevronRight,
-    ArrowUpDown,
 } from "lucide-react";
-import Modal from '@/Components/Modal';
+import Modal from "@/Components/Modal";
 
 export default function PayLaterApprovals({ auth, requests, filters = {}, stats }) {
     const [search, setSearch] = useState(filters.search || "");
-    const [status, setStatus] = useState(
-        filters.status || "all"
-    );
-    const [selectedIds, setSelectedIds] = useState([]);
-    const [showPromo, setShowPromo] = useState(true);
-    const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', action: null });
-    const [successModal, setSuccessModal] = useState({ isOpen: false, title: '', message: '' });
-    const [reviewModal, setReviewModal] = useState({ isOpen: false, customer: null, newStatus: '', reason: '' });
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [showReviewModal, setShowReviewModal] = useState(false);
+
+    const activeType = filters.type || "activation";
+
+    const { data, setData, patch, processing, reset } = useForm({
+        pay_later_status: "approved",
+        pay_later_credit_limit: 5000,
+        pay_later_daily_limit: 1000,
+        pay_later_weekly_limit: 2500,
+        pay_later_rejection_reason: "",
+    });
+
+    const updateFilters = (newFilters) => {
+        router.get(
+            route("admin.pay-later-approvals.index"),
+            { ...filters, ...newFilters },
+            { preserveState: true, replace: true }
+        );
+    };
 
     const handleSearch = (value) => {
         setSearch(value);
         updateFilters({ search: value, page: 1 });
     };
 
-    const updateFilters = (newFilters) => {
-        router.get(
-            route("admin.pay-later-approvals.index"),
-            { ...filters, ...newFilters },
-            { preserveState: true, replace: true },
-        );
+    const handleTypeChange = (newType) => {
+        updateFilters({ type: newType, page: 1 });
     };
 
-    const handleStatusChange = (newStatus) => {
-        setStatus(newStatus);
-        const statusVal = newStatus === "all" ? "" : newStatus;
-        updateFilters({ status: statusVal, page: 1 });
+    const openReviewModal = (reqUser) => {
+        const targetUser = reqUser.user || reqUser;
+        const facility = targetUser.pay_later_facility || targetUser.payLaterFacility || {};
+        setSelectedUser(targetUser);
+        setData({
+            pay_later_status: targetUser.pay_later_status === "pending" ? "approved" : (targetUser.pay_later_status || "approved"),
+            pay_later_credit_limit: targetUser.pay_later_credit_limit || facility.credit_limit || 5000,
+            pay_later_daily_limit: targetUser.pay_later_daily_limit ?? facility.daily_limit ?? 1000,
+            pay_later_weekly_limit: targetUser.pay_later_weekly_limit ?? facility.weekly_limit ?? 2500,
+            pay_later_rejection_reason: targetUser.pay_later_rejection_reason || "",
+        });
+        setShowReviewModal(true);
     };
 
-    const handlePerPageChange = (e) => {
-        updateFilters({ per_page: e.target.value, page: 1 });
-    };
+    const submitReview = (e) => {
+        e.preventDefault();
+        if (!selectedUser) return;
 
-    const handlePageChange = (url) => {
-        if (url) router.get(url, {}, { preserveState: true });
-    };
-
-    const toggleSelectAll = () => {
-        if (selectedIds.length === requests.data.length) {
-            setSelectedIds([]);
-        } else {
-            setSelectedIds(requests.data.map((c) => c.id));
-        }
-    };
-
-    const toggleSelect = (id) => {
-        if (selectedIds.includes(id)) {
-            setSelectedIds((prev) => prev.filter((i) => i !== id));
-        } else {
-            setSelectedIds((prev) => [...prev, id]);
-        }
-    };
-
-    const handleDelete = (id) => {
-        setConfirmModal({
-            isOpen: true,
-            title: 'Delete Pay Later Request',
-            message: 'Are you sure you want to delete this pay later request? The customer will remain in the system.',
-            action: () => {
-                router.patch(route('admin.customers.pay-later-status', id), { pay_later_status: 'inactive' }, {
-                    onSuccess: () => {
-                        setConfirmModal({ isOpen: false, title: '', message: '', action: null });
-                        setSuccessModal({
-                            isOpen: true,
-                            title: 'Success!',
-                            message: 'Pay later request has been successfully deleted.'
-                        });
-                    }
-                });
-            }
+        patch(route("admin.customers.pay-later-status", selectedUser.id), {
+            onSuccess: () => {
+                setShowReviewModal(false);
+                reset();
+            },
         });
     };
 
@@ -96,55 +76,54 @@ export default function PayLaterApprovals({ auth, requests, filters = {}, stats 
         <AdminLayout user={auth.user}>
             <Head title="Pay Later Approvals" />
 
-            <div className="min-h-screen bg-[#f5f6f8]">
+            <div className="min-h-screen">
                 <div className="w-full mx-auto px-6 py-8">
                     
                     {/* Header Row */}
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
                         <div>
-                            <h1 className="text-[24px] font-bold text-[#111827] tracking-tight">Pay Later Approvals</h1>
-                            <p className="text-[14px] text-[#6b7280] mt-0.5">Manage customer requests for the Pay Later facility</p>
-                        </div>
-                        <div className="flex items-center gap-3 mt-4 md:mt-0">
-                            {/* Actions can go here in the future */}
+                            <h1 className="text-[24px] font-bold text-[#111827] tracking-tight">Pay Later Applications</h1>
+                            <p className="text-[14px] text-[#6b7280] mt-0.5">Review deferred invoice credit limit requests and configure spending caps</p>
                         </div>
                     </div>
 
-                    {/* Main Container */}
+                    {/* Main Container matching Index.jsx */}
                     <div className="bg-white rounded-md border border-[#e5e7eb] shadow-sm">
                         
                         {/* Tabs Row */}
                         <div className="flex items-center gap-6 px-6 border-b border-[#e5e7eb] overflow-x-auto">
-                            {['All', 'Pending', 'Approved', 'Rejected'].map((tab) => {
-                                const tabValue = tab.toLowerCase();
-                                const isActive = status === tabValue;
-                                
+                            {[
+                                { key: "activation", label: "Activation Requests", count: stats?.activation || 0 },
+                                { key: "increase", label: "Limit Increase Requests", count: stats?.increase || 0 },
+                                { key: "history", label: "Processed History", count: stats?.history || 0 },
+                            ].map((tab) => {
+                                const isActive = activeType === tab.key;
                                 return (
                                     <button
-                                        key={tab}
-                                        onClick={() => handleStatusChange(tabValue)}
-                                        className={`flex items-center gap-2 py-3.5 text-[14px] font-medium border-b-2 whitespace-nowrap transition-colors ${
-                                            isActive 
-                                                ? 'border-[#673ab7] text-[#673ab7]' 
-                                                : 'border-transparent text-[#6b7280] hover:text-[#374151] hover:border-gray-300'
+                                        key={tab.key}
+                                        onClick={() => handleTypeChange(tab.key)}
+                                        className={`flex items-center gap-2 py-3.5 text-[14px] font-medium border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
+                                            isActive
+                                                ? "border-[#673ab7] text-[#673ab7]"
+                                                : "border-transparent text-[#6b7280] hover:text-[#374151] hover:border-gray-300"
                                         }`}
                                     >
-                                        {tab}
+                                        {tab.label}
                                         <span className="bg-[#f3f4f6] text-[#4b5563] text-[11px] px-2 py-0.5 rounded-full font-bold">
-                                            {stats[tabValue] || 0}
+                                            {tab.count}
                                         </span>
                                     </button>
                                 );
                             })}
                         </div>
 
-                        {/* Search & Filter Toolbar */}
+                        {/* Search Toolbar */}
                         <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 border-b border-[#e5e7eb]">
                             <div className="relative w-full md:w-[400px]">
                                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
-                                <input 
-                                    type="text" 
-                                    placeholder="Search by name, email, phone, or company..." 
+                                <input
+                                    type="text"
+                                    placeholder="Search by customer name, email, or company..."
                                     value={search}
                                     onChange={(e) => handleSearch(e.target.value)}
                                     className="w-full h-10 pl-10 pr-4 bg-white border border-[#d1d5db] rounded-[4px] text-[13px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] placeholder:text-[#9ca3af]"
@@ -154,456 +133,225 @@ export default function PayLaterApprovals({ auth, requests, filters = {}, stats 
 
                         {/* Table Area */}
                         <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-[#e3e4e8]">
-                                    <th className="pl-6 pr-3 py-3 w-10">
-                                        <div
-                                            onClick={toggleSelectAll}
-                                            className={`w-[18px] h-[18px] border-[2px] rounded cursor-pointer transition-all flex items-center justify-center ${
-                                                selectedIds.length ===
-                                                    requests.data.length &&
-                                                requests.data.length > 0
-                                                    ? "bg-[#673ab7] border-[#673ab7]"
-                                                    : "border-[#c3c4ca] hover:border-[#673ab7]"
-                                            }`}
-                                        >
-                                            {selectedIds.length ===
-                                                requests.data.length &&
-                                                requests.data.length > 0 && (
-                                                    <Check
-                                                        size={12}
-                                                        className="text-white"
-                                                    />
-                                                )}
-                                        </div>
-                                    </th>
-                                    <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
-                                        <div className="flex items-center gap-1.5 cursor-pointer hover:text-black group">
-                                            Customer
-                                            <ArrowUpDown
-                                                size={12}
-                                                className="text-[#a0a3af] group-hover:text-[#673ab7]"
-                                            />
-                                        </div>
-                                    </th>
-                                    <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
-                                        Contact
-                                    </th>
-                                    <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
-                                        Company
-                                    </th>
-                                    <th className="text-center px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
-                                        Plan
-                                    </th>
-                                    <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
-                                        Pay Later
-                                    </th>
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="border-b border-[#e3e4e8] bg-gray-50/50">
+                                        <th className="text-left px-6 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                            Customer / Company
+                                        </th>
+                                        <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                            Facility Status
+                                        </th>
+                                        <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                            Total Limit
+                                        </th>
+                                        <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                            Daily Cap
+                                        </th>
+                                        <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                            Weekly Cap
+                                        </th>
+                                        <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                            Requested Date
+                                        </th>
+                                        <th className="text-right px-6 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
+                                            Action
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[#e5e7eb]">
+                                    {requests.data && requests.data.length > 0 ? (
+                                        requests.data.map((req) => {
+                                            const u = req.user || req;
+                                            const facility = u.pay_later_facility || u.payLaterFacility || {};
+                                            const statusVal = u.pay_later_status || req.status || "pending";
 
-                                    <th className="text-left px-4 py-3 text-[12px] font-bold text-[#2f3344] uppercase tracking-wider">
-                                        Joined
-                                    </th>
-                                    <th className="px-6 py-3"></th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[#f1f2f4]">
-                                {requests.data.length > 0 ? (
-                                    requests.data.map((customer) => (
-                                        <tr
-                                            key={customer.id}
-                                            className={`hover:bg-[#fafbfc] transition-colors group ${selectedIds.includes(customer.id) ? "bg-[#f4f0ff]/50" : ""}`}
-                                        >
-                                            <td className="pl-6 pr-3 py-2">
-                                                <div
-                                                    onClick={() =>
-                                                        toggleSelect(
-                                                            customer.id,
-                                                        )
-                                                    }
-                                                    className={`w-[18px] h-[18px] border-[2px] rounded cursor-pointer transition-all flex items-center justify-center ${
-                                                        selectedIds.includes(
-                                                            customer.id,
-                                                        )
-                                                            ? "bg-[#673ab7] border-[#673ab7]"
-                                                            : "border-[#c3c4ca] hover:border-[#673ab7]"
-                                                    }`}
-                                                >
-                                                    {selectedIds.includes(
-                                                        customer.id,
-                                                    ) && (
-                                                        <Check
-                                                            size={12}
-                                                            className="text-white"
-                                                        />
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-2">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#673ab7] to-[#9c27b0] flex items-center justify-center text-white font-bold text-[12px]">
-                                                        {customer.name
-                                                            .charAt(0)
-                                                            .toUpperCase()}
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <p className="text-[13px] font-bold text-[#2f3344] group-hover:text-[#673ab7] transition-colors leading-tight">
-                                                            {customer.name}
-                                                        </p>
-                                                        <p className="text-[11px] text-[#727586] font-normal leading-tight mt-0.5">
-                                                            {customer.email}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-2">
-                                                <span className="text-[12px] text-[#727586]">
-                                                    {customer.phone_number ||
-                                                        "N/A"}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-2">
-                                                <span className="text-[12px] text-[#727586]">
-                                                    {customer.company_name ||
-                                                        "N/A"}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-2 text-center">
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-[12px] font-medium text-[#673ab7] leading-tight">
-                                                        {customer.user_subscription
-                                                            ?.pricing_plan
-                                                            ?.name || "No Plan"}
-                                                    </span>
-                                                    {customer.user_subscription
-                                                        ?.expires_at && (
-                                                        <span className="text-[11px] text-[#727586] leading-tight mt-0.5">
-                                                            Exp:{" "}
-                                                            {new Date(
-                                                                customer
-                                                                    .user_subscription
-                                                                    .expires_at,
-                                                            ).toLocaleDateString()}
+                                            return (
+                                                <tr key={req.id || u.id} className="hover:bg-[#f9fafb] transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div>
+                                                            <p className="text-[14px] font-bold text-[#111827]">{u.name}</p>
+                                                            <p className="text-[12px] text-[#6b7280]">{u.company_name || u.email}</p>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap">
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase ${
+                                                            statusVal === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                                            statusVal === 'pending' || statusVal === 'under_review' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                                            'bg-rose-50 text-rose-700 border border-rose-200'
+                                                        }`}>
+                                                            {statusVal}
                                                         </span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-2">
-                                                <div className="flex items-center gap-1.5">
-                                                    {customer.pay_later_status === 'approved' ? (
-                                                        <span className="px-2 py-1 bg-green-50 text-green-600 text-[11px] font-bold rounded-md">APPROVED</span>
-                                                    ) : customer.pay_later_status === 'pending' ? (
-                                                        <span className="px-2 py-1 bg-orange-50 text-orange-600 text-[11px] font-bold rounded-md">PENDING</span>
-                                                    ) : customer.pay_later_status === 'rejected' ? (
-                                                        <span className="px-2 py-1 bg-red-50 text-red-600 text-[11px] font-bold rounded-md">REJECTED</span>
-                                                    ) : (
-                                                        <span className="px-2 py-1 bg-gray-50 text-gray-500 text-[11px] font-bold rounded-md">INACTIVE</span>
-                                                    )}
-                                                </div>
-                                            </td>
-
-                                            <td className="px-4 py-2">
-                                                <span className="text-[12px] text-[#727586]">
-                                                    {new Date(
-                                                        customer.created_at,
-                                                    ).toLocaleDateString()}
-                                                </span>
-                                            </td>
-                                            <td className="pr-6 py-2 text-right">
-                                                <div className="flex items-center justify-end gap-1.5">
-                                                    <button
-                                                        onClick={() =>
-                                                            setReviewModal({
-                                                                isOpen: true,
-                                                                customer: customer,
-                                                                newStatus: customer.pay_later_status || 'inactive',
-                                                                reason: ''
-                                                            })
-                                                        }
-                                                        className="h-[28px] inline-flex items-center bg-[#673ab7] text-white px-4 rounded text-[12px] font-bold hover:bg-[#5e35b1] transition-all"
-                                                    >
-                                                        Review Request
-                                                    </button>
-                                                    <button
-                                                        onClick={() =>
-                                                            handleDelete(
-                                                                customer.id,
-                                                            )
-                                                        }
-                                                        className="w-7 h-7 flex items-center justify-center text-[#727586] hover:bg-red-50 hover:text-red-600 rounded transition-all"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </div>
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-[13px] font-bold text-[#673ab7]">
+                                                        €{Number(req.requested_limit || u.pay_later_credit_limit || facility.credit_limit || 5000).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-[13px] font-semibold text-blue-600">
+                                                        {Number(u.pay_later_daily_limit || facility.daily_limit || 0) > 0
+                                                            ? `€${Number(u.pay_later_daily_limit || facility.daily_limit).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                                                            : 'Unlimited'}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-[13px] font-semibold text-purple-600">
+                                                        {Number(u.pay_later_weekly_limit || facility.weekly_limit || 0) > 0
+                                                            ? `€${Number(u.pay_later_weekly_limit || facility.weekly_limit).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                                                            : 'Unlimited'}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-[13px] text-[#6b7280]">
+                                                        {req.created_at ? new Date(req.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button
+                                                                onClick={() => openReviewModal(req)}
+                                                                className="px-3 py-1.5 bg-[#673ab7] hover:bg-[#5e35b1] text-white text-[12px] font-bold rounded transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
+                                                            >
+                                                                <Edit3 size={14} />
+                                                                <span>Review</span>
+                                                            </button>
+                                                            <Link
+                                                                href={route("admin.customers.show", u.id)}
+                                                                className="p-1.5 text-[#6b7280] hover:text-[#111827] hover:bg-gray-100 rounded transition-colors"
+                                                                title="View Profile"
+                                                            >
+                                                                <Eye size={16} />
+                                                            </Link>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="7" className="p-8 text-center text-[#9ca3af] text-[13px]">
+                                                No Pay Later applications found matching your criteria.
                                             </td>
                                         </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td
-                                            colSpan="7"
-                                            className="px-7 py-20 text-center"
-                                        >
-                                            <div className="flex flex-col items-center gap-3 text-[#727586]">
-                                                <div className="w-16 h-16 bg-[#f8f9fa] rounded-full flex items-center justify-center mb-2">
-                                                    <Search
-                                                        size={30}
-                                                        className="text-[#c3c4ca]"
-                                                    />
-                                                </div>
-                                                <p className="text-[16px] font-bold text-[#2f3344]">
-                                                    No requests found
-                                                </p>
-                                                <p className="text-[14px]">
-                                                    Try adjusting your search or
-                                                    filters.
-                                                </p>
-                                                <button
-                                                    onClick={() => {
-                                                        setSearch("");
-                                                        handleStatusChange(
-                                                            "all",
-                                                        );
-                                                    }}
-                                                    className="mt-2 text-[#673ab7] font-bold text-[14px] hover:underline"
-                                                >
-                                                    Clear filters
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Pagination */}
-                    <div className="flex items-center justify-end gap-8 px-8 py-5 border-t border-[#e3e4e8]">
-                        <div className="flex items-center gap-3">
-                            <span className="text-[13px] text-[#727586]">
-                                Items per page:
-                            </span>
-                            <div className="relative">
-                                <select
-                                    value={filters.per_page || 10}
-                                    onChange={handlePerPageChange}
-                                    className="h-[38px] pl-4 pr-10 bg-white border border-[#e3e4e8] rounded-[6px] text-[13px] text-[#2f3344] font-medium appearance-none cursor-pointer focus:border-[#673ab7] outline-none"
-                                >
-                                    <option value="5">5</option>
-                                    <option value="10">10</option>
-                                    <option value="20">20</option>
-                                    <option value="50">50</option>
-                                </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#727586]">
-                                    <ChevronDown size={14} />
-                                </div>
-                            </div>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
 
-                        <div className="flex items-center gap-6">
-                            <span className="text-[13px] text-[#2f3344] font-medium">
-                                {requests.from || 0} - {requests.to || 0} of{" "}
-                                {requests.total || 0}
-                            </span>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() =>
-                                        handlePageChange(
-                                            requests.prev_page_url,
-                                        )
-                                    }
-                                    disabled={!requests.prev_page_url}
-                                    className="w-[34px] h-[34px] flex items-center justify-center rounded-full text-[#673ab7] hover:bg-[#673ab7]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                >
-                                    <ChevronLeft size={20} />
-                                </button>
-                                <button
-                                    onClick={() =>
-                                        handlePageChange(
-                                            requests.next_page_url,
-                                        )
-                                    }
-                                    disabled={!requests.next_page_url}
-                                    className="w-[34px] h-[34px] flex items-center justify-center rounded-full text-[#673ab7] hover:bg-[#673ab7]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                >
-                                    <ChevronRight size={20} />
-                                </button>
-                            </div>
-                        </div>
                     </div>
-                </div>
-
                 </div>
             </div>
 
-            {/* Confirmation Modal */}
-            <Modal show={confirmModal.isOpen} onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })} maxWidth="md">
-                <div className="p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
-                            <AlertCircle size={20} />
-                        </div>
-                        <h2 className="text-[18px] font-bold text-[#2f3344]">{confirmModal.title}</h2>
-                    </div>
-                    <p className="text-[14px] text-[#727586] mb-6">{confirmModal.message}</p>
-                    <div className="flex justify-end gap-3">
-                        <button
-                            onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-                            className="px-4 py-2 text-[13px] font-bold text-[#727586] hover:bg-[#f8f9fa] rounded-[8px] transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={confirmModal.action}
-                            className="px-4 py-2 text-[13px] font-bold text-white bg-[#673ab7] hover:bg-[#5e35b1] rounded-[8px] transition-colors"
-                        >
-                            Confirm Action
-                        </button>
-                    </div>
-                </div>
-            </Modal>
-
-            {/* Success Modal */}
-            <Modal show={successModal.isOpen} onClose={() => setSuccessModal({ ...successModal, isOpen: false })} maxWidth="sm">
-                <div className="p-6 text-center">
-                    <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-green-600 mx-auto mb-4">
-                        <Check size={32} strokeWidth={3} />
-                    </div>
-                    <h2 className="text-[20px] font-bold text-[#2f3344] mb-2">{successModal.title}</h2>
-                    <p className="text-[14px] text-[#727586] mb-6">{successModal.message}</p>
-                    <button
-                        onClick={() => setSuccessModal({ ...successModal, isOpen: false })}
-                        className="w-full py-2.5 text-[14px] font-bold text-white bg-[#00b090] hover:bg-[#009b7f] rounded-[8px] transition-colors"
-                    >
-                        Awesome!
-                    </button>
-                </div>
-            </Modal>
-
-            {/* Review Modal */}
-            <Modal show={reviewModal.isOpen} onClose={() => setReviewModal({ ...reviewModal, isOpen: false })} maxWidth="md">
-                {reviewModal.customer && (
-                    <div className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-[18px] font-bold text-[#2f3344]">Review Request</h2>
-                            <button onClick={() => setReviewModal({ ...reviewModal, isOpen: false })} className="text-gray-400 hover:text-gray-600">
-                                <X size={20} />
+            {/* Review & Edit Facility Modal */}
+            {showReviewModal && selectedUser && (
+                <Modal show={showReviewModal} onClose={() => setShowReviewModal(false)} maxWidth="md">
+                    <div className="p-6 space-y-4">
+                        <div className="flex items-center justify-between border-b border-[#e5e7eb] pb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded bg-purple-50 flex items-center justify-center text-[#673ab7]">
+                                    <CreditCard size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-[16px] font-bold text-[#111827]">Review Pay Later Facility</h3>
+                                    <p className="text-[12px] text-[#6b7280]">{selectedUser.name} ({selectedUser.company_name || selectedUser.email})</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowReviewModal(false)}
+                                className="text-[#9ca3af] hover:text-[#111827] p-1 rounded transition-colors cursor-pointer"
+                            >
+                                <X size={18} />
                             </button>
                         </div>
-                        
-                        <div className="space-y-5 mb-5">
-                            <div>
-                                <h3 className="text-[14px] font-bold text-[#2f3344] mb-3">Customer Details</h3>
-                                <div className="space-y-2 text-[13px]">
-                                    <div className="flex items-start">
-                                        <span className="w-32 text-[#727586] font-medium">Name</span>
-                                        <span className="w-4 text-[#727586]">:</span>
-                                        <span className="font-semibold text-[#2f3344] flex-1">{reviewModal.customer.name}</span>
-                                    </div>
-                                    <div className="flex items-start">
-                                        <span className="w-32 text-[#727586] font-medium">Email</span>
-                                        <span className="w-4 text-[#727586]">:</span>
-                                        <span className="font-semibold text-[#2f3344] flex-1">{reviewModal.customer.email}</span>
-                                    </div>
-                                    <div className="flex items-start">
-                                        <span className="w-32 text-[#727586] font-medium">Phone Number</span>
-                                        <span className="w-4 text-[#727586]">:</span>
-                                        <span className="font-semibold text-[#2f3344] flex-1">{reviewModal.customer.phone_number || 'N/A'}</span>
-                                    </div>
-                                    <div className="flex items-start">
-                                        <span className="w-32 text-[#727586] font-medium">Company Name</span>
-                                        <span className="w-4 text-[#727586]">:</span>
-                                        <span className="font-semibold text-[#2f3344] flex-1">{reviewModal.customer.company_name || 'N/A'}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <h3 className="text-[14px] font-bold text-[#2f3344] mb-3">Request Info</h3>
-                                <div className="space-y-2 text-[13px]">
-                                    <div className="flex items-start">
-                                        <span className="w-32 text-[#727586] font-medium">Requested At</span>
-                                        <span className="w-4 text-[#727586]">:</span>
-                                        <span className="font-semibold text-[#2f3344] flex-1">
-                                            {reviewModal.customer.pay_later_requested_at ? new Date(reviewModal.customer.pay_later_requested_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-start">
-                                        <span className="w-32 text-[#727586] font-medium">Current Status</span>
-                                        <span className="w-4 text-[#727586]">:</span>
-                                        <span className="font-semibold text-[#2f3344] capitalize flex-1">
-                                            {reviewModal.customer.pay_later_status || 'N/A'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
 
+                        <form onSubmit={submitReview} className="space-y-4">
                             <div>
-                                <label className="block text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">
-                                    Update Status
+                                <label className="block text-[13px] font-semibold text-[#374151] mb-1">
+                                    Application Status
                                 </label>
                                 <select
-                                    value={reviewModal.newStatus}
-                                    onChange={(e) => setReviewModal({ ...reviewModal, newStatus: e.target.value })}
-                                    className="w-full h-10 px-3 bg-white border border-[#d1d5db] rounded-[4px] text-[13px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7]"
+                                    value={data.pay_later_status}
+                                    onChange={(e) => setData("pay_later_status", e.target.value)}
+                                    className="w-full text-[13px] px-3 py-2 border border-[#d1d5db] rounded-[4px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7]"
                                 >
-                                    <option value="inactive">Inactive</option>
-                                    <option value="pending">Pending</option>
                                     <option value="approved">Approved</option>
+                                    <option value="pending">Under Review / Pending</option>
                                     <option value="rejected">Rejected</option>
                                 </select>
                             </div>
 
-                            {reviewModal.newStatus === 'rejected' && (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div>
-                                    <label className="block text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">
-                                        Rejection Reason (Required)
+                                    <label className="block text-[12px] font-semibold text-[#374151] mb-1">
+                                        Total Limit (€)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="100"
+                                        value={data.pay_later_credit_limit}
+                                        onChange={(e) => setData("pay_later_credit_limit", e.target.value)}
+                                        className="w-full text-[13px] px-3 py-2 border border-[#d1d5db] rounded-[4px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7]"
+                                        placeholder="5000"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[12px] font-semibold text-[#374151] mb-1">
+                                        Daily Cap (€)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="50"
+                                        value={data.pay_later_daily_limit}
+                                        onChange={(e) => setData("pay_later_daily_limit", e.target.value)}
+                                        className="w-full text-[13px] px-3 py-2 border border-[#d1d5db] rounded-[4px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7]"
+                                        placeholder="0 = Unlimited"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[12px] font-semibold text-[#374151] mb-1">
+                                        Weekly Cap (€)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="100"
+                                        value={data.pay_later_weekly_limit}
+                                        onChange={(e) => setData("pay_later_weekly_limit", e.target.value)}
+                                        className="w-full text-[13px] px-3 py-2 border border-[#d1d5db] rounded-[4px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7]"
+                                        placeholder="0 = Unlimited"
+                                    />
+                                </div>
+                            </div>
+
+                            {data.pay_later_status === "rejected" && (
+                                <div>
+                                    <label className="block text-[13px] font-semibold text-rose-600 mb-1">
+                                        Rejection Reason
                                     </label>
                                     <textarea
-                                        value={reviewModal.reason}
-                                        onChange={(e) => setReviewModal({ ...reviewModal, reason: e.target.value })}
-                                        className="w-full p-3 bg-white border border-[#d1d5db] rounded-[4px] text-[13px] focus:outline-none focus:border-[#673ab7] focus:ring-1 focus:ring-[#673ab7] resize-none"
-                                        rows="3"
-                                        placeholder="Please provide a reason..."
-                                    ></textarea>
+                                        value={data.pay_later_rejection_reason}
+                                        onChange={(e) => setData("pay_later_rejection_reason", e.target.value)}
+                                        className="w-full text-[13px] px-3 py-2 border border-rose-200 rounded-[4px] focus:outline-none focus:border-rose-500 text-rose-900"
+                                        placeholder="Specify why the application was rejected..."
+                                        rows={2}
+                                        required
+                                    />
                                 </div>
                             )}
-                        </div>
 
-                        <div className="flex justify-end gap-3 pt-4">
-                            <button
-                                onClick={() => setReviewModal({ ...reviewModal, isOpen: false })}
-                                className="px-4 py-2 text-[13px] font-bold text-[#727586] hover:bg-[#f8f9fa] rounded-[8px] transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (reviewModal.newStatus === 'rejected' && !reviewModal.reason.trim()) {
-                                        alert("Please provide a rejection reason.");
-                                        return;
-                                    }
-                                    
-                                    const payload = { pay_later_status: reviewModal.newStatus };
-                                    if (reviewModal.newStatus === 'rejected') {
-                                        payload.rejection_reason = reviewModal.reason;
-                                    }
-                                    
-                                    router.patch(route('admin.customers.pay-later-status', reviewModal.customer.id), payload, {
-                                        preserveScroll: true,
-                                        onSuccess: () => {
-                                            setReviewModal({ isOpen: false, customer: null, newStatus: '', reason: '' });
-                                            setSuccessModal({ isOpen: true, title: 'Success!', message: 'Pay Later status has been updated.' });
-                                        }
-                                    });
-                                }}
-                                className="px-4 py-2 text-[13px] font-bold text-white bg-[#673ab7] hover:bg-[#5e35b1] rounded-[8px] transition-colors"
-                            >
-                                Save Changes
-                            </button>
-                        </div>
+                            <div className="pt-4 border-t border-[#e5e7eb] flex items-center justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowReviewModal(false)}
+                                    className="px-4 py-2 border border-[#d1d5db] text-[#374151] rounded-[4px] text-[13px] font-medium hover:bg-gray-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="px-4 py-2 bg-[#673ab7] hover:bg-[#5e35b1] text-white rounded-[4px] text-[13px] font-bold transition-colors shadow-sm disabled:opacity-50"
+                                >
+                                    Save Facility Settings
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                )}
-            </Modal>
+                </Modal>
+            )}
         </AdminLayout>
     );
 }

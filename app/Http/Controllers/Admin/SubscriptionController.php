@@ -51,4 +51,32 @@ class SubscriptionController extends Controller
 
         return back()->with('success', 'Selected subscriptions deleted.');
     }
+
+    public function toggleAutoRenewal(Request $request, UserSubscription $subscription)
+    {
+        $user = $subscription->user;
+        
+        $cashierSubscription = collect($user->subscriptions)->first(function ($sub) use ($subscription) {
+            // Find by pricing plan or default name
+            return $sub->name === 'default';
+        });
+
+        if (!$cashierSubscription) {
+            return back()->with('error', 'No active Stripe subscription found for this user.');
+        }
+
+        try {
+            if ($cashierSubscription->canceled()) {
+                $cashierSubscription->resume();
+                $subscription->update(['auto_renew' => true]);
+                return back()->with('success', 'Auto-renewal has been enabled.');
+            } else {
+                $cashierSubscription->cancel();
+                $subscription->update(['auto_renew' => false]);
+                return back()->with('success', 'Auto-renewal has been disabled.');
+            }
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to update auto-renewal: ' . $e->getMessage());
+        }
+    }
 }

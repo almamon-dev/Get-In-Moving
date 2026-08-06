@@ -19,6 +19,7 @@ return new class extends Migration
             $table->timestamp('expires_at');
             $table->string('status')->default('active');
             $table->boolean('is_trial')->default(false);
+            $table->boolean('auto_renew')->default(true);
             $table->timestamps();
         });
     }

@@ -17,6 +17,7 @@ class QuoteDetailResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'status' => $this->status,
             'client_name' => $this->user ? ($this->user->company_name ?: $this->user->name) : 'N/A',
             'origin' => $this->pickup_address,
             'destination' => $this->delivery_address,

@@ -22,6 +22,9 @@ class Order extends Model
         'estimated_time',
         'status',
         'status_note',
+        'payment_method',
+        'payment_status',
+        'reserved_credit_amount',
         'proof_of_delivery',
         'pod_status',
     ];

@@ -121,7 +121,7 @@ export default function Index({ users, filters, auth }) {
                                             <td className="px-5 py-5">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-full bg-[#f4f0ff] flex items-center justify-center text-[#673ab7] font-bold">
-                                                        {user.name.charAt(0).toUpperCase()}
+                                                        {user.name?.charAt(0)?.toUpperCase() || 'U'}
                                                     </div>
                                                     <div>
                                                         <div className="text-[14px] font-bold text-[#2f3344]">

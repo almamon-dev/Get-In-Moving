@@ -9,10 +9,9 @@ use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithValidation;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 
-class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow, WithValidation
+class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow
 {
     protected $quoteRequestId;
 
@@ -20,11 +19,18 @@ class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow
 
     protected $attachmentPath;
 
+    protected $createdRequests = [];
+
     public function __construct($quoteRequestId = null, $userId = null, $attachmentPath = null)
     {
         $this->quoteRequestId = $quoteRequestId;
         $this->userId = $userId;
         $this->attachmentPath = $attachmentPath;
+    }
+
+    public function getCreatedRequests(): array
+    {
+        return $this->createdRequests;
     }
 
     public function rules(): array
@@ -143,6 +149,7 @@ class QuoteRequestItemsImport implements SkipsEmptyRows, ToModel, WithHeadingRow
         }
 
         $parent = QuoteRequest::create($data);
+        $this->createdRequests[] = $parent;
         Log::info('Bulk Mode: Created new QuoteRequest parent ID: '.$parent->id);
 
         return $parent->id;

@@ -3,7 +3,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { toast } from 'react-toastify';
 
-import { Building2, Mail, Phone, Globe, MapPin, Hash, Briefcase, Clock, Home, Save, CheckCircle2, ChevronDown, Calendar, Trash2, Loader2 } from 'lucide-react';
+import { Building2, Mail, Phone, Globe, MapPin, Hash, Briefcase, Clock, Home, Save, CheckCircle2, ChevronDown, Calendar, Trash2, Loader2, Upload, Image } from 'lucide-react';
 
 export default function CompanySettings({ settings }) {
     const DAYS = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -14,7 +14,10 @@ export default function CompanySettings({ settings }) {
         '08:00 PM', '08:30 PM', '09:00 PM', '09:30 PM', '10:00 PM'
     ];
 
+    const [logoPreview, setLogoPreview] = useState(settings.site_logo || null);
+
     const { data, setData, post, processing } = useForm({
+        site_logo: null,
         company_name: settings.company_name || '',
         legal_name: settings.legal_name || '',
         established_since: settings.established_since || '',
@@ -30,6 +33,14 @@ export default function CompanySettings({ settings }) {
             { from_day: 'Friday', to_day: 'Friday', start_time: '-', end_time: '-', status: 'Closed' }
         ]
     });
+
+    const handleLogoChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setData('site_logo', file);
+            setLogoPreview(URL.createObjectURL(file));
+        }
+    };
 
     const handleBusinessHourChange = (index, field, value) => {
         const newHours = [...data.business_hours];
@@ -57,7 +68,8 @@ export default function CompanySettings({ settings }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         post(route('admin.settings.update'), {
-            onSuccess: () => toast.success('Company settings updated successfully!'),
+            forceFormData: true,
+            onSuccess: () => toast.success('Company settings & logo updated successfully!'),
             onError: () => toast.error('Failed to update company settings.'),
             preserveScroll: true,
         });
@@ -90,6 +102,58 @@ export default function CompanySettings({ settings }) {
                         {processing ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                         Save Company Info
                     </button>
+                </div>
+
+                {/* Logo & Branding Section */}
+                <div className="bg-white rounded-[10px] border border-[#e3e4e8] shadow-sm overflow-hidden">
+                    <div className="px-7 py-5 border-b border-[#e3e4e8]">
+                        <div className="flex items-center gap-2">
+                            <Upload size={20} className="text-[#673ab7]" />
+                            <h2 className="text-[18px] font-bold text-[#2f3344]">Website &amp; Invoice Logo</h2>
+                        </div>
+                    </div>
+                    <div className="p-8">
+                        <div className="flex flex-col md:flex-row items-center gap-8">
+                            {/* Logo Preview */}
+                            <div className="w-48 h-24 border-2 border-dashed border-[#e3e4e8] rounded-[10px] flex items-center justify-center p-3 bg-[#f8f9fc] relative overflow-hidden">
+                                {logoPreview ? (
+                                    <img src={logoPreview} alt="Site Logo" className="max-h-full max-w-full object-contain" />
+                                ) : (
+                                    <div className="text-center text-[#a0a3af]">
+                                        <Upload size={24} className="mx-auto mb-1 opacity-60" />
+                                        <span className="text-[12px]">No Logo Set</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Logo Selector */}
+                            <div className="flex-1 space-y-3">
+                                <label className="text-[14px] font-bold text-[#2f3344] block">
+                                    Upload Company Logo
+                                </label>
+                                <p className="text-[12px] text-[#727586]">
+                                    Upload official company logo used across invoices, PDF reports, and customer portal. PNG or SVG with transparent background recommended.
+                                </p>
+                                <div className="flex items-center gap-4">
+                                    <label className="cursor-pointer bg-[#f3edf7] text-[#673ab7] hover:bg-[#e8def8] font-bold text-[13px] px-5 py-2.5 rounded-[6px] transition-all inline-flex items-center gap-2 border border-[#d0bcff]">
+                                        <Upload size={16} />
+                                        <span>Choose Logo Image</span>
+                                        <input 
+                                            type="file" 
+                                            accept="image/*" 
+                                            onChange={handleLogoChange}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                    {data.site_logo && (
+                                        <span className="text-[13px] font-medium text-[#2f3344]">
+                                            {data.site_logo.name}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Basic Legal Information */}

@@ -15,7 +15,15 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('pickup_address');
+            $table->string('pickup_country')->nullable();
+            $table->string('pickup_state')->nullable();
+            $table->string('pickup_city')->nullable();
+            $table->string('pickup_zip')->nullable();
             $table->string('delivery_address');
+            $table->string('delivery_country')->nullable();
+            $table->string('delivery_state')->nullable();
+            $table->string('delivery_city')->nullable();
+            $table->string('delivery_zip')->nullable();
             $table->date('pickup_date');
             $table->time('pickup_time_from');
             $table->time('pickup_time_till');

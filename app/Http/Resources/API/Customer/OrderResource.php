@@ -34,6 +34,8 @@ class OrderResource extends JsonResource
             'delivery_address' => $this->delivery_address,
             'pickup_date' => $this->pickup_date,
             'estimated_time' => $this->estimated_time,
+            'pallet_type' => $this->getPalletType(),
+            'items_count' => $this->items ? $this->items->sum('quantity') : 0,
             'proof_of_delivery' => \App\Helpers\Helper::generateURL($this->proof_of_delivery),
             'pod_status' => $this->pod_status,
             'tracking' => [
@@ -73,6 +75,20 @@ class OrderResource extends JsonResource
                     'created_at' => $update->created_at->format('d M Y, h:i A'),
                 ];
             }),
+            'invoice' => $this->invoice ? [
+                'id' => $this->invoice->id,
+                'invoice_number' => $this->invoice->invoice_number,
+                'status' => $this->invoice->status,
+                'due_date' => $this->invoice->due_date ? \Carbon\Carbon::parse($this->invoice->due_date)->format('Y-m-d') : null,
+                'due_date_formatted' => $this->invoice->due_date ? \Carbon\Carbon::parse($this->invoice->due_date)->format('d M Y') : null,
+                'auto_charge_date' => $this->invoice->due_date ? \Carbon\Carbon::parse($this->invoice->due_date)->format('d M Y') : null,
+                'days_remaining' => $this->invoice->due_date ? (int) max(0, (int) \Carbon\Carbon::now()->diffInDays(\Carbon\Carbon::parse($this->invoice->due_date), false)) : 0,
+                'is_overdue' => $this->invoice->due_date ? \Carbon\Carbon::now()->isAfter(\Carbon\Carbon::parse($this->invoice->due_date)) && $this->invoice->status !== 'paid' : false,
+            ] : null,
+            'payment_status' => $this->invoice ? $this->invoice->status : 'paid',
+            'payment_method' => ($this->invoice && $this->invoice->payments()->latest()->first()?->payment_method === 'pay_later')
+                ? 'pay_later' 
+                : ($this->invoice && $this->invoice->due_date ? 'pay_later' : 'upfront'),
             'created_at' => $this->created_at?->toDateTimeString(),
         ];
     }

@@ -2,6 +2,12 @@
 
 use App\Http\Controllers\API\Auth\AuthApiController;
 use App\Http\Controllers\API\Customer\CustomerApiController;
+use App\Http\Controllers\API\Customer\CustomerQuoteController;
+use App\Http\Controllers\API\Customer\CustomerOrderController;
+use App\Http\Controllers\API\Customer\CustomerInvoiceController;
+use App\Http\Controllers\API\Customer\CustomerPayLaterController;
+use App\Http\Controllers\API\Customer\CustomerNotificationController;
+use App\Http\Controllers\API\Customer\CustomerDashboardController;
 use App\Http\Controllers\API\Supplier\AvailabilityApiController;
 use App\Http\Controllers\API\Supplier\EmployeeApiController;
 use App\Http\Controllers\API\Supplier\SupplierApiController;
@@ -39,6 +45,7 @@ Route::get('/customer/quote-requests/pdf/sample/generate', [CustomerApiControlle
 
 // Public Data
 Route::get('/public/supplier-availabilities', [PublicApiController::class, 'getSupplierAvailabilities']);
+Route::post('/public/contact-us', [PublicApiController::class, 'submitContact']);
 
 // Pricing Plans
 Route::get('/pricing-plans', [\App\Http\Controllers\API\PricingPlanApiController::class, 'index']);
@@ -90,53 +97,60 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Customer Endpoints
     Route::middleware('customer')->prefix('customer')->group(function () {
-        Route::get('/dashboard-overview', [CustomerApiController::class, 'getDashboardOverview']);
-        Route::post('/quote-requests', [CustomerApiController::class, 'createQuoteRequest']);
-        Route::post('/quote-requests/import', [CustomerApiController::class, 'importQuoteRequest']);
-        Route::post('/quote-requests/upload-pdf', [CustomerApiController::class, 'uploadPdf']);
-        Route::get('/quote-requests/template-link', [CustomerApiController::class, 'getTemplateLink']);
-        Route::get('/quote-requests/pdf-template-link', [CustomerApiController::class, 'getPdfTemplateLink']);
-        Route::get('/quote-requests/sample-pdf-link', [CustomerApiController::class, 'getSamplePdfLink']);
-        Route::get('/quote-requests/template', [CustomerApiController::class, 'downloadTemplate']);
-        Route::get('/quote-requests', [CustomerApiController::class, 'getMyQuoteRequests']);
-        Route::delete('/quote-requests/{id}', [CustomerApiController::class, 'deleteQuoteRequest']);
-        Route::get('/quote-requests/{id}/edit', [CustomerApiController::class, 'editQuoteRequest']);
-        Route::put('/quote-requests/{id}', [CustomerApiController::class, 'updateQuoteRequest']);
-        Route::get('/quote-requests/{id}/quotes', [CustomerApiController::class, 'getRequestQuotes']);
-        Route::post('/quotes/{id}/accept', [CustomerApiController::class, 'acceptQuote']);
-        Route::post('/quotes/{id}/accept-revision', [CustomerApiController::class, 'acceptRevision']);
-        Route::post('/quotes/{id}/reject-revision', [CustomerApiController::class, 'rejectRevision']);
+        Route::post('/subscription/toggle-auto-renewal', [CustomerDashboardController::class, 'toggleAutoRenewal']);
+        Route::get('/dashboard-overview', [CustomerDashboardController::class, 'getDashboardOverview']);
+        Route::post('/quote-requests', [CustomerQuoteController::class, 'createQuoteRequest']);
+        Route::post('/quote-requests/import', [CustomerQuoteController::class, 'importQuoteRequest']);
+        Route::post('/quote-requests/upload-pdf', [CustomerQuoteController::class, 'uploadPdf']);
+        Route::get('/quote-requests/template-link', [CustomerQuoteController::class, 'getTemplateLink']);
+        Route::get('/quote-requests/pdf-template-link', [CustomerQuoteController::class, 'getPdfTemplateLink']);
+        Route::get('/quote-requests/sample-pdf-link', [CustomerQuoteController::class, 'getSamplePdfLink']);
+        Route::get('/quote-requests/template', [CustomerQuoteController::class, 'downloadTemplate']);
+        Route::get('/quote-requests', [CustomerQuoteController::class, 'getMyQuoteRequests']);
+        Route::delete('/quote-requests/{id}', [CustomerQuoteController::class, 'deleteQuoteRequest']);
+        Route::get('/quote-requests/{id}/edit', [CustomerQuoteController::class, 'editQuoteRequest']);
+        Route::put('/quote-requests/{id}', [CustomerQuoteController::class, 'updateQuoteRequest']);
+        Route::get('/quote-requests/{id}/quotes', [CustomerQuoteController::class, 'getRequestQuotes']);
+        Route::post('/quotes/{id}/accept', [CustomerQuoteController::class, 'acceptQuote']);
+        Route::post('/quotes/{id}/accept-revision', [CustomerQuoteController::class, 'acceptRevision']);
+        Route::post('/quotes/{id}/reject-revision', [CustomerQuoteController::class, 'rejectRevision']);
 
         // Orders
-        Route::get('/orders', [CustomerApiController::class, 'getMyOrders']);
-        Route::get('/orders/{id}', [CustomerApiController::class, 'getOrderDetails']);
+        Route::get('/orders', [CustomerOrderController::class, 'getMyOrders']);
+        Route::get('/orders/{id}', [CustomerOrderController::class, 'getOrderDetails']);
 
         // Billing
-        Route::get('/invoices', [CustomerApiController::class, 'getMyInvoices']);
-        Route::get('/invoices/{id}', [CustomerApiController::class, 'getInvoiceDetails']);
-        Route::get('/invoices/{id}/download', [CustomerApiController::class, 'downloadInvoice']);
-        Route::post('/invoices/{id}/pay', [CustomerApiController::class, 'payInvoice']);
-        Route::post('/invoices/{id}/pay-later', [CustomerApiController::class, 'payInvoiceWithPayLater']);
+        Route::get('/invoices', [CustomerInvoiceController::class, 'getMyInvoices']);
+        Route::get('/invoices/{id}', [CustomerInvoiceController::class, 'getInvoiceDetails']);
+        Route::get('/invoices/{id}/download', [CustomerInvoiceController::class, 'downloadInvoice']);
+        Route::post('/invoices/{id}/pay', [CustomerInvoiceController::class, 'payInvoice']);
+        Route::post('/invoices/{id}/pay-later', [CustomerInvoiceController::class, 'payInvoiceWithPayLater']);
 
         // Profile & Settings Management
         Route::get('/profile', [\App\Http\Controllers\API\Customer\SettingsController::class, 'getProfile']);
         Route::post('/profile', [\App\Http\Controllers\API\Customer\SettingsController::class, 'updateProfile']);
         Route::post('/change-password', [\App\Http\Controllers\API\Customer\SettingsController::class, 'changePassword']);
         Route::delete('/account', [\App\Http\Controllers\API\Customer\SettingsController::class, 'deleteAccount']);
-        Route::post('/pay-later/request', [CustomerApiController::class, 'requestPayLater']);
-        Route::get('/pay-later/setup-intent', [CustomerApiController::class, 'setupPayLaterCard']);
-        Route::post('/pay-later/save-card', [CustomerApiController::class, 'savePayLaterCard']);
+        Route::post('/pay-later/request', [CustomerPayLaterController::class, 'requestPayLater']);
+        Route::get('/pay-later/requests', [CustomerPayLaterController::class, 'getPayLaterRequests']);
+        Route::delete('/pay-later/request/{id}', [CustomerPayLaterController::class, 'deletePayLaterRequest']);
+        Route::get('/pay-later/summary', [CustomerPayLaterController::class, 'getPayLaterSummary']);
+        Route::get('/pay-later/saved-cards', [CustomerPayLaterController::class, 'getPayLaterSavedCards']);
+        Route::get('/pay-later/setup-intent', [CustomerPayLaterController::class, 'setupPayLaterCard']);
+        Route::post('/pay-later/save-card', [CustomerPayLaterController::class, 'savePayLaterCard']);
+        Route::delete('/pay-later/remove-card', [CustomerPayLaterController::class, 'removePayLaterCard']);
+        Route::get('/pay-later/transactions', [CustomerPayLaterController::class, 'getPayLaterTransactions']);
 
         // Notifications
-        Route::get('/notifications', [CustomerApiController::class, 'getNotifications']);
-        Route::post('/notifications/{id}/read', [CustomerApiController::class, 'markNotificationRead']);
-        Route::post('/notifications/read-all', [CustomerApiController::class, 'markAllNotificationsRead']);
+        Route::get('/notifications', [CustomerNotificationController::class, 'getNotifications']);
+        Route::post('/notifications/{id}/read', [CustomerNotificationController::class, 'markNotificationRead']);
+        Route::post('/notifications/read-all', [CustomerNotificationController::class, 'markAllNotificationsRead']);
 
         // Proof of Delivery Management
-        Route::get('/orders/{id}/pod-download', [CustomerApiController::class, 'downloadPod']);
-        Route::post('/orders/{id}/pod-approve', [CustomerApiController::class, 'approvePod']);
-        Route::post('/orders/{id}/pod-reject', [CustomerApiController::class, 'rejectPod']);
-        Route::post('/orders/{id}/rate', [CustomerApiController::class, 'submitReview']);
+        Route::get('/orders/{id}/pod-download', [CustomerOrderController::class, 'downloadPod']);
+        Route::post('/orders/{id}/pod-approve', [CustomerOrderController::class, 'approvePod']);
+        Route::post('/orders/{id}/pod-reject', [CustomerOrderController::class, 'rejectPod']);
+        Route::post('/orders/{id}/rate', [CustomerOrderController::class, 'submitReview']);
     });
 
     // Supplier Endpoints (Public for authenticated suppliers, even if unverified)

@@ -52,6 +52,27 @@ export default function Index({ auth, subscriptions, filters }) {
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', action: null });
     const [successModal, setSuccessModal] = useState({ isOpen: false, title: '', message: '' });
     const [viewModal, setViewModal] = useState({ isOpen: false, data: null });
+    const [isToggling, setIsToggling] = useState(false);
+
+    const handleToggleAutoRenew = () => {
+        if (!viewModal.data) return;
+        setIsToggling(true);
+        router.patch(route('admin.subscriptions.toggle-auto-renewal', viewModal.data.id), {}, {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                setIsToggling(false);
+                // Update local modal state with new value
+                setViewModal(prev => ({
+                    ...prev,
+                    data: {
+                        ...prev.data,
+                        auto_renew: !prev.data.auto_renew
+                    }
+                }));
+            },
+            onError: () => setIsToggling(false)
+        });
+    };
 
     const handleSearch = (e) => {
         setSearchQuery(e.target.value);
@@ -134,7 +155,7 @@ export default function Index({ auth, subscriptions, filters }) {
         <AdminLayout user={auth.user}>
             <Head title="Subscription Management" />
 
-            <div className="min-h-screen bg-[#f5f6f8]">
+            <div className="min-h-screen ">
                 <div className="w-full mx-auto px-6 py-8">
                     
                     {/* Header Row */}
@@ -432,9 +453,19 @@ export default function Index({ auth, subscriptions, filters }) {
                                         </div>
                                         <div>
                                             <p className="text-[11px] text-[#64748b] mb-0.5">Auto-Renew</p>
-                                            <p className={`text-[13px] font-bold ${viewModal.data.auto_renew ? 'text-green-600' : 'text-slate-500'}`}>
-                                                {viewModal.data.auto_renew ? 'Enabled' : 'Disabled'}
-                                            </p>
+                                            <div className="flex items-center justify-between">
+                                                <p className={`text-[13px] font-bold ${viewModal.data.auto_renew ? 'text-green-600' : 'text-slate-500'}`}>
+                                                    {viewModal.data.auto_renew ? 'Enabled' : 'Disabled'}
+                                                </p>
+                                                <button 
+                                                    type="button"
+                                                    disabled={isToggling}
+                                                    onClick={handleToggleAutoRenew}
+                                                    className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${viewModal.data.auto_renew ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                                                >
+                                                    <span className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${viewModal.data.auto_renew ? 'translate-x-3' : 'translate-x-0'}`} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

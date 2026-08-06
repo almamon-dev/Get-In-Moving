@@ -38,7 +38,7 @@ class InvoiceDetailResource extends JsonResource
 
             'delivery_info' => [
                 'delivery_date' => $order?->pickup_date ? \Carbon\Carbon::parse($order->pickup_date)->addDays(3)->format('j M Y') : '20 Jan 2026',
-                'total_amount' => number_format($order?->total_amount ?? 0, 0),
+                'total_amount' => '€'.number_format($this->total_amount ?? 0, 2),
             ],
 
             'addresses' => [
@@ -53,9 +53,14 @@ class InvoiceDetailResource extends JsonResource
             ],
 
             'amount_breakdown' => [
-                'supplier_amount' => '€'.number_format($this->supplier_amount, 0),
-                'platform_fee' => '€'.number_format($this->platform_fee, 0),
-                'total_payable' => '€'.number_format($this->total_amount, 0),
+                'base_price' => '€'.number_format($order?->quote?->base_amount ?? max(0, $this->supplier_amount - ($order?->quote?->extraCharges?->sum('amount') ?? 0)), 2),
+                'supplier_amount' => '€'.number_format($this->supplier_amount, 2),
+                'platform_fee' => '€'.number_format($this->platform_fee, 2),
+                'extra_costs' => $order?->quote?->extraCharges?->map(fn ($extra) => [
+                    'label' => $extra->custom_name ?? $extra->type ?? 'Extra Charge',
+                    'amount' => '€'.number_format($extra->amount, 2),
+                ])->values()->all() ?? [],
+                'total_payable' => '€'.number_format($this->total_amount, 2),
             ],
 
             'payment_details' => [

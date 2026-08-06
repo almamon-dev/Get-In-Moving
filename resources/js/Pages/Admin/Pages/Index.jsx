@@ -64,7 +64,7 @@ export default function Index({ auth, pages = [] }) {
         <AdminLayout user={auth.user}>
             <Head title="Page Management" />
 
-            <div className="min-h-screen bg-[#f5f6f8]">
+            <div className="min-h-screen ">
                 <div className="w-full mx-auto px-6 py-8">
                     
                     {/* Header Row */}

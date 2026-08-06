@@ -10,17 +10,8 @@ import {
 
 const Sidebar = ({ isCollapsed, toggleCollapse }) => {
     const { url, props } = usePage();
-    const { sidebarCategories = [], auth } = props;
+    const { auth } = props;
     const currentPath = url.split("?")[0];
-
-    const [openMenus, setOpenMenus] = useState(() => {
-        // Initialize open menus based on current path
-
-        if (currentPath.startsWith('/admin/billing')) {
-            return { billing: true };
-        }
-        return {};
-    });
 
     const menuGroups = [
         {
@@ -32,10 +23,14 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     route: "admin.customers.index"
                 },
                 {
-                    label: "Pay Later Approvals",
-                    path: route('admin.pay-later-approvals.index'),
+                    label: "Pay Later Management",
                     icon: <CreditCard />,
-                    route: "admin.pay-later-approvals.index"
+                    key: "pay_later",
+                    children: [
+                        { label: "Dashboard", path: route('admin.credit.dashboard'), route: "admin.credit.dashboard" },
+                        { label: "Pay Later Approvals", path: route('admin.pay-later-approvals.index'), route: "admin.pay-later-approvals.index" },
+                        { label: "Limit Requests", path: route('admin.credit.requests.index'), route: "admin.credit.requests.index" },
+                    ]
                 },
                 {
                     label: "Suppliers",
@@ -90,9 +85,8 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     icon: <Settings />,
                     key: "general",
                     children: [
-                        { label: "Profile", path: route('admin.settings.general.profile') },
-                        { label: "Security", path: route('admin.settings.general.security') },
-
+                        { label: "Profile", path: route('admin.settings.general.profile'), route: 'admin.settings.general.profile' },
+                        { label: "Security", path: route('admin.settings.general.security'), route: 'admin.settings.general.security' },
                     ]
                 },
                 {
@@ -100,9 +94,8 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     icon: <Globe />,
                     key: "website",
                     children: [
-                        { label: "System Settings", path: route('admin.settings.website.system') },
-                        { label: "Company Settings", path: route('admin.settings.website.company') },
-
+                        { label: "System Settings", path: route('admin.settings.website.system'), route: 'admin.settings.website.system' },
+                        { label: "Company Settings", path: route('admin.settings.website.company'), route: 'admin.settings.website.company' },
                     ]
                 },
                 {
@@ -110,9 +103,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     icon: <Monitor />,
                     key: "system",
                     children: [
-                        { label: "Email", path: route('admin.settings.system.email') },
-
-
+                        { label: "Email", path: route('admin.settings.system.email'), route: 'admin.settings.system.email' },
                     ]
                 },
                 {
@@ -120,8 +111,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                     icon: <CircleDollarSign />,
                     key: "financial",
                     children: [
-                        { label: "Payment Gateway", path: route('admin.settings.financial.gateway') },
-
+                        { label: "Payment Gateway", path: route('admin.settings.financial.gateway'), route: 'admin.settings.financial.gateway' },
                     ]
                 },
 
@@ -134,14 +124,57 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
         { label: "Home", path: "/dashboard", icon: <Home />, route: "dashboard" },
     ];
 
-
+    const isChildActive = (child) => {
+        if (typeof route !== 'undefined' && child.route) {
+            const wildcardRoute = child.route.endsWith('.index') ? child.route.replace('.index', '.*') : `${child.route}.*`;
+            if (route().current(child.route) || route().current(wildcardRoute)) {
+                return true;
+            }
+        }
+        if (child.path) {
+            return currentPath === child.path || (child.path !== '/' && currentPath.startsWith(child.path));
+        }
+        return false;
+    };
 
     const checkActive = (item) => {
-        if (typeof route !== 'undefined' && item.route) {
-            if (route().current(item.route)) return true;
+        if (item.children) {
+            return item.children.some(child => isChildActive(child));
         }
-        return currentPath === item.path;
+        if (typeof route !== 'undefined' && item.route) {
+            const wildcardRoute = item.route.endsWith('.index') ? item.route.replace('.index', '.*') : `${item.route}.*`;
+            if (route().current(item.route) || route().current(wildcardRoute)) {
+                return true;
+            }
+        }
+        if (item.path) {
+            return currentPath === item.path || (item.path !== '/' && currentPath.startsWith(item.path));
+        }
+        return false;
     };
+
+    const getInitialOpenMenus = () => {
+        const initial = {};
+        menuGroups.forEach(group => {
+            group.items.forEach(item => {
+                if (item.children && item.key) {
+                    if (item.children.some(child => isChildActive(child))) {
+                        initial[item.key] = true;
+                    }
+                }
+            });
+        });
+        return initial;
+    };
+
+    const [openMenus, setOpenMenus] = useState(() => getInitialOpenMenus());
+
+    useEffect(() => {
+        const autoOpen = getInitialOpenMenus();
+        if (Object.keys(autoOpen).length > 0) {
+            setOpenMenus(prev => ({ ...prev, ...autoOpen }));
+        }
+    }, [currentPath, url]);
 
     const renderMenuItem = (item) => {
         const active = checkActive(item);
@@ -151,7 +184,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
         const content = (
             <>
                 {/* Icon */}
-                <div className={`flex-shrink-0 ${isCollapsed ? 'mb-1' : 'mr-3'} transition-transform duration-200 group-hover:scale-110 ${active || isOpen ? 'text-[#0a66c2]' : 'text-slate-400 group-hover:text-[#0a66c2]'}`}>
+                <div className={`flex-shrink-0 ${isCollapsed ? 'mb-1' : 'mr-3'} transition-transform duration-200 group-hover:scale-110 ${active || isOpen ? 'text-[#673ab7]' : 'text-slate-400 group-hover:text-[#673ab7]'}`}>
                     {React.cloneElement(item.icon, {
                         size: isCollapsed ? 24 : 18,
                         strokeWidth: active || isOpen ? 2 : 1.5
@@ -160,13 +193,13 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
 
                 {/* Label */}
                 {!isCollapsed && (
-                    <span className={`font-medium leading-tight transition-all duration-300 text-[14px] flex-1 text-left whitespace-nowrap truncate
-                        ${active || isOpen ? 'text-[#0a66c2]' : 'text-slate-600'}`}>
+                    <span className={`font-semibold leading-tight transition-all duration-300 text-[14px] flex-1 text-left whitespace-nowrap truncate
+                        ${active || isOpen ? 'text-[#673ab7]' : 'text-slate-600'}`}>
                         {item.label}
                     </span>
                 )}
 
-                {/* Chevron for expandable or just as a visual guide */}
+                {/* Chevron */}
                 {!isCollapsed && !isLogout && (
                     <ChevronRight
                         size={14}
@@ -193,7 +226,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                                 ? 'flex-col items-center justify-center py-4 px-1'
                                 : 'flex-row items-center py-2.5 px-4'}
                             ${active || isOpen
-                                ? 'bg-[#0a66c2]/5 text-[#0a66c2]'
+                                ? 'bg-[#f8f6ff] text-[#673ab7] font-semibold'
                                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
                     >
                         {content}
@@ -201,22 +234,21 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
 
                     {/* Sub-menu items */}
                     {!isCollapsed && isOpen && (
-                        <div className="ml-4 mt-1">
-                            {item.children.map(child => (
-                                <Link
-                                    key={child.label}
-                                    href={child.path}
-                                    className={`flex items-center gap-3 py-2 px-3 rounded-lg text-[13px] transition-all hover:bg-slate-50
-                                        ${(currentPath === child.path || (child.route && typeof route !== 'undefined' && route().current(child.route))) ? 'text-[#0a66c2] bg-[#0a66c2]/5 font-semibold' : 'text-slate-500'}`}
-                                >
-                                    {child.icon ? (
-                                        React.cloneElement(child.icon, { size: 14 })
-                                    ) : (
-                                        <div className={`w-1 h-1 rounded-full ${currentPath === child.path ? 'bg-[#0a66c2]' : 'bg-slate-300'}`} />
-                                    )}
-                                    <span>{child.label}</span>
-                                </Link>
-                            ))}
+                        <div className="ml-4 mt-1 space-y-0.5 pl-2">
+                            {item.children.map(child => {
+                                const childActive = isChildActive(child);
+                                return (
+                                    <Link
+                                        key={child.label}
+                                        href={child.path}
+                                        className={`flex items-center gap-3 py-2 px-3 rounded-lg text-[13px] transition-all hover:bg-[#f8f6ff]
+                                            ${childActive ? 'text-[#673ab7] bg-[#f8f6ff] font-bold' : 'text-slate-600 font-medium hover:text-[#673ab7]'}`}
+                                    >
+                                        <div className={`w-1.5 h-1.5 rounded-full ${childActive ? 'bg-[#673ab7]' : 'bg-slate-300'}`} />
+                                        <span>{child.label}</span>
+                                    </Link>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -235,7 +267,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                             ? 'flex-col items-center justify-center py-4 px-1'
                             : 'flex-row items-center py-2.5 px-4'}
                         ${active
-                            ? 'bg-[#0a66c2]/5 text-[#0a66c2]'
+                            ? 'bg-[#f8f6ff] text-[#673ab7]'
                             : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
                 >
                     {content}
@@ -252,7 +284,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
                         ? 'flex-col items-center justify-center py-4 px-1'
                         : 'flex-row items-center py-2.5 px-4'}
                     ${active
-                        ? 'bg-[#0a66c2]/5 text-[#0a66c2]'
+                        ? 'bg-[#f8f6ff] text-[#673ab7] font-semibold'
                         : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
             >
                 {content}
@@ -261,11 +293,11 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white relative">
+        <div className="flex flex-col h-full bg-white relative border-r border-[#e3e4e8]">
             {/* Collapse Toggle Button */}
             <button
                 onClick={toggleCollapse}
-                className="absolute -right-3.5 top-5 z-50 w-7 h-7 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-[#0a66c2] shadow-sm transition-transform duration-300"
+                className="absolute -right-3.5 top-5 z-50 w-7 h-7 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-[#673ab7] shadow-sm transition-transform duration-300"
                 style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}
             >
                 <ChevronsLeft size={14} strokeWidth={3} />
@@ -273,12 +305,12 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
 
             {/* Logo Section */}
             <div className={`h-[70px] flex items-center px-6 transition-all duration-300 ${isCollapsed ? 'justify-center px-0' : 'justify-start'}`}>
-                <div className="min-w-[35px] w-[35px] h-[35px] bg-[#0a66c2] rounded-lg flex items-center justify-center text-white shadow-sm">
+                <div className="min-w-[35px] w-[35px] h-[35px] bg-[#673ab7] rounded-lg flex items-center justify-center text-white shadow-sm">
                     <Cloud size={20} fill="currentColor" />
                 </div>
                 {!isCollapsed && (
                     <span className="ml-3 font-bold text-slate-800 text-lg tracking-tight animate-in fade-in duration-500">
-                        Admin<span className="text-slate-400 font-normal">Panel</span>
+                        Admin<span className="text-[#673ab7] font-bold">Panel</span>
                     </span>
                 )}
             </div>
@@ -292,8 +324,8 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
 
                 {/* Sectioned Navigation */}
                 {menuGroups.map((group) => (
-                    <div key={group.title} className="mb-6">
-                        {!isCollapsed && (
+                    <div key={group.title || 'main'} className="mb-6">
+                        {!isCollapsed && group.title && (
                             <div className="px-4 py-2 border-t border-slate-100 mt-2 mb-1">
                                 <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                                     {group.title}

@@ -102,7 +102,7 @@ export default function Index({ auth, customers, filters = {}, stats }) {
         <AdminLayout user={auth.user}>
             <Head title="Customers" />
 
-            <div className="min-h-screen bg-[#f5f6f8]">
+            <div className="min-h-screen ">
                 <div className="w-full mx-auto px-6 py-8">
                     
                     {/* Header Row */}
@@ -277,8 +277,8 @@ export default function Index({ auth, customers, filters = {}, stats }) {
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#673ab7] to-[#9c27b0] flex items-center justify-center text-white font-bold text-[12px]">
                                                         {customer.name
-                                                            .charAt(0)
-                                                            .toUpperCase()}
+                                                            ?.charAt(0)
+                                                            ?.toUpperCase() || 'C'}
                                                     </div>
                                                     <div className="flex flex-col">
                                                         <p className="text-[13px] font-bold text-[#2f3344] group-hover:text-[#673ab7] transition-colors leading-tight">

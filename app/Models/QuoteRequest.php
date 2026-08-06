@@ -12,7 +12,15 @@ class QuoteRequest extends Model
     protected $fillable = [
         'user_id',
         'pickup_address',
+        'pickup_country',
+        'pickup_state',
+        'pickup_city',
+        'pickup_zip',
         'delivery_address',
+        'delivery_country',
+        'delivery_state',
+        'delivery_city',
+        'delivery_zip',
         'pickup_date',
         'delivery_date',
         'pickup_time_from',
@@ -67,14 +75,23 @@ class QuoteRequest extends Model
         return 'new';
     }
 
+    public function getPalletTypeAttribute()
+    {
+        return $this->attributes['pallet_type'] ?? $this->getPalletType();
+    }
+
     public function getPalletType(): string
     {
+        if (! empty($this->attributes['pallet_type'])) {
+            return $this->attributes['pallet_type'];
+        }
+
         $firstItem = $this->items()->first();
         if (! $firstItem || ! $firstItem->item_type) {
             return 'N/A';
         }
 
-        $distinctTypes = $this->items()->pluck('item_type')->unique();
+        $distinctTypes = $this->items()->pluck('item_type')->filter()->unique();
         if ($distinctTypes->count() > 1) {
             return 'Mixed';
         }

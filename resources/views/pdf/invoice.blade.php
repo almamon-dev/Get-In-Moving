@@ -7,323 +7,454 @@
         @page {
             margin: 0px;
         }
-        body {
-            font-family: 'Helvetica Neue', 'Helvetica', Arial, sans-serif;
-            font-size: 13px;
-            color: #333;
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            position: relative;
         }
-        .top-bar {
-            background-color: #1a2533;
-            height: 20px;
-            width: 100%;
-        }
-        .top-left-triangle {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 0;
-            height: 0;
-            border-style: solid;
-            border-width: 40px 40px 0 0;
-            border-color: #38b2ac transparent transparent transparent;
-        }
-        .bottom-bar-wrapper {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            height: 25px;
-        }
-        .bottom-bar {
-            background-color: #1a2533;
-            height: 12px;
-            width: 100%;
-            position: absolute;
-            bottom: 0;
-        }
-        .bottom-right-triangle {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 0;
-            height: 0;
-            border-style: solid;
-            border-width: 0 0 40px 40px;
-            border-color: transparent transparent #38b2ac transparent;
-        }
-        .container {
-            padding: 20px 40px;
-        }
-        .invoice-title {
-            font-size: 36px;
-            font-weight: 800;
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            color: #000000;
+            background: #ffffff;
+            padding: 0;
             margin: 0;
-            color: #000;
-            letter-spacing: 1.5px;
         }
-        .logo-box {
-            display: inline-block;
-            background-color: #fbbf24;
-            color: white;
-            border-radius: 6px;
-            padding: 6px 12px;
-            font-size: 22px;
-            font-weight: bold;
-            margin-right: 10px;
-            vertical-align: middle;
+
+        .container {
+            padding: 30px 35px 80px 35px;
         }
-        .logo-text {
-            display: inline-block;
-            font-size: 16px;
-            font-weight: 900;
-            color: #38b2ac;
-            text-align: left;
-            vertical-align: middle;
-            line-height: 1.1;
-        }
-        .logo-text span {
-            display: block;
-            color: #1a2533;
-        }
-        .section-heading {
-            font-size: 16px;
-            font-weight: 800;
-            margin: 0 0 8px 0;
-            color: #1a2533;
-        }
-        table {
+
+        /* ─── HEADER TABLE ─────────────────────── */
+        .header-table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 25px;
         }
+        .header-table td {
+            vertical-align: top;
+        }
+
+        /* Logo styling matching image */
+        .logo-title {
+            font-size: 16px;
+            font-weight: 900;
+            color: #bc0000;
+            letter-spacing: -0.3px;
+            font-family: Arial, sans-serif;
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+        .logo-badge {
+            background-color: #000000;
+            color: #ffffff;
+            font-size: 9.5px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-top: 4px;
+            text-align: center;
+        }
+        .logo-subtext {
+            font-size: 8.5px;
+            color: #444444;
+            margin-top: 4px;
+            font-weight: bold;
+        }
+
+        /* Middle contact info matching image */
+        .company-title {
+            font-size: 13px;
+            font-weight: 900;
+            color: #000000;
+            margin-bottom: 4px;
+        }
+        .company-info {
+            font-size: 9.5px;
+            color: #111111;
+            line-height: 1.5;
+        }
+        .company-info span {
+            display: block;
+        }
+
+        /* Right meta box matching image */
+        .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid #000000;
+        }
+        .meta-table tr td {
+            border: 1px solid #000000;
+            padding: 5px 10px;
+            font-size: 10px;
+        }
+        .meta-table tr td:first-child {
+            background-color: #e5e7eb;
+            font-weight: bold;
+            color: #000000;
+            width: 45%;
+            text-align: center;
+        }
+        .meta-table tr td:last-child {
+            font-weight: bold;
+            text-align: center;
+            color: #000000;
+        }
+        .meta-table tr.po-row td:last-child {
+            color: #bc0000;
+        }
+
+        /* ─── CUSTOMER & SUPPLIER TABLE ─────────── */
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid #000000;
+            margin-bottom: 12px;
+        }
+        .info-table th {
+            background-color: #e5e7eb;
+            border: 1px solid #000000;
+            border-bottom: 2px solid #000000;
+            padding: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            width: 50%;
+        }
+        .info-table td {
+            border: 1px solid #000000;
+            padding: 8px 12px;
+            vertical-align: top;
+            width: 50%;
+            font-size: 10px;
+            line-height: 1.7;
+        }
+        .info-row {
+            display: block;
+            margin-bottom: 2px;
+        }
+        .info-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 95px;
+            color: #000000;
+        }
+        .info-val {
+            color: #111111;
+            font-weight: bold;
+        }
+
+        /* ─── METHOD / ROUTE / STATUS TABLE ─────── */
+        .status-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid #000000;
+            margin-bottom: 12px;
+        }
+        .status-table th {
+            background-color: #e5e7eb;
+            border: 1px solid #000000;
+            border-bottom: 2px solid #000000;
+            padding: 6px;
+            font-size: 10.5px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .status-table td {
+            border: 1px solid #000000;
+            padding: 8px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            color: #000000;
+        }
+
+        /* ─── ITEMS TABLE ───────────────────────── */
         .items-table {
-            margin-top: 5px;
-            margin-bottom: 20px;
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid #000000;
+            margin-bottom: 0px;
         }
         .items-table th {
-            background-color: #fbbf24;
-            color: #000;
-            padding: 8px 10px;
+            background-color: #e5e7eb;
+            border: 1px solid #000000;
+            border-bottom: 2px solid #000000;
+            padding: 6px 10px;
+            font-size: 10.5px;
+            font-weight: bold;
             text-align: left;
-            font-weight: 800;
-            font-size: 11px;
         }
+        .items-table th.center { text-align: center; }
+        .items-table th.right { text-align: right; }
+
         .items-table td {
+            border: 1px solid #000000;
             padding: 8px 10px;
-            color: #333;
-            font-size: 12px;
+            font-size: 10.5px;
+            font-weight: bold;
+            color: #000000;
         }
-        .items-table tbody tr:nth-child(even) {
-            background-color: #f3f4f6;
-        }
-        .items-table tbody tr:nth-child(odd) {
-            background-color: #ffffff;
+        .items-table td.center { text-align: center; }
+        .items-table td.right { text-align: right; }
+
+        /* ─── TOTALS SECTION ────────────────────── */
+        .totals-container {
+            width: 100%;
+            margin-top: 0px;
         }
         .totals-table {
-            width: 100%;
+            width: 320px;
+            float: right;
+            border-collapse: collapse;
         }
-        .totals-table td {
-            padding: 4px 0;
-        }
-        .totals-table td:last-child {
-            text-align: right;
-            padding-right: 15px;
-        }
-        .totals-table .grand-total td {
-            font-weight: 800;
-            font-size: 13px;
-            border-top: 2px solid #000;
-            border-bottom: 2px solid #000;
-            padding: 8px 0;
-        }
-        .totals-table .grand-total td:last-child {
-            padding-right: 15px;
-        }
-        .terms-list {
-            padding-left: 15px;
-            margin-top: 0;
-            color: #333;
+        .totals-table tr.sub-row td {
+            padding: 6px 10px;
             font-size: 11px;
-            line-height: 1.3;
+            font-weight: bold;
+            border-bottom: 1px dashed #000000;
+            border-left: 2px solid #000000;
+            border-right: 2px solid #000000;
         }
-        .terms-list li {
-            margin-bottom: 3px;
+        .totals-table tr.sub-row td:last-child {
+            text-align: right;
         }
-        .payment-bar {
-            background-color: #1a2533;
-            color: #ffffff;
-            padding: 8px 40px;
+
+        /* Grand Total Box matching image */
+        .grand-total-table {
+            width: 320px;
+            float: right;
+            border-collapse: collapse;
+            border: 2px solid #000000;
+            margin-top: -1px;
+        }
+        .grand-total-table td {
+            padding: 10px;
+            font-weight: 900;
+        }
+        .grand-total-label {
+            background-color: #e5e7eb;
+            border-right: 2px solid #000000;
             font-size: 14px;
-            font-weight: bold;
-            margin-top: 20px;
+            width: 35%;
+            color: #000000;
         }
-        .signature-line {
-            border-top: 1px solid #333;
-            width: 150px;
-            display: inline-block;
-            padding-top: 4px;
+        .grand-total-val {
+            font-size: 18px;
+            text-align: right;
+            color: #000000;
+        }
+
+        .clear {
+            clear: both;
+        }
+
+        /* ─── FOOTER BAR ────────────────────────── */
+        .footer-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #bc0000;
+            color: #ffffff;
             text-align: center;
+            padding: 7px 10px;
+            font-size: 11px;
             font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
     </style>
 </head>
 <body>
-    <div class="top-bar"></div>
-    <div class="top-left-triangle"></div>
 
     <div class="container">
-        <!-- Header -->
-        <table style="margin-bottom: 20px;">
+
+        <!-- Header Table -->
+        <table class="header-table">
             <tr>
-                <td style="width: 50%;">
-                    <h1 class="invoice-title">INVOICE</h1>
-                </td>
-                <td style="width: 50%; text-align: right;">
+                <!-- Left: Logo & Tagline -->
+                <td style="width: 32%;">
                     @php
-                        $appName = env('APP_NAME', 'GetIt Moving');
-                        // Split by space, or if no space, just show the whole thing with no second part
-                        $nameParts = explode(' ', $appName, 2);
-                        $firstName = $nameParts[0] ?? 'GetIt';
-                        $secondName = $nameParts[1] ?? 'Moving';
-                        $initial = strtoupper(substr($firstName, 0, 1));
+                        $settingsMap = \App\Models\Setting::pluck('value', 'key');
+                        $companyName = $settingsMap['company_name'] ?? config('app.name', 'GET IT MOVING');
+                        $companyEmail = $settingsMap['company_email'] ?? 'support@getitmoving.com';
+                        $companyPhone = $settingsMap['company_phone'] ?? '800-790-4469';
+                        $companyAddress = $settingsMap['address'] ?? 'Watline Freight Ave, Logistics Hub';
+                        $companyWebsite = $settingsMap['website'] ?? 'www.getitmoving.com';
+
+                        $rawLogoPath = $settingsMap['site_logo'] ?? null;
+                        $pdfImagePath = ($rawLogoPath && file_exists(public_path($rawLogoPath))) 
+                            ? public_path($rawLogoPath) 
+                            : (function_exists('get_site_logo') ? get_site_logo() : null);
+
+                        $quote = $invoice->order?->quote;
+                        $extraSum = $quote?->extraCharges?->sum('amount') ?? 0;
+                        $baseFreightPrice = $quote?->base_amount ?? max(0, $invoice->supplier_amount - $extraSum);
                     @endphp
-                    <div class="logo-box">{{ $initial }}</div>
-                    <div class="logo-text">
-                        {{ $firstName }}<br>
-                        <span>{{ $secondName }}</span>
+                    @if($pdfImagePath)
+                        <img src="{{ $pdfImagePath }}" style="max-height: 50px; max-width: 180px; margin-bottom: 4px; display: block;" alt="Site Logo">
+                    @endif
+                   
+                </td>
+
+                <!-- Middle: Company Details -->
+                <td style="width: 36%; padding-left: 10px;">
+                    <div class="company-title">{{ strtoupper($companyName) }}</div>
+                    <div class="company-info">
+                        <span><b>Address:</b> {{ $companyAddress }}</span>
+                        <span><b>Phone:</b> {{ $companyPhone }}</span>
+                        <span><b>Email:</b> {{ $companyEmail }}</span>
+                        <span><b>Website:</b> {{ $companyWebsite }}</span>
                     </div>
                 </td>
-            </tr>
-        </table>
-        
-        <!-- Bill To -->
-        <table style="margin-bottom: 25px;">
-            <tr>
-                <td style="width: 50%; vertical-align: top;">
-                    <h3 class="section-heading">Bill To:</h3>
-                    <div style="line-height: 1.4;">
-                        <div><strong>Client Name:</strong> {{ $invoice->order->customer->name ?? 'N/A' }}</div>
-                        <div><strong>Company Name:</strong> {{ $invoice->order->customer->company_name ?? 'N/A' }}</div>
-                        <div><strong>Billing Address:</strong> {{ $invoice->order->customer->address ?? 'N/A' }}</div>
-                        <div><strong>Phone:</strong> {{ $invoice->order->customer->phone_number ?? 'N/A' }}</div>
-                        <div><strong>Email:</strong> {{ $invoice->order->customer->email ?? 'N/A' }}</div>
-                    </div>
-                </td>
-                <td style="width: 50%; vertical-align: bottom;">
-                    <table style="width: 100%; font-weight: bold;">
+
+                <!-- Right: Meta Box -->
+                <td style="width: 32%;">
+                    <table class="meta-table">
                         <tr>
-                            <td style="text-align: left; width: 40%; padding-bottom: 3px;">Invoice Number:</td>
-                            <td style="text-align: left; padding-bottom: 3px; font-weight: normal;">{{ $invoice->invoice_number }}</td>
+                            <td>Date</td>
+                            <td>{{ $invoice->created_at->format('n/j/Y') }}</td>
                         </tr>
                         <tr>
-                            <td style="text-align: left; width: 40%;">Invoice Date:</td>
-                            <td style="text-align: left; font-weight: normal;">{{ $invoice->created_at->format('F d, Y') }}</td>
+                            <td>Order Number</td>
+                            <td>#{{ $invoice->order->order_number ?? ('LD-' . $invoice->order_id) }}</td>
                         </tr>
+                        <tr>
+                            <td>Invoice Number</td>
+                            <td>{{ $invoice->invoice_number }}</td>
+                        </tr>
+                       
                     </table>
                 </td>
             </tr>
         </table>
 
-        <!-- Service Details -->
-        <h3 class="section-heading">Service Details:</h3>
-        <table class="items-table">
+        <!-- Customer & Supplier Details Box -->
+        <table class="info-table">
             <thead>
                 <tr>
-                    <th style="width: 5%; text-align: center;">No</th>
-                    <th style="width: 45%;">Description of Service</th>
-                    <th style="width: 15%;">Quantity</th>
-                    <th style="width: 15%;">Rate (€)</th>
-                    <th style="width: 20%;">Total (€)</th>
+                    <th>Customer Details (Bill To)</th>
+                    <th>Supplier Details (Assigned Carrier)</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($invoice->order->items as $index => $item)
                 <tr>
-                    <td style="text-align: center; font-weight: bold;">{{ $index + 1 }}</td>
-                    <td>{{ $item->item_type }}</td>
-                    <td>{{ $item->quantity }} project</td>
-                    <td>€{{ number_format($item->weight ?? 0, 2) }}</td>
-                    <td>€{{ number_format(($item->quantity * ($item->weight ?? 0)), 2) }}</td>
+                    <td>
+                        <div class="info-row"><span class="info-label">Customer Name:</span><span class="info-val">{{ strtoupper($invoice->order->customer->name ?? 'N/A') }}</span></div>
+                        <div class="info-row"><span class="info-label">Company Name:</span><span class="info-val">{{ strtoupper($invoice->order->customer->company_name ?? 'N/A') }}</span></div>
+                        <div class="info-row"><span class="info-label">Address:</span><span class="info-val">{{ strtoupper($invoice->order->customer->address ?? 'N/A') }}</span></div>
+                        <div class="info-row"><span class="info-label">Email:</span><span class="info-val">{{ strtoupper($invoice->order->customer->email ?? 'N/A') }}</span></div>
+                        <div class="info-row"><span class="info-label">Phone:</span><span class="info-val">{{ $invoice->order->customer->phone_number ?? 'N/A' }}</span></div>
+                    </td>
+                    <td>
+                        <div class="info-row"><span class="info-label">Supplier Name:</span><span class="info-val">{{ strtoupper($invoice->order->supplier->company_name ?? $invoice->order->supplier->name ?? 'N/A') }}</span></div>
+                        <div class="info-row"><span class="info-label">Email:</span><span class="info-val">{{ strtoupper($invoice->order->supplier->email ?? 'N/A') }}</span></div>
+                        <div class="info-row"><span class="info-label">Phone:</span><span class="info-val">{{ $invoice->order->supplier->phone_number ?? 'N/A' }}</span></div>
+                        <div class="info-row"><span class="info-label">Pickup Address:</span><span class="info-val">{{ strtoupper($invoice->order->pickup_address ?? 'N/A') }}</span></div>
+                        <div class="info-row"><span class="info-label">Delivery Address:</span><span class="info-val">{{ strtoupper($invoice->order->delivery_address ?? 'N/A') }}</span></div>
+                    </td>
                 </tr>
-                @endforeach
-                @if($invoice->order->items->isEmpty())
+            </tbody>
+        </table>
+
+        <!-- Method / Transport Type / Status Box -->
+        <table class="status-table">
+            <thead>
                 <tr>
-                    <td style="text-align: center; font-weight: bold;">1</td>
-                    <td>{{ $invoice->order->pallet_type ?? 'Road Freight Service' }}</td>
-                    <td>1 project</td>
-                    <td>€{{ number_format($invoice->supplier_amount, 2) }}</td>
-                    <td>€{{ number_format($invoice->supplier_amount, 2) }}</td>
+                    <th style="width: 33.33%;">Payment Method</th>
+                    <th style="width: 33.33%;">Service / Pallet Type</th>
+                    <th style="width: 33.33%;">Status</th>
                 </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ strtoupper($invoice->order->payment_method === 'pay_later' ? 'PAY LATER' : 'PAY NOW') }}</td>
+                    <td>{{ strtoupper($invoice->order->pallet_type ?? 'ROAD FREIGHT') }}</td>
+                    <td>{{ strtoupper($invoice->status) }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Items Table -->
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th class="center" style="width: 20%;">Invoice #</th>
+                    <th style="width: 45%;">Description of Service</th>
+                    <th class="center" style="width: 10%;">QTY</th>
+                    <th class="right" style="width: 12.5%;">Unit Price</th>
+                    <th class="right" style="width: 12.5%;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if($invoice->order->items->isNotEmpty())
+                    @foreach($invoice->order->items as $index => $item)
+                    <tr>
+                        <td class="center">{{ $invoice->invoice_number }}</td>
+                        <td>
+                            <b>{{ strtoupper($item->item_type) }}</b>
+                            <br><span style="font-size:9px; color:#555;">FREIGHT TRANSPORT SERVICE ({{ $invoice->order->pickup_address ?? '' }} to {{ $invoice->order->delivery_address ?? '' }})</span>
+                        </td>
+                        <td class="center">{{ $item->quantity }}</td>
+                        <td class="right">{{ number_format($baseFreightPrice, 2) }}</td>
+                        <td class="right">{{ number_format(($item->quantity * $baseFreightPrice), 2) }}</td>
+                    </tr>
+                    @endforeach
+                @else
+                    <tr>
+                        <td class="center">{{ $invoice->invoice_number }}</td>
+                        <td>
+                            <b>FREIGHT TRANSPORT SERVICE</b> ({{ strtoupper($invoice->order->pallet_type ?? 'EURO PALLETS') }})
+                            <br><span style="font-size:9px; color:#555;">{{ $invoice->order->pickup_address ?? '' }} to {{ $invoice->order->delivery_address ?? '' }}</span>
+                        </td>
+                        <td class="center">1</td>
+                        <td class="right">{{ number_format($baseFreightPrice, 2) }}</td>
+                        <td class="right">{{ number_format($baseFreightPrice, 2) }}</td>
+                    </tr>
                 @endif
             </tbody>
         </table>
 
-        <!-- Totals & Terms -->
-        <table style="margin-bottom: 10px;">
-            <tr>
-                <td style="width: 60%; vertical-align: top; padding-right: 15px;">
-                    <h3 class="section-heading">Terms and Conditions:</h3>
-                    <ul class="terms-list">
-                        <li>Payment is due upon receipt of this invoice.</li>
-                        <li>Late payments may incur additional charges.</li>
-                        <li>Please make checks payable to GetItMoving Logistics.</li>
-                    </ul>
-                </td>
-                <td style="width: 40%; vertical-align: top;">
-                    <table class="totals-table">
-                        <tr>
-                            <td>Subtotal</td>
-                            <td>€{{ number_format($invoice->supplier_amount, 2) }}</td>
-                        </tr>
-                        <tr>
-                            <td>Platform Fee (5%)</td>
-                            <td>€{{ number_format($invoice->platform_fee, 2) }}</td>
-                        </tr>
-                        <tr class="grand-total">
-                            <td>Total Amount Due</td>
-                            <td>€{{ number_format($invoice->total_amount, 2) }}</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
+        <!-- Totals Section -->
+        <div class="totals-container">
+            <table class="totals-table">
+                <tr class="sub-row">
+                    <td style="width: 60%;">Base Freight Price</td>
+                    <td style="width: 40%;">€{{ number_format($baseFreightPrice, 2) }}</td>
+                </tr>
+                @if($quote?->extraCharges && $quote->extraCharges->isNotEmpty())
+                    @foreach($quote->extraCharges as $extra)
+                    <tr class="sub-row">
+                        <td>{{ $extra->custom_name ?? $extra->type ?? 'Extra Charge' }}</td>
+                        <td>€{{ number_format($extra->amount, 2) }}</td>
+                    </tr>
+                    @endforeach  
+                @endif
+                <tr class="sub-row">
+                    <td>System Service Charge</td>
+                    <td>€{{ number_format($invoice->platform_fee, 2) }}</td>
+                </tr>
+            </table>
+            <div class="clear"></div>
+
+            <table class="grand-total-table">
+                <tr>
+                    <td class="grand-total-label">Total</td>
+                    <td class="grand-total-val">€{{ number_format($invoice->total_amount, 2) }}</td>
+                </tr>
+            </table>
+            <div class="clear"></div>
+        </div>
+
     </div>
 
-    <!-- Payment Information Bar -->
-    <div class="payment-bar">
-        Payment Information:
+    <!-- Fixed Footer Bar -->
+    <div class="footer-bar">
+        AMSTERDAM &nbsp;|&nbsp; ROTTERDAM &nbsp;|&nbsp; BRUSSELS &nbsp;|&nbsp; BERLIN &nbsp;|&nbsp; PARIS &nbsp;|&nbsp; LONDON
     </div>
 
-    <div class="container" style="padding-top: 15px; padding-bottom: 30px;">
-        <table>
-            <tr>
-                <td style="width: 50%; vertical-align: top;">
-                    <div style="line-height: 1.4;">
-                        <div><strong>Payment Method:</strong> {{ $invoice->payments()->latest()->first()?->payment_method === 'pay_later' ? 'Pay Later' : ($invoice->payments()->latest()->first() ? 'Credit Card/Stripe' : 'Bank Transfer') }}</div>
-                        <div><strong>Due Date:</strong> {{ \Carbon\Carbon::parse($invoice->due_date)->format('F d, Y') }}</div>
-                        <div><strong>Payment Status:</strong> {{ ucfirst($invoice->status) }}</div>
-                    </div>
-                    
-                    <h3 class="section-heading" style="margin-top: 15px;">Questions</h3>
-                    <div style="line-height: 1.4;">
-                        <div><strong>Email US:</strong> support@getitmoving.com</div>
-                        <div><strong>Call US:</strong> (123) 456-7890</div>
-                    </div>
-                </td>
-                <td style="width: 50%; text-align: center; vertical-align: bottom;">
-                    <div style="margin-bottom: 25px;">Date : {{ $invoice->created_at->format('F d, Y') }}</div>
-                    <div class="signature-line">
-                        GetItMoving Admin
-                    </div>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <div class="bottom-bar-wrapper">
-        <div class="bottom-bar"></div>
-        <div class="bottom-right-triangle"></div>
-    </div>
 </body>
 </html>

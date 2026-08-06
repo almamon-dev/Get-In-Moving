@@ -13,7 +13,10 @@ class InvoicePaymentService
 {
     public function __construct()
     {
-        Stripe::setApiKey(config('services.stripe.secret'));
+        $secret = config('services.stripe.secret') ?? env('STRIPE_SECRET');
+        if ($secret) {
+            Stripe::setApiKey($secret);
+        }
     }
 
     /**
@@ -21,26 +24,70 @@ class InvoicePaymentService
      */
     public function createCheckoutSession(Invoice $invoice)
     {
-        $supplier = $invoice->order->supplier ?? null;
-        $sessionData = [
-            'payment_method_types' => ['card'],
-            'line_items' => [[
+        $secret = config('services.stripe.secret') ?? env('STRIPE_SECRET');
+        if (! $secret) {
+            throw new \Exception('Stripe API secret key is missing. Please set STRIPE_SECRET in your environment.');
+        }
+        Stripe::setApiKey($secret);
+
+        $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+
+        $successUrl = config('services.stripe.success_url') 
+            ? (config('services.stripe.success_url') . '?type=quote')
+            : ($frontendUrl . '/client-dashboard/orders?type=quote');
+
+        $cancelUrl = config('services.stripe.cancel_url') 
+            ? (config('services.stripe.cancel_url') . '?type=quote')
+            : ($frontendUrl . '/client-dashboard/biling?type=quote');
+
+        $supplierAmount = (float) ($invoice->supplier_amount ?? ($invoice->total_amount - ($invoice->platform_fee ?? 0)));
+        $platformFee = (float) ($invoice->platform_fee ?? 0);
+
+        if ($supplierAmount <= 0) {
+            $supplierAmount = (float) $invoice->total_amount;
+            $platformFee = 0;
+        }
+
+        $lineItems = [];
+
+        // 1. Base Freight Shipping Fee
+        $lineItems[] = [
+            'price_data' => [
+                'currency' => 'eur',
+                'product_data' => [
+                    'name' => 'Base Freight Fee (Order #'.($invoice->order?->order_number ?? $invoice->order_id).')',
+                    'description' => 'Supplier base transport fee',
+                ],
+                'unit_amount' => (int) round($supplierAmount * 100),
+            ],
+            'quantity' => 1,
+        ];
+
+        // 2. System Service Charge
+        if ($platformFee > 0) {
+            $lineItems[] = [
                 'price_data' => [
                     'currency' => 'eur',
                     'product_data' => [
-                        'name' => 'Invoice '.$invoice->invoice_number,
-                        'description' => 'Payment for Order '.$invoice->order->order_number,
+                        'name' => 'System Service Charge',
+                        'description' => 'GetItMoving platform service fee',
                     ],
-                    'unit_amount' => (int) ($invoice->total_amount * 100),
+                    'unit_amount' => (int) round($platformFee * 100),
                 ],
                 'quantity' => 1,
-            ]],
+            ];
+        }
+
+        $supplier = $invoice->order->supplier ?? null;
+        $sessionData = [
+            'payment_method_types' => ['card'],
+            'line_items' => $lineItems,
             'mode' => 'payment',
-            'success_url' => config('services.stripe.success_url') . '?type=quote',
-            'cancel_url' => config('services.stripe.cancel_url') . '?type=quote',
+            'success_url' => $successUrl,
+            'cancel_url' => $cancelUrl,
             'metadata' => [
                 'invoice_id' => $invoice->id,
-                'type' => 'invoice_payment'
+                'type' => 'invoice_payment',
             ],
         ];
 
@@ -50,13 +97,24 @@ class InvoicePaymentService
             $totalPlatformFee = $invoice->platform_fee + $supplierFeeAmount;
 
             $sessionData['payment_intent_data'] = [
-                'application_fee_amount' => (int) ($totalPlatformFee * 100), // Our total platform fee (Customer's + Supplier's)
+                'application_fee_amount' => (int) round($totalPlatformFee * 100),
                 'transfer_data' => [
-                    'destination' => $supplier->stripe_account_id, // Rest of money goes to supplier
+                    'destination' => $supplier->stripe_account_id,
                 ],
             ];
         }
-        return Session::create($sessionData);
+
+        try {
+            return Session::create($sessionData);
+        } catch (\Stripe\Exception\InvalidRequestException $e) {
+            // If the supplier's stripe_account_id destination is invalid/deleted, fallback to platform direct payment
+            if (str_contains(strtolower($e->getMessage()), 'destination') && isset($sessionData['payment_intent_data'])) {
+                Log::warning("Stripe Checkout fallback: Invalid supplier stripe_account_id destination '{$supplier?->stripe_account_id}'. Retrying without transfer_data.");
+                unset($sessionData['payment_intent_data']);
+                return Session::create($sessionData);
+            }
+            throw $e;
+        }
     }
 
     /**

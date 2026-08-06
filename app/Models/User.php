@@ -68,6 +68,9 @@ class User extends Authenticatable
         'pay_later_pm_id',
         'pay_later_pm_last_four',
         'pay_later_pm_type',
+        'pay_later_credit_limit',
+        'pay_later_daily_limit',
+        'pay_later_weekly_limit',
     ];
 
     /**
@@ -104,7 +107,65 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'deletion_requested_at' => 'datetime',
             'is_stripe_connected' => 'boolean',
+            'pay_later_credit_limit' => 'float',
         ];
+    }
+
+    /**
+     * Get or create Pay Later Facility for the user.
+     */
+    public function payLaterFacility()
+    {
+        return $this->hasOne(PayLaterFacility::class);
+    }
+
+    /**
+     * Get Pay Later Transactions for the user.
+     */
+    public function payLaterTransactions()
+    {
+        return $this->hasMany(PayLaterTransaction::class);
+    }
+
+    /**
+     * Get total reserved Pay Later credit (unpaid active orders using Pay Later).
+     */
+    public function getPayLaterReservedCreditAttribute(): float
+    {
+        if ($this->relationLoaded('payLaterFacility') && $this->payLaterFacility) {
+            return $this->payLaterFacility->reserved_credit;
+        }
+
+        return (float) \App\Models\Order::where('customer_id', $this->id)
+            ->where('payment_method', 'pay_later')
+            ->where('payment_status', 'unpaid')
+            ->where('status', '!=', 'cancelled')
+            ->sum('reserved_credit_amount');
+    }
+
+    /**
+     * Get total used Pay Later credit (unpaid due/overdue invoices).
+     */
+    public function getPayLaterUsedCreditAttribute(): float
+    {
+        if ($this->relationLoaded('payLaterFacility') && $this->payLaterFacility) {
+            return $this->payLaterFacility->used_credit;
+        }
+
+        return (float) \App\Models\Invoice::whereHas('order', function ($q) {
+            $q->where('customer_id', $this->id);
+        })
+        ->whereIn('status', ['due', 'overdue'])
+        ->sum('total_amount');
+    }
+
+    /**
+     * Get available Pay Later credit.
+     */
+    public function getPayLaterAvailableCreditAttribute(): float
+    {
+        $limit = (float) ($this->payLaterFacility->credit_limit ?? $this->pay_later_credit_limit ?? 5000.00);
+        return (float) max(0, $limit - ($this->pay_later_used_credit + $this->pay_later_reserved_credit));
     }
 
     /**

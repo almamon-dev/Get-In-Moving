@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             PageSeeder::class,
             PricingPlanSeeder::class,
             UserSeeder::class,
+            QuoteSeeder::class,
             // QuoteRequestSeeder::class,
             // SupplierDashboardSeeder::class,
         ]);

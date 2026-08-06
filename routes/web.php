@@ -19,7 +19,20 @@ Route::middleware('auth')->group(function () {
         Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class)->only(['index', 'show', 'destroy']);
         Route::patch('customers/{customer}/verification', [\App\Http\Controllers\Admin\CustomerController::class, 'updateVerification'])->name('customers.verification');
         Route::patch('customers/{customer}/pay-later-status', [\App\Http\Controllers\Admin\CustomerController::class, 'updatePayLaterStatus'])->name('customers.pay-later-status');
+        Route::patch('pay-later-requests/{pay_later_request}/status', [\App\Http\Controllers\Admin\CustomerController::class, 'updatePayLaterRequestStatus'])->name('pay-later-requests.status');
         Route::get('pay-later-approvals', [\App\Http\Controllers\Admin\CustomerController::class, 'payLaterApprovals'])->name('pay-later-approvals.index');
+
+        // Enterprise Credit Management Routes
+        Route::prefix('credit-management')->name('credit.')->group(function () {
+            Route::get('dashboard', [\App\Http\Controllers\Admin\AdminCreditManagementController::class, 'dashboard'])->name('dashboard');
+            Route::get('requests', [\App\Http\Controllers\Admin\AdminPayLaterRequestController::class, 'index'])->name('requests.index');
+            Route::patch('requests/{payLaterRequest}/approve', [\App\Http\Controllers\Admin\AdminPayLaterRequestController::class, 'approve'])->name('requests.approve');
+            Route::patch('requests/{payLaterRequest}/reject', [\App\Http\Controllers\Admin\AdminPayLaterRequestController::class, 'reject'])->name('requests.reject');
+            Route::patch('requests/{payLaterRequest}/request-documents', [\App\Http\Controllers\Admin\AdminPayLaterRequestController::class, 'requestDocuments'])->name('requests.request-documents');
+            Route::get('customer/{customer}', [\App\Http\Controllers\Admin\AdminCreditManagementController::class, 'showProfile'])->name('customer.profile');
+            Route::patch('account/{account}/adjust-limit', [\App\Http\Controllers\Admin\AdminCreditManagementController::class, 'adjustLimit'])->name('account.adjust-limit');
+            Route::patch('account/{account}/update-status', [\App\Http\Controllers\Admin\AdminCreditManagementController::class, 'updateStatus'])->name('account.update-status');
+        });
 
         Route::resource('suppliers', \App\Http\Controllers\Admin\SupplierController::class)->only(['index', 'show', 'destroy']);
         Route::patch('suppliers/{supplier}/compliance', [\App\Http\Controllers\Admin\SupplierController::class, 'updateCompliance'])->name('suppliers.compliance');
@@ -28,6 +41,7 @@ Route::middleware('auth')->group(function () {
 
         // Subscription Management
         Route::get('subscriptions', [\App\Http\Controllers\Admin\SubscriptionController::class, 'index'])->name('subscriptions.index');
+        Route::patch('subscriptions/{subscription}/toggle-auto-renewal', [\App\Http\Controllers\Admin\SubscriptionController::class, 'toggleAutoRenewal'])->name('subscriptions.toggle-auto-renewal');
         Route::delete('subscriptions/{subscription}', [\App\Http\Controllers\Admin\SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
         Route::post('subscriptions/bulk-destroy', [\App\Http\Controllers\Admin\SubscriptionController::class, 'bulkDestroy'])->name('subscriptions.bulk-destroy');
 

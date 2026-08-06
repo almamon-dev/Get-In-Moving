@@ -18,6 +18,9 @@ return new class extends Migration
             $table->foreignId('customer_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('supplier_id')->constrained('users')->onDelete('cascade');
             $table->decimal('total_amount', 12, 2);
+            $table->string('payment_method')->default('pay_later');
+            $table->string('payment_status')->default('unpaid');
+            $table->decimal('reserved_credit_amount', 12, 2)->default(0.00);
             $table->string('pallet_type')->nullable();
             $table->text('pickup_address');
             $table->text('delivery_address');

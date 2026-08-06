@@ -463,7 +463,11 @@ class SupplierApiController extends Controller
      */
     public function getOrderDetails($id)
     {
-        $order = Order::with(['items', 'customer', 'quote.quoteRequest', 'invoice'])->find($id);
+        $order = Order::with(['items', 'customer', 'quote.quoteRequest', 'invoice'])
+            ->where(function ($q) use ($id) {
+                $q->where('id', $id)->orWhere('order_number', $id);
+            })
+            ->first();
 
         if (! $order || $order->supplier_id !== auth()->id()) {
             return $this->sendError('Order not found.', [], 404);

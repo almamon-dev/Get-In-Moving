@@ -53,4 +53,37 @@ class PublicApiController extends Controller
             ],
         ], 'Public supplier availabilities retrieved successfully.');
     }
+
+    /**
+     * Handle public contact us form submission and dispatch email to official business email.
+     */
+    public function submitContact(Request $request)
+    {
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'nullable|string|max:100',
+            'email' => 'required|email|max:191',
+            'phone' => 'nullable|string|max:30',
+            'subject' => 'nullable|string|max:200',
+            'message' => 'required|string|max:5000',
+        ]);
+
+        $officialEmail = \App\Models\Setting::where('key', 'company_email')->value('value')
+            ?? \App\Models\Setting::where('key', 'official_email')->value('value')
+            ?? \App\Models\Setting::where('key', 'business_email')->value('value')
+            ?? \App\Models\Setting::where('key', 'contact_email')->value('value')
+            ?? config('mail.from.address');
+
+        try {
+            if ($officialEmail) {
+                \Illuminate\Support\Facades\Mail::to($officialEmail)->send(new \App\Mail\ContactFormMail($validated));
+            }
+
+            return $this->sendResponse(null, 'Thank you for reaching out! Your message has been sent successfully.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Contact Us email failed to send: ' . $e->getMessage());
+
+            return $this->sendResponse(null, 'Thank you! Your message has been recorded and our team will get back to you soon.');
+        }
+    }
 }

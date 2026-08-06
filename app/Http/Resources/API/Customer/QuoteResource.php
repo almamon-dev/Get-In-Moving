@@ -16,6 +16,7 @@ class QuoteResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'status' => $this->status,
             'amount' => '€'.number_format($this->revision_status === 'pending' ? $this->revised_amount : $this->amount, 0),
             'base_amount' => $this->base_amount ? '€'.number_format($this->base_amount, 0) : null,
             'extra_charges' => $this->whenLoaded('extraCharges', function () {

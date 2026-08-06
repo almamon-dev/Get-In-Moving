@@ -54,8 +54,11 @@ class SettingController extends Controller
             'stripe_key',
             'stripe_secret',
             'stripe_webhook_secret',
-            'fund_hold_minutes',
-            'pay_later_days'
+            'system_charge',
+            'pay_later_days',
+            'pay_later_default_limit',
+            'pay_later_default_daily_limit',
+            'pay_later_default_weekly_limit'
         ];
 
         $dbSettings = Setting::whereIn('key', $keys)->pluck('value', 'key');
@@ -65,9 +68,11 @@ class SettingController extends Controller
             'stripe_key' => $dbSettings['stripe_key'] ?? config('services.stripe.key'),
             'stripe_secret' => $dbSettings['stripe_secret'] ?? config('services.stripe.secret'),
             'stripe_webhook_secret' => $dbSettings['stripe_webhook_secret'] ?? config('services.stripe.webhook_secret'),
-            'fund_hold_minutes' => $dbSettings['fund_hold_minutes'] ?? env('FUND_HOLD_MINUTES', 5),
             'system_charge' => $dbSettings['system_charge'] ?? env('SYSTEM_CHARGE', 10),
             'pay_later_days' => $dbSettings['pay_later_days'] ?? env('PAY_LATER_DAYS', 30),
+            'pay_later_default_limit' => $dbSettings['pay_later_default_limit'] ?? 5000,
+            'pay_later_default_daily_limit' => $dbSettings['pay_later_default_daily_limit'] ?? 1000,
+            'pay_later_default_weekly_limit' => $dbSettings['pay_later_default_weekly_limit'] ?? 2500,
         ];
 
         return Inertia::render('Admin/Settings/Financial/Gateway', [
@@ -91,7 +96,8 @@ class SettingController extends Controller
             'website',
             'address',
             'is_operating_active',
-            'business_hours'
+            'business_hours',
+            'site_logo'
         ];
 
         $dbSettings = Setting::whereIn('key', $keys)->pluck('value', 'key');
@@ -106,6 +112,7 @@ class SettingController extends Controller
             'tax_id' => $dbSettings['tax_id'] ?? 'TAX-8822-001',
             'website' => $dbSettings['website'] ?? 'https://almamon.dev',
             'address' => $dbSettings['address'] ?? '123 Tech Square, Digital City, Dhaka, Bangladesh',
+            'site_logo' => \App\Helpers\Helper::getSiteLogo(),
             'is_operating_active' => isset($dbSettings['is_operating_active']) ? filter_var($dbSettings['is_operating_active'], FILTER_VALIDATE_BOOLEAN) : true,
             'business_hours' => isset($dbSettings['business_hours']) ? json_decode($dbSettings['business_hours'], true) : [
                 ['from_day' => 'Saturday', 'to_day' => 'Thursday', 'start_time' => '09:00 AM', 'end_time' => '06:00 PM', 'status' => 'Open'],
@@ -193,14 +200,28 @@ class SettingController extends Controller
      */
     public function update(Request $request)
     {
-        $settings = $request->except(['_token', '_method']);
+        // Handle site_logo file upload if present
+        if ($request->hasFile('site_logo')) {
+            $uploadedPath = \App\Helpers\Helper::uploadFile('settings', $request->file('site_logo'));
+            if ($uploadedPath) {
+                $oldLogo = Setting::where('key', 'site_logo')->value('value');
+                if ($oldLogo) {
+                    \App\Helpers\Helper::deleteFile($oldLogo);
+                }
+                Setting::updateOrCreate(
+                    ['key' => 'site_logo'],
+                    ['value' => $uploadedPath]
+                );
+            }
+        }
+
+        $settings = $request->except(['_token', '_method', 'site_logo']);
         
         // Keys that should also be updated in .env
         $envKeysMapping = [
             'stripe_key' => 'STRIPE_KEY',
             'stripe_secret' => 'STRIPE_SECRET',
             'stripe_webhook_secret' => 'STRIPE_WEBHOOK_SECRET',
-            'fund_hold_minutes' => 'FUND_HOLD_MINUTES',
             'system_charge' => 'SYSTEM_CHARGE',
             'pay_later_days' => 'PAY_LATER_DAYS',
         ];

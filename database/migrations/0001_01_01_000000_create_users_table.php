@@ -52,10 +52,26 @@ return new class extends Migration
             $table->boolean('is_compliance_verified')->default(false);
             $table->timestamp('compliance_verified_at')->nullable();
 
-            // Stripe Integration
+            // Stripe Integration & Financial
             $table->string('stripe_account_id')->nullable();
             $table->boolean('is_stripe_connected')->default(false);
             $table->decimal('balance', 12, 2)->default(0);
+
+            // Pay Later & Credit Limits
+            $table->enum('pay_later_status', ['inactive', 'pending', 'approved', 'rejected'])->default('inactive');
+            $table->timestamp('pay_later_requested_at')->nullable();
+            $table->text('pay_later_rejection_reason')->nullable();
+            $table->decimal('pay_later_credit_limit', 12, 2)->default(5000.00);
+            $table->decimal('pay_later_daily_limit', 12, 2)->nullable()->default(0);
+            $table->decimal('pay_later_weekly_limit', 12, 2)->nullable()->default(0);
+            $table->decimal('pay_later_reserved_credit', 12, 2)->default(0.00);
+            $table->string('pay_later_pm_id')->nullable();
+            $table->string('pay_later_pm_last_four', 4)->nullable();
+            $table->string('pay_later_pm_type')->nullable();
+            $table->string('credit_card_last_four', 4)->nullable();
+            $table->string('credit_card_brand')->nullable();
+            $table->integer('credit_card_exp_month')->nullable();
+            $table->integer('credit_card_exp_year')->nullable();
 
             // Password & Reset
             $table->string('password');
@@ -66,6 +82,7 @@ return new class extends Migration
 
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

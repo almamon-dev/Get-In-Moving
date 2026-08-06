@@ -27,6 +27,9 @@ class OrderResource extends JsonResource
             'delivered' => ['text' => 'Mark as Completed', 'target' => 'completed'],
         ];
 
+        $isPaid = $this->invoice?->status === 'paid' || $this->payment_method === 'pay_later';
+        $paymentStatus = $this->payment_method === 'pay_later' ? 'pay_later' : ($this->invoice?->status ?? 'paid');
+
         return [
             'id' => $this->id,
             'order_no' => $this->order_number,
@@ -40,10 +43,12 @@ class OrderResource extends JsonResource
             'payment' => [
                 'total' => (float) $this->total_amount,
                 'formatted' => '€'.number_format($this->total_amount, 2),
-                'is_paid' => $this->invoice?->status === 'paid',
-                'status' => $this->invoice?->status,
+                'is_paid' => $isPaid,
+                'status' => $paymentStatus,
+                'payment_method' => $this->payment_method ?? ($this->invoice?->due_date ? 'pay_later' : 'upfront'),
             ],
-            'payment_status' => $this->invoice?->status,
+            'payment_status' => $paymentStatus,
+            'payment_method' => $this->payment_method ?? ($this->invoice?->due_date ? 'pay_later' : 'upfront'),
 
             'shipping' => [
                 'service' => $this->pallet_type,

@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('quote_request_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Supplier
+            $table->decimal('base_amount', 12, 2)->nullable();
             $table->decimal('amount', 12, 2);
             $table->string('estimated_time')->nullable();
             $table->text('notes')->nullable();

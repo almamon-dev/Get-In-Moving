@@ -74,4 +74,16 @@ class Helper
         // Return a full URL based on the relative path from public/
         return asset($filePath);
     }
+
+    /**
+     * Get site logo URL using generateURL helper
+     */
+    public static function getSiteLogo(): ?string
+    {
+        $logo = \App\Models\Setting::where('key', 'site_logo')->value('value');
+        if ($logo) {
+            return self::generateURL($logo);
+        }
+        return null;
+    }
 }

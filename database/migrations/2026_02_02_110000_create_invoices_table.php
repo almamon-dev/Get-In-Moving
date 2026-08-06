@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('invoice_number')->unique();
             $table->decimal('supplier_amount', 12, 2);
             $table->decimal('platform_fee', 12, 2);
+            $table->decimal('supplier_fee', 12, 2)->default(0.00);
             $table->decimal('total_amount', 12, 2);
             $table->enum('status', ['due', 'paid', 'overdue', 'cancelled'])->default('due');
             $table->string('invoice_type')->default('order');

@@ -212,7 +212,7 @@ export default function Index({ auth, withdrawRequests, filters = {} }) {
                                             <td className="px-7 py-5">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#2c8af8] to-[#1a7ae8] flex items-center justify-center text-white font-bold text-[14px]">
-                                                        {(request.account_name || request.supplier?.name || "U").charAt(0).toUpperCase()}
+                                                        {(request.account_name || request.supplier?.name || "U")?.charAt(0)?.toUpperCase() || 'U'}
                                                     </div>
                                                     <div>
                                                         <p className="text-[14px] font-bold text-[#2f3344] group-hover:text-[#673ab7] transition-colors">
